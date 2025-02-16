@@ -1,7 +1,7 @@
 %% Parameters
 
 Thtv0 = -0.619426178368110;
-x = [0.01,0.010,0.01,0.01,0.01,Thtv0+0.01];
+x = [0.01,0.010,0.01,0.01,0.01,Thtv0+0.01]';
 
 Wh   = x(1);
 Omh  = x(2);
@@ -13,7 +13,7 @@ Ts = 0.1;
 
 %% Create MPC object
 
-N = 10;
+N = 20;
 N_h_ctr = 5;
 
 mpc = init_mpc(N,N_h_ctr);
