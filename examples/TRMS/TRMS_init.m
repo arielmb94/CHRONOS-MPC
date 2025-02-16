@@ -9,7 +9,7 @@ Thth = x(3);
 Wv   = x(4);
 Thtv = x(6);
 
-Ts = 0.1;
+Ts = 0.02;
 
 %% Create MPC object
 
@@ -38,9 +38,9 @@ u_min = [-2.5;-2];
 u_max = -u_min;
 mpc = init_mpc_u_cnstr(mpc,u_min,u_max);
 
-du_min = -0.1*ones(mpc.nu,1);
-du_max = 0.1*ones(mpc.nu,1);
-%mpc = init_mpc_delta_u_cnstr(mpc,du_min,du_max);
+du_min = -1.5*ones(mpc.nu,1);
+du_max = 1.5*ones(mpc.nu,1);
+mpc = init_mpc_delta_u_cnstr(mpc,du_min,du_max);
 
 y_min = [];
 y_max = [];
@@ -68,14 +68,14 @@ x_ref_is_y = 1;
 
 %% Costs
 
-Qe = diag([1 1 100 1 1 100]);
+Qe = diag([0 1 1000 0 1 1000]);
 mpc = init_mpc_Tracking_cost(mpc,Qe);
 
-Rdu = 1;
+Rdu = 10;
 %mpc = init_mpc_DiffControl_cost(mpc,Rdu);
 
-Ru = diag([0.5 1]);
-mpc = init_mpc_Control_cost(mpc,Ru);
+%Ru = diag([0.5 1]);
+%mpc = init_mpc_Control_cost(mpc,Ru);
 
 %% Init conditions for simulation
 
