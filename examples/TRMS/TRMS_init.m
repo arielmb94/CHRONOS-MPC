@@ -9,12 +9,12 @@ Thth = x(3);
 Wv   = x(4);
 Thtv = x(6);
 
-Ts = 0.02;
+Ts = 0.1;
 
 %% Create MPC object
 
-N = 20;
-N_h_ctr = 5;
+N = 5;
+N_h_ctr = 3;
 
 mpc = init_mpc(N,N_h_ctr);
 %% LTI system
@@ -38,9 +38,9 @@ u_min = [-2.5;-2];
 u_max = -u_min;
 mpc = init_mpc_u_cnstr(mpc,u_min,u_max);
 
-du_min = -1.5*ones(mpc.nu,1);
-du_max = 1.5*ones(mpc.nu,1);
-mpc = init_mpc_delta_u_cnstr(mpc,du_min,du_max);
+du_min = -0.5*ones(mpc.nu,1);
+du_max = 0.5*ones(mpc.nu,1);
+%mpc = init_mpc_delta_u_cnstr(mpc,du_min,du_max);
 
 y_min = [];
 y_max = [];
@@ -59,16 +59,16 @@ yi_max = [];
 
 %% Terminal Ingredients
 
-Qx = diag([3000 0.1]);
-Ru = 1;
+Qx = diag([1 0.1 10 1 0.1 50]);
+Ru = 0.1;
 ter_constraint = 0;
 x_ref_is_y = 1;
 
-%[mpc] = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,ter_constraint,x_ref_is_y);
+[mpc] = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,ter_constraint,x_ref_is_y);
 
 %% Costs
 
-Qe = diag([0 1 1000 0 1 1000]);
+Qe = diag([1 0 50 1 0 50]);
 mpc = init_mpc_Tracking_cost(mpc,Qe);
 
 Rdu = 10;
@@ -81,3 +81,5 @@ Rdu = 10;
 
 x0 = zeros(mpc.Nu+mpc.Nx,1);
 u_prev = [0;0];
+
+mpc.t = 100;
