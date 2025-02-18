@@ -21,6 +21,10 @@ mpc = init_mpc(N,N_h_ctr);
 
 sys = qLPV_TRMS_SS(Wh,Omh,Thth,Wv,Thtv);
 C = eye(6);
+% C = [1 0 0 0 0 0;
+%     0 0 1 0 0 0;
+%     0 0 0 1 0 0;
+%     0 0 0 0 0 1];
 
 mpc = init_mpc_system(mpc,eye(6)+Ts*sys.A,Ts*sys.B,0,C,0,0);
 
@@ -59,7 +63,7 @@ yi_max = [];
 
 %% Terminal Ingredients
 
-Qx = diag([1 0.1 10 1 0.1 50]);
+Qx = diag([1 50 1 1 50 1]);
 Ru = 0.1;
 ter_constraint = 0;
 x_ref_is_y = 1;
@@ -68,11 +72,11 @@ x_ref_is_y = 1;
 
 %% Costs
 
-Qe = diag([1 0 50 1 0 50]);
+Qe = diag([1 50 1 1 50 1]);
 mpc = init_mpc_Tracking_cost(mpc,Qe);
 
-Rdu = 10;
-%mpc = init_mpc_DiffControl_cost(mpc,Rdu);
+Rdu = diag([1 1]);
+mpc = init_mpc_DiffControl_cost(mpc,Rdu);
 
 %Ru = diag([0.5 1]);
 %mpc = init_mpc_Control_cost(mpc,Ru);
@@ -82,4 +86,4 @@ Rdu = 10;
 x0 = zeros(mpc.Nu+mpc.Nx,1);
 u_prev = [0;0];
 
-mpc.t = 100;
+mpc.t = 500;
