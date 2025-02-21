@@ -2,16 +2,19 @@ clear all
 TRMS_refMPC_init
 
 %%
-TththRef = 0.3;
-TthtvRef = -0.4;
+tsim = 600;
+Sim_samples = tsim/Ts;
+
+TththRef_v = sin(2*pi*(1/115)*(0:Ts:tsim));
+TthtvRef_v = -0.6+0.3*sin(2*pi*(1/90)*(0:Ts:tsim));
+
+
 WhRef = x(1);
 WvRef = x(4);
 
 %%
 clear Wh_dat Omh_dat Thth_dat Wv_dat Omv_dat Thtv_dat uh_dat uv_dat ti ...
     WhRef_dat WvRef_dat
-
-Sim_samples = 30/Ts;
 
 for i = 1:Sim_samples
 
@@ -21,6 +24,9 @@ Thth = x(3);
 Wv   = x(4);
 Omv  = x(5);
 Thtv = x(6);
+
+TthtvRef = TthtvRef_v(i);
+TththRef = TththRef_v(i);
 
 [~,OmhRef,~,OmvRef] = compute_ref(TththRef,Thth,TthtvRef,Thtv);
 
@@ -61,14 +67,18 @@ x = x + Ts*dt_x;
 
 end
 
-
+1/mean(ti)
 %%
 close all
+plot(TththRef_v)
+hold on
 plot(Thth_dat)
 grid on
 title('Thth')
 
 figure
+plot(TthtvRef_v)
+hold on
 plot(Thtv_dat)
 grid on
 title('Thtv')
