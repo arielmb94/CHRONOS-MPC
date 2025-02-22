@@ -14,8 +14,8 @@ Ts = 0.1;
 %% Create MPC object
 
 % MIMO mpc
-N = 6;
-N_h_ctr = 4;
+N = 10;
+N_h_ctr = 5;
 
 mpc = init_mpc(N,N_h_ctr);
 
@@ -100,14 +100,14 @@ mpc = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,ter_constraint,x_ref_is_y);
 Qx = 50;
 Ru = 1;
 ter_constraint = 0;
-x_ref_is_y = 1;
+x_ref_is_y = 0;
 
 mpc_h = init_mpc_ter_ingredients_dlqr(mpc_h,Qx,Ru,ter_constraint,x_ref_is_y);
 
 Qx = 50;
 Ru = 1;
 ter_constraint = 0;
-x_ref_is_y = 1;
+x_ref_is_y = 0;
 
 mpc_v = init_mpc_ter_ingredients_dlqr(mpc_v,Qx,Ru,ter_constraint,x_ref_is_y);
 

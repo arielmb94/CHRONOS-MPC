@@ -2,15 +2,17 @@ clear all
 TRMS_two_lvl_init
 
 %%
-tsim = 200;
+tsim = 300;
 Sim_samples = tsim/Ts;
 
 TththRef_v = sin(2*pi*(1/57)*(0:Ts:tsim));
-TthtvRef_v = -0.6+0.3*sin(2*pi*(1/45)*(0:Ts:tsim));
+TthtvRef_v = -0.4+0.6*sin(2*pi*(1/41)*(0:Ts:tsim));
 
 % TththRef_v = 0.3*ones(1,Sim_samples);
-% TthtvRef_v = -0.4*ones(1,Sim_samples);
+% TthtvRef_v = 0.2*ones(1,Sim_samples);
 
+mask_Wh = 1:mpc.nu:mpc.Nu;
+mask_Wv = 2:mpc.nu:mpc.Nu;
 
 %%
 clear Wh_dat Omh_dat Thth_dat Wv_dat Omv_dat Thtv_dat uh_dat uv_dat ti ...
@@ -28,8 +30,8 @@ Thtv = x(6);
 TthtvRef = TthtvRef_v(i);
 TththRef = TththRef_v(i);
 
-OmhRef = (TththRef-Thth)/3;
-OmvRef = (TthtvRef-Thtv)/5;
+OmhRef = (TththRef-Thth)/0.5;
+OmvRef = (TthtvRef-Thtv)/0.5;
 
 Wh_dat(i)   = x(1);
 Omh_dat(i)  = x(2);
@@ -54,11 +56,13 @@ ref = [OmhRef TththRef OmvRef TthtvRef-Thtv0]';
 
 [u_prev,J,x0] = mpc_solve(x0,x_mpc,u_prev,ref,uv,mpc,[],[],[]);
 
-WhRef = u_prev(1);
-WvRef = u_prev(2);
+W_ref = get_u(x0,mpc.nx,mpc.nu,mpc.N_ctr_hor,mpc.Nu);
 
-[uh,J,x0_h] = mpc_solve(x0_h,Wh,uh,WhRef,[],mpc_h,[],[],[]);
-[uv,J,x0_v] = mpc_solve(x0_v,Wv,uv,WvRef,[],mpc_v,[],[],[]);
+WhRef = W_ref(mask_Wh);
+WvRef = W_ref(mask_Wv);
+
+[uh,J,x0_h] = mpc_solve(x0_h,Wh,uh,WhRef(1:mpc_h.Nu-1),[],mpc_h,WhRef(end),[],[]);
+[uv,J,x0_v] = mpc_solve(x0_v,Wv,uv,WvRef(1:mpc_v.Nu-1),[],mpc_v,WvRef(end),[],[]);
 ti(i) = cputime-t0;
 
 % WhRef = u_prev(1);
@@ -67,8 +71,8 @@ ti(i) = cputime-t0;
 % OmhRef_dat(i) = OmhRef;
 % OmvRef_dat(i) = OmvRef;
 % 
-WhRef_dat(i) = WhRef;
-WvRef_dat(i) = WvRef;
+WhRef_dat(i) = WhRef(1);
+WvRef_dat(i) = WvRef(1);
 
 uh_dat(i) = uh;
 uv_dat(i) = uv;
