@@ -2,11 +2,11 @@ clear all
 TRMS_refMPC_init
 
 %%
-tsim = 600;
+tsim = 200;
 Sim_samples = tsim/Ts;
 
-TththRef_v = sin(2*pi*(1/115)*(0:Ts:tsim));
-TthtvRef_v = -0.6+0.3*sin(2*pi*(1/90)*(0:Ts:tsim));
+TththRef_v = sin(2*pi*(1/57)*(0:Ts:tsim));
+TthtvRef_v = -0.6+0.3*sin(2*pi*(1/45)*(0:Ts:tsim));
 
 
 WhRef = x(1);
@@ -14,7 +14,7 @@ WvRef = x(4);
 
 %%
 clear Wh_dat Omh_dat Thth_dat Wv_dat Omv_dat Thtv_dat uh_dat uv_dat ti ...
-    WhRef_dat WvRef_dat
+    WhRef_dat WvRef_dat OmhRef_dat OmvRef_dat
 
 for i = 1:Sim_samples
 
@@ -55,6 +55,9 @@ uh = u_prev(1);
 uv = u_prev(2);
 WhRef = u_prev(3);
 WvRef = u_prev(4);
+
+OmhRef_dat(i) = OmhRef;
+OmvRef_dat(i) = OmvRef;
 
 uh_dat(i) = u_prev(1);
 uv_dat(i) = u_prev(2);

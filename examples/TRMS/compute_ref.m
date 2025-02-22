@@ -51,8 +51,8 @@ function [WhRef,OmhRef,WvRef,OmvRef] = compute_ref(TththRef,thth,TthtvRef,thtv)
     K_H = K_A*l_t+K_B*l_m+0.5*m_b*(l_b^2)+m_cb*l_cb;
         
         
-    OmhRef = (TththRef-thth)/3;
-    OmvRef = (TthtvRef-thtv)/5;
+    OmhRef = (TththRef-thth)/0.5;
+    OmvRef = (TthtvRef-thtv)/0.5;
     
     f5r = (g*(K_C*sin(TthtvRef)+(K_B-K_A)*cos(TthtvRef))+k_ov*OmvRef+(OmvRef^2)*K_H*sin(TthtvRef)*cos(TthtvRef))/(l_m+k_g*OmhRef*cos(TthtvRef));
     if f5r >= 0

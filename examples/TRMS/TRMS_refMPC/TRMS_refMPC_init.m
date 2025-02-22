@@ -13,8 +13,8 @@ Ts = 0.1;
 
 %% Create MPC object
 
-N = 5;
-N_h_ctr = 3;
+N = 6;
+N_h_ctr = 4;
 
 mpc = init_mpc(N,N_h_ctr);
 %% LTI system
@@ -63,8 +63,8 @@ yi_max = [];
 
 %% Terminal Ingredients
 
-Qx = diag([1 1 50 1 1 50]);
-Ru = 0.1;
+Qx = diag([1 1 50 1 1 1000]);
+Ru = 0.01;
 ter_constraint = 0;
 x_ref_is_y = 0;
 
@@ -72,7 +72,7 @@ x_ref_is_y = 0;
 
 %% Costs
 
-Qe = diag([50 1 50 1]);
+Qe = diag([50 1 500 1]);
 mpc = init_mpc_Tracking_cost(mpc,Qe);
 
 Rdu = diag([1 1 0.1 0.1]);
