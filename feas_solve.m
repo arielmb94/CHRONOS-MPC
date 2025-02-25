@@ -1,5 +1,6 @@
-function [u0,J,x] = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
+function [u0,x] = feas_solve(x0,s_prev,u_prev,r,d,orig_mpc,x_ref,di)
 
+    mpc = orig_mpc;
     % number of variables
     n = length(x0);
 
@@ -19,18 +20,6 @@ function [u0,J,x] = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
     else 
         x_ref = [];
         grad_ter = [];
-    end
-
-    if isempty(mpc.gradPerfQz)
-        perfCost = 0;
-        z = [];
-    else
-        perfCost = 1;
-    end
-    
-    % Recompute hessian if cost terms have been updated
-    if mpc.recompute_cost_hess
-        mpc = update_mpc_f0_hess(mpc);
     end
 
     % for first iteration we assume x0 is feasible and wont check
@@ -145,16 +134,8 @@ function [u0,J,x] = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
             end
         end
         
-        % 3. Compute gradient of cost function at x0
-        if perfCost
-            z = get_lin_out(s_all,u,dz,mpc.nx,mpc.nu,mpc.nz,mpc.ndz,mpc.N,...
-                mpc.N_ctr_hor,mpc.Nz,mpc.Cz,mpc.Dz,mpc.Ddz,mpc.Ndz);
-        end
-
-        grad_f0 = grad_f0_MPC(mpc,err,du,u,grad_ter,z);
-        
         % 4. Compute gradient at x0 : grad(J) = t*grad(f0)+grad(Phi)
-        grad_J_x0 = mpc.t*grad_f0+grad_fi_Ind;
+        grad_J_x0 = mpc.t_feas*grad_f0+grad_fi_Ind;
 
 
         % Compute Hessian Matrix
@@ -247,11 +228,8 @@ function [u0,J,x] = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
             hess_fi_Ind = hess_fi_Ind + hess_ter_Ind_x0;
         end
 
-        % 3. Compute Hessian of f(x0,t):
-        hess_J_x0 = mpc.t*mpc.hessCost+hess_fi_Ind;
-
         % solve KKT system
-        KKT = [hess_J_x0 mpc.Aeq';mpc.Aeq zeros(n_eq)];
+        KKT = [hess_fi_Ind mpc.Aeq';mpc.Aeq zeros(n_eq)];
 
         delta_x = - linsolve(KKT,[grad_J_x0;mpc.Aeq*x-mpc.beq],opts);
         %delta_x = - linsolve(KKT,[grad_J_x0;zeros(n_eq,1)],opts);

@@ -85,6 +85,7 @@ mpc.hessDeltaUmin = [];
 mpc.hessDeltaUmax = [];
 mpc.m = 0;
 mpc.t = 50;
+mpc.t_feas = 500;
 mpc.Beta = 0.75;
 mpc.min_l = 0.99;
 mpc.eps = 1e-4;
