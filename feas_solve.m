@@ -2,15 +2,20 @@ function [u0,x] = feas_solve(x0,s_prev,u_prev,r,d,orig_mpc,x_ref,di)
 
     mpc = orig_mpc;
     % number of variables
-    n = length(x0);
+
+    % extend vector of optimization variables with feasibility slack
+    x = [x0;mpc.x0_feas];
+
+    n = length(x);
+    % feasibility cost function is J = v
+    % define fesibility cost function gradient as [0 ... 0 1]^T
+    grad_f0 = [zeros(n-1,1);1];
 
     % number of equality constraints
     n_eq = size(mpc.Aeq,1); 
 
     % update b matrix from equality condition
     mpc = update_mpc_beq(mpc,s_prev,d);
-
-    x = x0;
 
     if mpc.ter_ingredients
         if mpc.x_ref_is_y && isempty(x_ref)
