@@ -1,4 +1,6 @@
-function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
+function [u0,J,x,fallback_control] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
+    % fallback status
+    fallback_control = false;
 
     % number of variables
     n = length(x0);
@@ -277,6 +279,8 @@ function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
         % solve KKT system
         KKT = [hess_J_x0 mpc.Aeq';mpc.Aeq zeros(n_eq)];
 
+        %delta_x = - solveLinearSystemLU(KKT,[grad_J_x0;mpc.Aeq*x-mpc.beq]);
+        %delta_x = - solveLinearSystemLDL(KKT,[grad_J_x0;mpc.Aeq*x-mpc.beq]);
         delta_x = - linsolve(KKT,[grad_J_x0;mpc.Aeq*x-mpc.beq],opts);
         %delta_x = - linsolve(KKT,[grad_J_x0;zeros(n_eq,1)],opts);
         %delta_x = - KKT\[grad_J_x0;mpc.Aeq*x-mpc.beq];
@@ -300,6 +304,7 @@ function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
         if feas
             x = xhat;
         else
+            iner_loop_time = 0;
             while ~feas
 
                 l = l*mpc.Beta;
@@ -333,6 +338,7 @@ function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
         u0 = u(1:mpc.nu);
     end
 
+    % Might fix this function in order to use the fallback control
     %J = f0_fun_MPC(mpc.Qe,err,mpc.N,mpc.ny,mpc.Rdu,du,mpc.nu,[],[]);
     J = 0;
 
