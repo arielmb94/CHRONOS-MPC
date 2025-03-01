@@ -95,7 +95,7 @@ mpc.P = [];
 mpc.hessTerminalCost = [];
 mpc.recompute_cost_hess = 0;
 mpc.t_feas = 500;
-mpc.x0_feas = 1e5;
+mpc.v0_feas = 1e5;
 mpc.qfeas = 1;
 mpc.warm_starting = 0;
 

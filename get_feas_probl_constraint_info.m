@@ -3,7 +3,7 @@ function [s,s_all,s_ter,u,du,y,yi,...
     fi_u_min_x0,fi_u_max_x0,fi_du_min_x0,fi_du_max_x0,...
     fi_y_min_x0,fi_y_max_x0,fi_ter_x0,...
     fi_yi_min_x0,fi_yi_max_x0,feas] = ...
-    get_feas_probl_constraint_info(x,s_prev,u_prev,x_ref,d,di,mpc,check_feas)
+    get_feas_probl_constraint_info(x,s_prev,u_prev,x_ref,d,di,v,mpc,check_feas)
 
 %states
 [s,s_all,s_ter] = get_x(x,s_prev,mpc.nx,mpc.nu,mpc.N,mpc.N_ctr_hor,mpc.Nx);
@@ -14,8 +14,6 @@ du = diff_u(u,u_prev,mpc.nu,mpc.N_ctr_hor,mpc.Nu);
 % system outputs
 y = get_lin_out(s_all,u,d,mpc.nx,mpc.nu,mpc.ny,mpc.nd,mpc.N,mpc.N_ctr_hor,...
     mpc.Ny,mpc.C,mpc.D,mpc.Dd,mpc.Nd);
-% feasibility slack variable
-v = x(end);
 
 feas = 1;
 % State box constraints

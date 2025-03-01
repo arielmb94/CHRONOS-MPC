@@ -1,10 +1,12 @@
-function [u0,x] = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,di)
+function [u0,x_mpc] = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,di)
 
-    % extend vector of optimization variables with feasibility slack
-    x = [x0;mpc.x0_feas];
-
-    % number of variables
-    n = length(x);
+    x_mpc = x0;
+    v_feas = mpc.v0_feas;
+    % extend optimization vector with feasibility slack variable
+    x = [x_mpc;v_feas];
+    
+    % number of variables of original mpc problem
+    n = length(x_mpc);
     
     % number of equality constraints
     n_eq = size(mpc.Aeq,1); 
@@ -31,7 +33,7 @@ function [u0,x] = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,di)
     fi_u_min_x0,fi_u_max_x0,fi_du_min_x0,fi_du_max_x0,...
     fi_y_min_x0,fi_y_max_x0,fi_ter_x0,...
     fi_yi_min_x0,fi_yi_max_x0,feas] = ...
-    get_feas_probl_constraint_info(x,s_prev,u_prev,x_ref,d,di,mpc,check_feas);
+    get_feas_probl_constraint_info(x_mpc,s_prev,u_prev,x_ref,d,di,v_feas,mpc,check_feas);
     % for following iteration check feasibility
     check_feas = true;
 
@@ -234,7 +236,7 @@ function [u0,x] = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,di)
         delta_x = - linsolve(KKT,[grad_J_x0;mpc.Aeq*x-mpc.beq],opts);
         %delta_x = - linsolve(KKT,[grad_J_x0;zeros(n_eq,1)],opts);
         %delta_x = - KKT\[grad_J_x0;mpc.Aeq*x-mpc.beq];
-        delta_x_prim = delta_x(1:n);
+        delta_x_prim = delta_x(1:n+1);
 
         % compute lambda^2
         lambda2 = -grad_J_x0'*delta_x_prim;
@@ -243,13 +245,15 @@ function [u0,x] = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,di)
 
         l = 1;
         xhat = x+l*delta_x_prim;
+        x_mpc = xhat(1:n);
+        v_feas = xhat(n+1);
 
         [s,s_all,s_ter,u,du,y,yi,...
          fi_s_min_x0,fi_s_max_x0,fi_s_ter_min_x0,fi_s_ter_max_x0,...
          fi_u_min_x0,fi_u_max_x0,fi_du_min_x0,fi_du_max_x0,...
          fi_y_min_x0,fi_y_max_x0,fi_ter_x0,...
          fi_yi_min_x0,fi_yi_max_x0,feas] = ...
-         get_feas_probl_constraint_info(xhat,s_prev,u_prev,x_ref,d,di,mpc,check_feas);
+         get_feas_probl_constraint_info(x_mpc,s_prev,u_prev,x_ref,d,di,v_feas,mpc,check_feas);
 
         if feas
             x = xhat;
@@ -259,13 +263,16 @@ function [u0,x] = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,di)
                 l = l*mpc.Beta;
 
                 xhat = x+l*delta_x_prim;
+                x_mpc = xhat(1:n);
+                v_feas = xhat(n+1);
 
                 [s,s_all,s_ter,u,du,y,yi,...
                  fi_s_min_x0,fi_s_max_x0,fi_s_ter_min_x0,fi_s_ter_max_x0,...
                  fi_u_min_x0,fi_u_max_x0,fi_du_min_x0,fi_du_max_x0,...
                  fi_y_min_x0,fi_y_max_x0,fi_ter_x0,...
                  fi_yi_min_x0,fi_yi_max_x0,feas] = ...
-                 get_feas_probl_constraint_info(xhat,s_prev,u_prev,x_ref,d,di,mpc,check_feas);
+                 get_feas_probl_constraint_info(x_mpc,s_prev,u_prev,x_ref,d,di,...
+                 v_feas,mpc,check_feas);
             end
             x = xhat;
 
