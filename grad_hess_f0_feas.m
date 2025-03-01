@@ -25,7 +25,7 @@ if mpc.warm_starting
 
 else
 
-    grad_f0 = [zeros(n,1);1] + mpc.qfeas*[x(1:end-1)-x0;0];
+    grad_f0 = [zeros(n,1);1] + mpc.qfeas*[x-x0;0];
 
     hess_f0 = diag([mpc.qfeas*ones(1,n), 0]);
 

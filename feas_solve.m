@@ -135,9 +135,6 @@ function [u0,x_mpc] = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,di)
                 grad_fi_Ind = grad_fi_Ind + grad_ter_Ind_x0; 
             end
         end
-        
-        % 4. Compute gradient at x0 : grad(J) = t*grad(f0)+grad(Phi)
-        grad_J_x0 = mpc.t_feas*grad_f0+grad_fi_Ind;
 
 
         % Compute Hessian Matrix
@@ -230,8 +227,29 @@ function [u0,x_mpc] = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,di)
             hess_fi_Ind = hess_fi_Ind + hess_ter_Ind_x0;
         end
 
+
+        % Manage and adapt gradients and Hessian
+        
+        % 1. Compute gradient of f0
+        [grad_f0,hess_f0] = grad_hess_f0_feas(mpc,x_mpc,x0,n);
+
+        % 2. Compute gradient at x0 : grad(J) = t*grad(f0)+grad(Phi)
+        grad_J_x0 = mpc.t_feas*grad_f0 + [grad_fi_Ind;0];
+
+        % 3. Compute Hessian of f(x0,t):
+        if mpc.warm_starting
+
+            hess_J_x0 = [hess_fi_Ind zeros(n,1); zeros(1,n+1)];
+
+        else
+    
+            hess_J_x0 = mpc.t_feas*hess_f0 + [hess_fi_Ind zeros(n,1); zeros(1,n+1)];
+
+        end
+
         % solve KKT system
-        KKT = [hess_fi_Ind mpc.Aeq';mpc.Aeq zeros(n_eq)];
+        
+        KKT = [hess_J_x0 mpc.Aeq';mpc.Aeq zeros(n_eq)];
 
         delta_x = - linsolve(KKT,[grad_J_x0;mpc.Aeq*x-mpc.beq],opts);
         %delta_x = - linsolve(KKT,[grad_J_x0;zeros(n_eq,1)],opts);
