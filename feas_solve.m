@@ -1,4 +1,4 @@
-function [u0,x_mpc] = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,di)
+function x_mpc = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,di)
 
     x_mpc = x0;
     v_feas = mpc.v0_feas;
@@ -45,10 +45,9 @@ function [u0,x_mpc] = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,di)
         end
     end
 
-    continue_Newton = true;
     opts.SYM = true;
-    lambda2 = 1;
-    while mpc.eps <= lambda2*0.5 && continue_Newton
+    iter = 0;
+    while v_feas > 0 && iter <= mpc.max_feas_iter
 
         % Compute gradient:
 
@@ -299,17 +298,18 @@ function [u0,x_mpc] = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,di)
             end
             x = xhat;
 
-            if l<mpc.min_l
-                continue_Newton = false;
-            end
         end
-
+        iter = iter+1;
     end
 
-    % Get first control action
-    u0 = u(1:mpc.nu);
-
-    %J = f0_fun_MPC(mpc.Qe,err,mpc.N,mpc.ny,mpc.Rdu,du,mpc.nu,[],[]);
-    J = 0;
+    if v_feas > 0
+        disp("Max feasibility iter. reached, problem not feasible")
+        v_feas
+        iter
+    else
+        if ~mpc.warm_starting
+            disp("Feasibility Solver saved you")
+        end
+    end
 
 end
