@@ -6,10 +6,6 @@ function [u0,x] = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,di)
     % number of variables
     n = length(x);
     
-    % feasibility cost function is J = v
-    % define fesibility cost function gradient as [0 ... 0 1]^T
-    grad_f0 = [zeros(n-1,1);1];
-
     % number of equality constraints
     n_eq = size(mpc.Aeq,1); 
 

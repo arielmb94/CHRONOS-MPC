@@ -85,16 +85,18 @@ mpc.hessDeltaUmin = [];
 mpc.hessDeltaUmax = [];
 mpc.m = 0;
 mpc.t = 50;
-mpc.t_feas = 500;
 mpc.Beta = 0.75;
 mpc.min_l = 0.99;
 mpc.eps = 1e-4;
-mpc.x0_feas = 1e5;
 mpc.ter_ingredients = 0;
 mpc.ter_constraint = 0;
 mpc.x_ref_is_y = 0;
 mpc.P = [];
 mpc.hessTerminalCost = [];
 mpc.recompute_cost_hess = 0;
+mpc.t_feas = 500;
+mpc.x0_feas = 1e5;
+mpc.qfeas = 1;
+mpc.warm_starting = 0;
 
 end
