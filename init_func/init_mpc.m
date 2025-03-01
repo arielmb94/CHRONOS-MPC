@@ -98,5 +98,6 @@ mpc.t_feas = 500;
 mpc.v0_feas = 1e5;
 mpc.qfeas = 1;
 mpc.warm_starting = 0;
+mpc.feas_lambda = 100;
 
 end
