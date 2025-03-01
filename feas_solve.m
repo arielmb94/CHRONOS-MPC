@@ -8,8 +8,10 @@ function [u0,x_mpc] = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,di)
     % number of variables of original mpc problem
     n = length(x_mpc);
     
+    % Adapt equality constraints to feasibility solver size 
     % number of equality constraints
     n_eq = size(mpc.Aeq,1); 
+    Aeq_feas = [mpc.Aeq zeros(n_eq,1)];
 
     % update b matrix from equality condition
     mpc = update_mpc_beq(mpc,s_prev,d);
@@ -248,10 +250,10 @@ function [u0,x_mpc] = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,di)
         end
 
         % solve KKT system
-        
-        KKT = [hess_J_x0 mpc.Aeq';mpc.Aeq zeros(n_eq)];
 
-        delta_x = - linsolve(KKT,[grad_J_x0;mpc.Aeq*x-mpc.beq],opts);
+        KKT = [hess_J_x0 Aeq_feas';Aeq_feas zeros(n_eq)];
+
+        delta_x = - linsolve(KKT,[grad_J_x0;Aeq_feas*x-mpc.beq],opts);
         %delta_x = - linsolve(KKT,[grad_J_x0;zeros(n_eq,1)],opts);
         %delta_x = - KKT\[grad_J_x0;mpc.Aeq*x-mpc.beq];
         delta_x_prim = delta_x(1:n+1);
