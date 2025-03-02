@@ -15,7 +15,7 @@ mpc.warm_starting = 1;
 x0 = zeros(mpc.Nx+mpc.Nu,1);
 
 % find feasible point
-x_mpc = feas_solve(x0,mpc,s_prev,u_prev,d,x_ref,di);
+[x_mpc,iter] = feas_solve(x0,mpc,s_prev,u_prev,d,x_ref,di);
 
 % disable warm_starting boolean
 mpc.warm_starting = 0;

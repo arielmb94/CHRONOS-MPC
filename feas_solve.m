@@ -1,4 +1,4 @@
-function x_mpc = feas_solve(x0,mpc,s_prev,u_prev,d,x_ref,di)
+function [x_mpc,iter] = feas_solve(x0,mpc,s_prev,u_prev,d,x_ref,di)
 arguments
 x0
 mpc
