@@ -1,4 +1,13 @@
-function x_mpc = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,di)
+function x_mpc = feas_solve(x0,mpc,s_prev,u_prev,d,x_ref,di)
+arguments
+x0
+mpc
+s_prev
+u_prev
+d = [];
+x_ref = [];
+di = [];
+end
 
     x_mpc = x0;
     v_feas = mpc.v0_feas;
@@ -15,15 +24,6 @@ function x_mpc = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,di)
 
     % update b matrix from equality condition
     mpc = update_mpc_beq(mpc,s_prev,d);
-
-    if mpc.ter_ingredients
-        if mpc.x_ref_is_y && isempty(x_ref)
-            x_ref = r;
-            % TODO: account for reference being a sequence
-        end    
-    else 
-        x_ref = [];
-    end
 
     % get mpc variables from optimization vector x and constraint
     % information
@@ -257,7 +257,7 @@ function x_mpc = feas_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,di)
 
         delta_x = - linsolve(KKT,[grad_J_x0;Aeq_feas*x-mpc.beq],opts);
         %delta_x = - linsolve(KKT,[grad_J_x0;zeros(n_eq,1)],opts);
-        %delta_x = - KKT\[grad_J_x0;mpc.Aeq*x-mpc.beq];
+        %delta_x = - KKT\[grad_J_x0;Aeq_feas*x-mpc.beq];
         delta_x_prim = delta_x(1:n+1);
 
         % compute lambda^2
