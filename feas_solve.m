@@ -138,9 +138,10 @@ end
 
         % 2. If enabled, compute terminal constraint gradients 
         if mpc.ter_ingredients && mpc.ter_constraint
-            [~,grad_ter_Ind_x0,hess_ter_Ind_x0] = ...
-                ter_set_Ind_fun(x_ref,s_ter,fi_ter_x0,...
-                mpc.P,mpc.Nx,mpc.Nu,mpc.nx,mpc.nu,mpc.N,mpc.ter_constraint);
+
+            [grad_ter_Ind_x0,hess_ter_Ind_x0] = ...
+                ter_set_feas_Ind_fun(x_ref,s_ter,fi_ter_x0,mpc.P,...
+                mpc.nx,n);
 
                 grad_fi_Ind = grad_fi_Ind + grad_ter_Ind_x0; 
         end
