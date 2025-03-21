@@ -1,4 +1,4 @@
-function [x_mpc,iter] = feas_solve(x0,mpc,s_prev,u_prev,d,x_ref,di)
+function [x_mpc,iter,mpc] = feas_solve(x0,mpc,s_prev,u_prev,d,x_ref,di)
 arguments
 x0
 mpc
@@ -8,6 +8,9 @@ d = [];
 x_ref = [];
 di = [];
 end
+
+    % Set false at start
+    mpc.unfeasible = 0;
 
     x_mpc = x0;
     v_feas = mpc.v0_feas;
@@ -281,7 +284,7 @@ end
             x = xhat;
         else
             while ~feas
-                disp('Ohhh Mamma')
+                
                 l = l*mpc.Beta;
 
                 xhat = x+l*delta_x_prim;
@@ -302,14 +305,10 @@ end
         iter = iter+1;
     end
 
+    % If feas. slack variable is positive, the feasibility solver did not
+    % found a feasible point
     if v_feas > 0
-        disp("Max feasibility iter. reached, problem not feasible")
-        v_feas
-        iter
-    else
-        if ~mpc.warm_starting
-            disp("Feasibility Solver saved you")
-        end
+        mpc.unfeasible = 1;
     end
 
 end

@@ -100,5 +100,5 @@ mpc.qfeas = 1e-5;
 mpc.warm_starting = 0;
 mpc.feas_lambda = 100;
 mpc.max_feas_iter = 100;
-
+mpc.unfeasible = 0;
 end
