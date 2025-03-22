@@ -100,5 +100,4 @@ Qz = [];
 
 x_prev = [h1; h2];
 u_prev = 3.7;
-mpc.v0_feas = 0.1;
 x0 = init_mpc_warm_start(mpc,x_prev,u_prev);

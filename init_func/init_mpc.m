@@ -95,10 +95,10 @@ mpc.P = [];
 mpc.hessTerminalCost = [];
 mpc.recompute_cost_hess = 0;
 mpc.t_feas = 500;
-mpc.v0_feas = 1e5;
+mpc.v0_feas = 10;
 mpc.qfeas = 1e-5;
 mpc.warm_starting = 0;
 mpc.feas_lambda = 100;
-mpc.max_feas_iter = 100;
+mpc.max_feas_iter = 10;
 mpc.unfeasible = 0;
 end
