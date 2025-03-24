@@ -1,4 +1,12 @@
-function [fi_low_x0,fi_up_x0] = fi_box_fun(x,low_lim,up_lim,N,n)
+function [fi_low_x0,fi_up_x0] = fi_box_fun(x,low_lim,up_lim,N,n,v_feas)
+arguments
+x
+low_lim
+up_lim
+N
+n
+v_feas = 0;
+end
 
 if ~isempty(low_lim)
 
@@ -7,6 +15,11 @@ if ~isempty(low_lim)
 
         fi_low_x0((k-1)*n+1:k*n) = low_lim-x((k-1)*n+1:k*n);
 
+    end
+
+    % for feasibility solver: fi - v_feas <= 0
+    if v_feas
+        fi_low_x0 = fi_low_x0 - v_feas;
     end
 
 else
@@ -22,6 +35,11 @@ if ~isempty(up_lim)
 
         fi_up_x0((k-1)*n+1:k*n) = x((k-1)*n+1:k*n)-up_lim;
 
+    end
+
+    % for feasibility solver: fi - v_feas <= 0
+    if v_feas
+        fi_up_x0 = fi_up_x0 - v_feas;
     end
 
 else

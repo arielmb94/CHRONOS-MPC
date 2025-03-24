@@ -33,20 +33,44 @@ function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
         mpc = update_mpc_f0_hess(mpc);
     end
 
-    % for first iteration we assume x0 is feasible and wont check
-    check_feas = false;
-    % get mpc variables from optimimization vector x and constraint
-    % information
-    [s,s_all,s_ter,u,du,y,err,yi,...
-    fi_s_min_x0,fi_s_max_x0,fi_s_ter_min_x0,fi_s_ter_max_x0,...
-    fi_u_min_x0,fi_u_max_x0,fi_du_min_x0,fi_du_max_x0,...
-    fi_y_min_x0,fi_y_max_x0,fi_ter_x0,...
-    fi_yi_min_x0,fi_yi_max_x0,feas] = ...
-    get_state_constraint_info(x,s_prev,u_prev,r,x_ref,d,di,mpc,check_feas);
-    % for following iteration check feasibility
-    check_feas = true;
-
+    % Set Newton solver condition at start
     continue_Newton = true;
+
+    % check if initial state is feasible, it might lead to numerical
+    % problems otherwise
+    feas = feas_check_s_prev(s_prev,mpc);
+
+    if feas
+        % get mpc variables from optimization vector x and constraint
+        % information and feasibility
+        [s,s_all,s_ter,u,du,y,err,yi,...
+        fi_s_min_x0,fi_s_max_x0,fi_s_ter_min_x0,fi_s_ter_max_x0,...
+        fi_u_min_x0,fi_u_max_x0,fi_du_min_x0,fi_du_max_x0,...
+        fi_y_min_x0,fi_y_max_x0,fi_ter_x0,...
+        fi_yi_min_x0,fi_yi_max_x0,feas] = ...
+        get_state_constraint_info(x,s_prev,u_prev,r,x_ref,d,di,mpc);
+    end
+
+    if ~feas
+        % If initial point was not feasible, compute new feasible point
+        [x,iter,mpc] = feas_solve(x,mpc,s_prev,u_prev,d,x_ref,di);
+
+        % If feas. solver fails skip mpc solver
+        if mpc.unfeasible
+            continue_Newton = false;
+        else
+
+            % Get constraint info on new point
+            [s,s_all,s_ter,u,du,y,err,yi,...
+                fi_s_min_x0,fi_s_max_x0,fi_s_ter_min_x0,fi_s_ter_max_x0,...
+                fi_u_min_x0,fi_u_max_x0,fi_du_min_x0,fi_du_max_x0,...
+                fi_y_min_x0,fi_y_max_x0,fi_ter_x0,...
+                fi_yi_min_x0,fi_yi_max_x0,feas] = ...
+                get_state_constraint_info(x,s_prev,u_prev,r,x_ref,d,di,mpc);
+        end
+
+    end
+
     opts.SYM = true;
     lambda2 = 1;
     while mpc.eps <= lambda2*0.5 && continue_Newton
@@ -139,7 +163,7 @@ function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
         if mpc.ter_ingredients
             [grad_ter,grad_ter_Ind_x0,hess_ter_Ind_x0] = ...
                 ter_set_Ind_fun(x_ref,s_ter,fi_ter_x0,...
-                mpc.P,mpc.Nx,mpc.Nu,mpc.nx,mpc.nu,mpc.N,mpc.ter_constraint);
+                mpc.P,mpc.Nx,mpc.Nu,mpc.nx,mpc.ter_constraint);
             if mpc.ter_constraint
                 grad_fi_Ind = grad_fi_Ind + grad_ter_Ind_x0; 
             end
@@ -271,7 +295,7 @@ function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
         fi_u_min_x0,fi_u_max_x0,fi_du_min_x0,fi_du_max_x0,...
         fi_y_min_x0,fi_y_max_x0,fi_ter_x0,...
             fi_yi_min_x0,fi_yi_max_x0,feas] = ...
-        get_state_constraint_info(xhat,s_prev,u_prev,r,x_ref,d,di,mpc,check_feas);
+        get_state_constraint_info(xhat,s_prev,u_prev,r,x_ref,d,di,mpc);
 
         if feas
             x = xhat;
@@ -287,7 +311,7 @@ function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
                 fi_u_min_x0,fi_u_max_x0,fi_du_min_x0,fi_du_max_x0,...
                 fi_y_min_x0,fi_y_max_x0,fi_ter_x0,...
                     fi_yi_min_x0,fi_yi_max_x0,feas] = ...
-                get_state_constraint_info(xhat,s_prev,u_prev,r,x_ref,d,di,mpc,check_feas);
+                get_state_constraint_info(xhat,s_prev,u_prev,r,x_ref,d,di,mpc);
             end
             x = xhat;
 
@@ -297,9 +321,17 @@ function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
         end
 
     end
-
-    % Get first control action
-    u0 = u(1:mpc.nu);
+  
+    if mpc.unfeasible
+        % if mpc constraints are unfeasible, return first control action 
+        % from the optimization vector, reset optimization vector 
+        % afterwards
+        u0 = x(1:mpc.nu);
+        x = x*0;
+    else
+        % Get first control action
+        u0 = u(1:mpc.nu);
+    end
 
     %J = f0_fun_MPC(mpc.Qe,err,mpc.N,mpc.ny,mpc.Rdu,du,mpc.nu,[],[]);
     J = 0;

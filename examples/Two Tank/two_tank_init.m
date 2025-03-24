@@ -98,6 +98,6 @@ Qz = [];
 
 %% Init conditions for simulation
 
-x0 = 0.45*ones(mpc.Nu+mpc.Nx,1);
 x_prev = [h1; h2];
-u_prev = 0.45;
+u_prev = 3.7;
+x0 = init_mpc_warm_start(mpc,x_prev,u_prev);

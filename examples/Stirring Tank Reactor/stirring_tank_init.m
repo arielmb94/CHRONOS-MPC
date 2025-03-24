@@ -111,3 +111,5 @@ mpc.t = 500;
 
 x0 = 0.45*ones(mpc.Nu+mpc.Nx,1);
 u_prev = 0.45;
+d = [1;v0];
+x0 = init_mpc_warm_start(mpc,x_prev,u_prev,d);
