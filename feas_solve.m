@@ -28,9 +28,6 @@ end
     n_eq = size(mpc.Aeq,1); 
     Aeq_feas = [mpc.Aeq zeros(n_eq,1)];
 
-    % update b matrix from equality condition
-    mpc = update_mpc_beq(mpc,s_prev,d);
-
     % get mpc variables from optimization vector x and constraint
     % information
     % increase v_feas if needed   
