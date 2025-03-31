@@ -1,6 +1,11 @@
-function [u0,J,x,fallback_control] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
-    % fallback status
-    fallback_control = false;
+function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di,Ts,i)
+    if coder.target('MATLAB') 
+        start_time = cputime;
+    else
+        start_time = zeros(1,2,'int64'); % [seconds, nanoseconds]
+        end_time = zeros(1,2,'int64');
+        coder.ceval('clock_gettime', coder.opaque('int', 'CLOCK_MONOTONIC'), coder.wref(start_time)); % compatible with mex generation
+    end
 
     % number of variables
     n = length(x0);
@@ -300,11 +305,10 @@ function [u0,J,x,fallback_control] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz
         fi_y_min_x0,fi_y_max_x0,fi_ter_x0,...
             fi_yi_min_x0,fi_yi_max_x0,feas] = ...
         get_state_constraint_info(xhat,s_prev,u_prev,r,x_ref,d,di,mpc);
-
+        
         if feas
             x = xhat;
         else
-            iner_loop_time = 0;
             while ~feas
 
                 l = l*mpc.Beta;

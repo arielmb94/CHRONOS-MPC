@@ -32,15 +32,15 @@ for i = 1:2400
     
     xref = [f_c;f_v];
     
-    [u_prev,J,x0,fallback_control] = mpc_solve(x0,x_prev,u_prev,xref,d,mpc,[],[],[]);
-    if fallback_control
-        if i > 1
-            if Jk(i - 1) < J
-                u_prev = uk(i - 1);            
-            end
-            disp("Fallback control is used!")
-        end
+    % Testing the fallback control
+    if i == 100 || i == 103
+        sampling_time = 0;
+        disp("Forcefully calling the fallback control")
+    else
+        sampling_time = Ts;
     end
+
+    [u_prev,J,x0] = mpc_solve(x0,x_prev,u_prev,xref,d,mpc,[],[],[],sampling_time);
     
     ck = ck + Ts*((1-ck)/theta_f - k*ck*exp(-M/vk));
     vk = vk + Ts*((xf-vk)/theta_f + k*ck*exp(-M/vk)-alpha*u_prev*(vk-xc));
