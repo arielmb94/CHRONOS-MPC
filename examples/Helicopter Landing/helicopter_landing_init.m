@@ -21,7 +21,7 @@ x_prev = [initial_px; initial_vx; initial_py; initial_vy];
 %% Create MPC object
 
 N = 15;
-N_h_ctr = 5;
+N_h_ctr = 15;
 
 mpc = init_mpc(N,N_h_ctr);
 %% LTI system
@@ -62,9 +62,9 @@ u_min = [-20; -20];
 u_max = [20; 20];
 mpc = init_mpc_u_cnstr(mpc,u_min,u_max);
 
-du_min = -0.1*ones(mpc.nu,1);
-du_max = 0.1*ones(mpc.nu,1);
-mpc = init_mpc_delta_u_cnstr(mpc,du_min,du_max);
+% du_min = -0.1*ones(mpc.nu,1);
+% du_max = 0.1*ones(mpc.nu,1);
+% mpc = init_mpc_delta_u_cnstr(mpc,du_min,du_max);
 
 y_min = [];
 y_max = [];
