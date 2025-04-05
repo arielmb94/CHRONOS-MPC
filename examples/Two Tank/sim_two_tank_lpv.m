@@ -38,6 +38,12 @@ xf = xf + Ts*(-xf/tau+r(k)/tau);
 x_ref = [xf;xf];
 
 tic;
+% Update LPV model
+A_lpv = eye(2)+Ts*[-sqrt(2*g)*sqrt(h1)/(Ab*h1) 0;
+     sqrt(2*g)*sqrt(h1)/(Ab*h1) -sqrt(2*g)*sqrt(h2)/(Ab*h2)];
+% Update mpc problem dynamics
+mpc = update_mpc_sys_dynamics(mpc,A_lpv,mpc.B,[]);
+
 % Solve mpc iteration
 [u_prev,J,x0] = mpc_solve(x0,x_prev,u_prev,xf,[],mpc,x_ref,[],[]);
 tk = toc;
