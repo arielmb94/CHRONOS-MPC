@@ -38,7 +38,7 @@ Note that if we expand the state-space LTV model we recover the original nonline
 
 In order to control the height of the second tank we solve at each iteration the following MPC problem using the CHRONOS solver:
 
-$$\min_{u,x}J = \sum_{i=1}^{N-1} (r-y)^TQ_{e}(r-y) + \sum_{i=1}^{N_{ctr}}\Delta u^TdR_u\Delta u + (x_{ref}-x_N)^TP(x_{ref}-x_N)$$
+$$\min_{u,x}J = (x_{ref}-x_N)^TP(x_{ref}-x_N) + \sum_{i=1}^{N-1} (r-y_i)^TQ_{e}(r-y_i) + \sum_{i=0}^{N_{ctr-1}}\Delta u_i^TdR_u\Delta u_i $$
 
 s.t.
 
