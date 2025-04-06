@@ -60,7 +60,7 @@ TththRef = TththRef_v(i);
 OmhRef = (TththRef-Thth)/0.5;
 OmvRef = (TthtvRef-Thtv)/0.5;
 
-t0 = cputime;
+tic;
 % Update LPV model to current scheduling values
 [A,B,Bd,Ah,Bh,Av,Bv] = qLPV_TRMS_cascade_mpc_SS(Wh,Omh,Thth,Wv,Thtv);
 % Update MIMO mpc problem structure
@@ -89,7 +89,7 @@ WvRef = W_ref(mask_Wv);
 [uh,J,x0_h] = mpc_solve(x0_h,Wh,uh,WhRef(1:mpc_h.Nu-1),[],mpc_h,WhRef(end),[],[]);
 % solve Vertical Fan mpc
 [uv,J,x0_v] = mpc_solve(x0_v,Wv,uv,WvRef(1:mpc_v.Nu-1),[],mpc_v,WvRef(end),[],[]);
-ti(i) = cputime-t0;
+ti(i) = toc;
 
 % Storoge control action values for plotting and analysis
 WhRef_dat(i) = WhRef(1);

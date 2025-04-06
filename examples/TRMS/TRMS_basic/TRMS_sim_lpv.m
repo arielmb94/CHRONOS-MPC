@@ -56,7 +56,7 @@ TththRef = TththRef_v(i);
 % Define reference vector
 ref = [WhRef OmhRef TththRef WvRef OmvRef TthtvRef-Thtv0]';
 
-t0 = cputime;
+tic
 % Update LPV model to current scheduling values
 sys = qLPV_TRMS_SS(Wh,Omh,Thth,Wv,Thtv);
 % Update mpc problem structure
@@ -66,7 +66,7 @@ mpc = update_mpc_sys_dynamics(mpc,eye(6)+Ts*sys.A,Ts*sys.B,[]);
 x_mpc = [Wh;Omh;Thth;Wv;Omv;Thtv-Thtv0];
 % Solve mpc iteration
 [u_prev,J,x0] = mpc_solve(x0,x_mpc,u_prev,ref,[],mpc,[],[],[]);
-ti(i) = cputime-t0;
+ti(i) = toc;
 
 % Assign control actions
 uh = u_prev(1);
