@@ -56,7 +56,7 @@ u_dat(k) = u_prev;
 t_dat(k) = tk;
 
 % Forward Euler step of Two Tank nonlinear dynamics
-h1 = h1 + Ts*(u_prev/Ab-sqrt(2*g)*sqrt(h1))/Ab;
+h1 = h1 + Ts*(u_prev/Ab-sqrt(2*g)*sqrt(h1)/Ab);
 h2 = h2 + Ts*(sqrt(2*g)*sqrt(h1)/Ab-sqrt(2*g)*sqrt(h2)/Ab);
 % update state vector for the following iteration
 x_prev = [h1;h2];

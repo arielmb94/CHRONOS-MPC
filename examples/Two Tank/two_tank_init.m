@@ -110,7 +110,7 @@ Qz = [];    % Quadratic penalty on performance vector: z'*Qz*z
 qz = [];    % Linear penalty on performance vector: qz'*z 
 
 % Init performance cost
-mpc = init_mpc_LinPerf_cost(mpc,Cz,Dz,Ddz,Qz,qz);
+%mpc = init_mpc_LinPerf_cost(mpc,Cz,Dz,Ddz,Qz,qz);
 
 %% Init conditions for simulation
 
