@@ -64,10 +64,16 @@ tic;
 % Update LPV model to current scheduling values
 [A,B,Bd,Ah,Bh,Av,Bv] = qLPV_TRMS_cascade_mpc_SS(Wh,Omh,Thth,Wv,Thtv);
 % Update MIMO mpc problem structure
+% System discretized with forward Euler discretization:
+% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
 mpc = update_mpc_sys_dynamics(mpc,eye(4)+Ts*A,Ts*B,Ts*Bd);
 % Update Horizontal Fan mpc problem structure
+% System discretized with forward Euler discretization:
+% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
 mpc_h = update_mpc_sys_dynamics(mpc_h,1+Ts*Ah,Ts*Bh,[]);
 % Update Vertical Fan mpc problem structure
+% System discretized with forward Euler discretization:
+% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
 mpc_v = update_mpc_sys_dynamics(mpc_v,1+Ts*Av,Ts*Bv,[]);
 
 % Adjust Vertical Angle State

@@ -35,12 +35,18 @@ mpc_v = init_mpc(N_h_ctr);
 [A,B,Bd,Ah,Bh,Av,Bv] = qLPV_TRMS_cascade_mpc_SS(Wh,Omh,Thth,Wv,Thtv);
 
 % Initialize MIMO mpc system dynamics
+% System discretized with forward Euler discretization:
+% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
 mpc = init_mpc_system(mpc,eye(4)+Ts*A,Ts*B,Ts*Bd,eye(4),0,0);
 
 % Initialize Horizontal Fan mpc system dynamics
+% System discretized with forward Euler discretization:
+% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
 mpc_h = init_mpc_system(mpc_h,1+Ts*Ah,Ts*Bh,0,1,0,0);
 
 % Initialize Vorizontal Fan mpc system dynamics
+% System discretized with forward Euler discretization:
+% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
 mpc_v = init_mpc_system(mpc_v,1+Ts*Av,Ts*Bv,0,1,0,0);
 
 %% Constraints

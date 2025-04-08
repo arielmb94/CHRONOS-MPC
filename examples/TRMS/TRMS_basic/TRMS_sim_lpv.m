@@ -60,6 +60,8 @@ tic
 % Update LPV model to current scheduling values
 sys = qLPV_TRMS_SS(Wh,Omh,Thth,Wv,Thtv);
 % Update mpc problem structure
+% System discretized with forward Euler discretization:
+% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
 mpc = update_mpc_sys_dynamics(mpc,eye(6)+Ts*sys.A,Ts*sys.B,[]);
 
 % Adjust Vertical Angle State

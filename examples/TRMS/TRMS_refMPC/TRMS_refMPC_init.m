@@ -29,6 +29,8 @@ mpc = init_mpc(N,N_h_ctr);
 sys = qLPV_TRMS_refMPC_SS(Wh,Omh,Thth,Wv,Thtv);
 
 % Initialize system dynamics
+% System discretized with forward Euler discretization:
+% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
 mpc = init_mpc_system(mpc,eye(6)+Ts*sys.A,Ts*sys.B,0,sys.C,0,0);
 
 %% Constraints

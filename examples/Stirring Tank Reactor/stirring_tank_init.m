@@ -35,6 +35,8 @@ Bd = [1/theta_f k*c0*M*exp(-M/v0)/(v0^2); xf/theta_f 0];
 C = eye(2);
 
 % Initialize system dynamics
+% System discretized with forward Euler discretization:
+% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
 mpc = init_mpc_system(mpc,eye(2)+Ts*A,Ts*B,Ts*Bd,C,[0;0],0);
 
 %% Constraints

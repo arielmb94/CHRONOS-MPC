@@ -35,6 +35,8 @@ vk = x_prev(2);
 
 tic
 % Update LPV model
+% System discretized with forward Euler discretization:
+% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
 A_lpv = eye(2)+Ts*[-1/theta_f-k*exp(-M/vk) -k*ck*M*exp(-M/vk)/(vk^2);
      k*exp(-M/vk) -1/theta_f];
 B_lpv = Ts*[0; -alpha*(vk-xc)];

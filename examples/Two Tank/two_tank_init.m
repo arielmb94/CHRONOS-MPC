@@ -29,6 +29,8 @@ B = [1/Ab; 0];
 C = [0 1];
 
 % Initialize system dynamics
+% System discretized with forward Euler discretization:
+% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
 mpc = init_mpc_system(mpc,eye(2)+Ts*A,Ts*B,0,C,0,0);
 
 %% Constraints

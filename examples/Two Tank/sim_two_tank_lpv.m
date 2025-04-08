@@ -39,6 +39,8 @@ x_ref = [xf;xf];
 
 tic;
 % Update LPV model
+% System discretized with forward Euler discretization:
+% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
 A_lpv = eye(2)+Ts*[-sqrt(2*g)*sqrt(h1)/(Ab*h1) 0;
      sqrt(2*g)*sqrt(h1)/(Ab*h1) -sqrt(2*g)*sqrt(h2)/(Ab*h2)];
 % Update mpc problem dynamics
