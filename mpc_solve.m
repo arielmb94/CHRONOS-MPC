@@ -1,11 +1,4 @@
-function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di,Ts,i)
-    if coder.target('MATLAB') 
-        start_time = cputime;
-    else
-        start_time = zeros(1,2,'int64'); % [seconds, nanoseconds]
-        end_time = zeros(1,2,'int64');
-        coder.ceval('clock_gettime', coder.opaque('int', 'CLOCK_MONOTONIC'), coder.wref(start_time)); % compatible with mex generation
-    end
+function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
 
     % number of variables
     n = length(x0);
@@ -76,11 +69,15 @@ function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di,Ts,i)
                 get_state_constraint_info(x,s_prev,u_prev,r,x_ref,d,di,mpc);
         end
 
+    else
+        iter = 0;
     end
 
     opts.SYM = true;
     lambda2 = 1;
-    while mpc.eps <= lambda2*0.5 && continue_Newton
+    solver_iter = iter;
+    while mpc.eps <= lambda2*0.5 && continue_Newton && solver_iter <= mpc.max_solver_iter
+        solver_iter = solver_iter + 1;
 
         % Compute gradient:
 
@@ -339,6 +336,11 @@ function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di,Ts,i)
         x = x*0;
     else
         % Get first control action
+        u0 = u(1:mpc.nu);
+    end
+
+    if solver_iter > mpc.max_solver_iter
+        u = fallback_control(u_prev, u, s_prev, r, mpc);
         u0 = u(1:mpc.nu);
     end
 

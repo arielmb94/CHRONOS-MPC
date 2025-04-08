@@ -31,16 +31,8 @@ for i = 1:2400
     d = [1;vk];
     
     xref = [f_c;f_v];
-    
-    % Testing the fallback control
-    if i == 100 || i == 103
-        sampling_time = 0;
-        disp("Forcefully calling the fallback control")
-    else
-        sampling_time = Ts;
-    end
 
-    [u_prev,J,x0] = mpc_solve(x0,x_prev,u_prev,xref,d,mpc,[],[],[],sampling_time);
+    [u_prev,J,x0] = mpc_solve(x0,x_prev,u_prev,xref,d,mpc,[],[],[]);
     
     ck = ck + Ts*((1-ck)/theta_f - k*ck*exp(-M/vk));
     vk = vk + Ts*((xf-vk)/theta_f + k*ck*exp(-M/vk)-alpha*u_prev*(vk-xc));
