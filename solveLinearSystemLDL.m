@@ -1,5 +1,5 @@
 function x = solveLinearSystemLDL(A, b)
-    % "solveLinearSystemLDL" Solves Ax = b using LDL' factorization.
+    % Solves Ax = b using LDL' factorization.
     %   A: Symmetric matrix
     %   b: Right-hand side vector
     %   x: Solution vector
@@ -11,7 +11,7 @@ function x = solveLinearSystemLDL(A, b)
 end
 
 function [L, D] = ldlFactorization(A)
-    % "ldlFactorization" Performs LDL' decomposition.
+    % Performs LDL' decomposition.
     %   A: Symmetric matrix
     %   L: Lower triangular matrix with unit diagonal
     %   D: Diagonal matrix
@@ -21,11 +21,11 @@ function [L, D] = ldlFactorization(A)
     D = zeros(n, 1);
     
     for i = 1:n
-        % Compute D(i, i)
+        % Compute D considering just the diagonal
         D(i) = A(i, i) - L(i, 1:i-1) * (D(1:i-1) .* L(i, 1:i-1)');
         
         for j = i+1:n
-            % Compute L(j, i)
+            % Compute L(j, i) using the diagonal of D
             L(j, i) = (A(j, i) - L(j, 1:i-1) * (D(1:i-1) .* L(i, 1:i-1)')) / D(i);
         end
     end
@@ -33,26 +33,28 @@ function [L, D] = ldlFactorization(A)
 end
 
 function y = forwardSubstitution(L, b)
-    % "forwardSubstitution" Solves Ly = b for y (L is lower triangular).
+    % Solves Ly = b for y (L is lower triangular).
     n = length(b);
     y = zeros(n, 1);
     
     for i = 1:n
+        % Does not need to divide by L(i,i) because it is 1
         y(i) = b(i) - L(i, 1:i-1) * y(1:i-1);
     end
 end
 
 function z = diagonalSolve(D, y)
-    % "diagonalSolve" Solves Dz = y for z (D is diagonal).
+    % Solves Dz = y for z (D is diagonal).
     z = y ./ diag(D);
 end
 
 function x = backSubstitution(U, y)
-    % "backSubstitution" Solves Ux = y for x (U = L' is upper triangular with unit diagonal).
+    % Solves Ux = y for x (U = L' is upper triangular with unit diagonal).
     n = length(y);
     x = zeros(n, 1);
     
     for i = n:-1:1
-        x(i) = y(i) - U(i, i+1:n) * x(i+1:n);
+        % Does not need to divide by U(i,i) because it is 1
+        x(i) = y(i) - U(i, i+1:n) * x(i+1:n); 
     end
 end

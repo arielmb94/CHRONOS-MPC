@@ -277,9 +277,16 @@ function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
         % solve KKT system
         KKT = [hess_J_x0 mpc.Aeq';mpc.Aeq zeros(n_eq)];
 
-        delta_x = - linsolve(KKT,[grad_J_x0;mpc.Aeq*x-mpc.beq],opts);
-        %delta_x = - linsolve(KKT,[grad_J_x0;zeros(n_eq,1)],opts);
-        %delta_x = - KKT\[grad_J_x0;mpc.Aeq*x-mpc.beq];
+        if mpc.linear_solver == 0
+            delta_x = - solveLinearSystemLDL(KKT,[grad_J_x0;mpc.Aeq*x-mpc.beq]);
+        elseif mpc.linear_solver == 1
+            delta_x = - solveLinearSystemLU(KKT,[grad_J_x0;mpc.Aeq*x-mpc.beq]);
+        elseif mpc.linear_solver == 2
+            delta_x = - linsolve(KKT,[grad_J_x0;mpc.Aeq*x-mpc.beq],opts);
+        else
+            delta_x = - KKT\[grad_J_x0;mpc.Aeq*x-mpc.beq];
+        end
+        
         delta_x_prim = delta_x(1:n);
 
         % compute lambda^2

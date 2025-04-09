@@ -101,4 +101,5 @@ mpc.warm_starting = 0;
 mpc.feas_lambda = 100;
 mpc.max_feas_iter = 10;
 mpc.unfeasible = 0;
+mpc.linear_solver = 0;
 end
