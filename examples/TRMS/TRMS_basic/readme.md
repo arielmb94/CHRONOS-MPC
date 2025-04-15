@@ -5,13 +5,13 @@
 In this folder you will find the following files:
 
 * *TRMS_init.m*: script to define the MPC problem using the CHRONOS init functions.
-* *TRMS_sim_lpv.m*.m: script to simulate the TRMS in closed-loop using the CHRONOS mpc solver, at each iteration we use the CHRONOS update functions to adapt its internal Linear Parameter Varying model to the instantaneous TRMS states.
+* *TRMS_sim_lpv.m*.m: script to simulate the TRMS in closed-loop using the CHRONOS MPC solver, at each iteration we use the CHRONOS update functions to adapt its internal Linear Parameter Varying model to the instantaneous TRMS states.
 * *qLPV_TRMS_SS.m*: computes the LPV model of the TRMS based on the current values of the state vector. The LPV model is extracted from the nonlinear model provided in [1].
 * *compute_ref.m*: computes the state references based on the angle set points for the TRMS and from the equilibrium equations as given in [1].
 
 ### Example introduction
 
-The TRMS is a simplified representation of a helicotper, it has no translation, however, it can rotate freely on the horizontal and vertical frames. It counts with a main rotor to control the vertical angle enabling the TRMS to pitch and a tail rotor to control the horizontal angle, which allows changes on the TRMS yaw direction. Each rotor operated by a dedicated DC motor. 
+The TRMS is a simplified representation of a helicotper, it has no translation, however, it can rotate freely on the horizontal and vertical frames. It counts with a main rotor to control the vertical angle enabling the TRMS to pitch and a tail rotor to control the horizontal angle, which allows changes on the TRMS yaw angle. Each rotor operated by a dedicated DC motor. 
 
 Existing multiple representations of the TRMS dynamics available in the literature, we borrowed the nonlinear model and parameters identified in [1]. The nonlinear model presented in [1] captures very well the nonlinear dynamics of the vertical and horzizontal TRMS dynamics, their couplings and the effect of friction forces, which are represented by discontinuous equations taking into account the differences between negative and positive displacement directions. The quality of the identification work carried by the authors in [1] is demonstrated by the perfect matching between simulated model response and real data from the physical TRMS behaviour. 
 
@@ -36,7 +36,7 @@ b_{11} & 0 \\\
 0 & 0 
 \end{array} \right ]u$$
 
-The state vector is $x = [\omega_h,\Omega_h,\theta_h,\omega_v,\Omega_v,\theta_v]^T $, with
+The state vector is $x = [\omega_h,\Omega_h,\theta_h,\omega_v,\Omega_v,\theta_v]^T $, where
 
 * $\omega_h$: angular speed of the tail rotor DC fan
 * $\Omega_h$: TRMS angular speed on the horizontal frame
@@ -45,7 +45,7 @@ The state vector is $x = [\omega_h,\Omega_h,\theta_h,\omega_v,\Omega_v,\theta_v]
 * $\Omega_v$: TRMS angular speed on the vertical frame
 * $\theta_v$: TRMS vertical angle
 
-The input vector is  $u = [u_h,u_v]^T$, with
+The input vector is  $u = [u_h,u_v]^T$, where
 
 * $u_h$: DC voltage applied to the tail rotor fan
 * $u_v$: DC voltage applied to the main rotor fan
@@ -88,7 +88,7 @@ $$  \left [\begin{array}{c}
 2.0 
 \end{array} \right ]$$
 
-Due to the highly nonlinear dynamics of the TRMS and the couplings between its vertical and horizontal motions, it is required to provide tracking references to all states to obtain goof control performance. The state references are computed as follows:
+Due to the highly nonlinear dynamics of the TRMS and the couplings between its vertical and horizontal motions, it is required to provide tracking references for all states to obtain good control performance. The state references are computed as follows:
 * $\theta_h^{ref}$, $\theta_v^{ref}$: set points provided to the MPC
 * $\Omega_h^{ref}$, $\Omega_v^{ref}$: computed from the angle error value and a time constant $\tau$ as:
 

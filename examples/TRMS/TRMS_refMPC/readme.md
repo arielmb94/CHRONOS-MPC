@@ -53,14 +53,14 @@ Finally, note that parameter varying terms have been made explicit by showing on
 
 ### Example introduction
 
-Different to the basic MPC example, on this example we want to stop computing the references for the rotor fan speeds based on equilibrium equations. Instead, we will make use of CHRONOS cost function custom performance vectors $z$ in order to make the MPC solver compute appropiate references for this states internally.
+Different to the basic MPC example, on this example we want to stop computing the references for the rotor fan speeds based on equilibrium equations. Instead, we will make use of CHRONOS cost function custom performance vectors $z$ in order to make the MPC solver compute appropiate references for the rotor fan speed states internally.
 
 Let's consider the extended control action vector $u = [u_h,u_v,\omega_h^{ref},\omega_v^{ref}]^T$ with:
 
 * $\omega_h^{ref}$: the tail rotor fan speed setpoint to be computed by the MPC
 * $\omega_v^{ref}$: the main rotor fan speed setpoint to be computed by the MPC
 
-To accomodate the new MPC actions we will decouple the rotor fan speeds states from the TRMS dynamics. In their place, we will rewrite rotor speed model terms on the horizontal and vertical TRMS dynamics as caused by the newly introduced setpoint actions. Following this, let's redifine the LPV model as:
+To accomodate the new MPC actions we will decouple the rotor fan speeds states from the TRMS horizontal and vertical dynamics. In their place, terms associated to the rotor fan speed will now be moved to be terms multupliying the newly introduced setpoint actions. Following this, let's redifine the LPV model as:
 
 $$ \dot x=
 \left [\begin{array}{cccccc}  
@@ -81,11 +81,11 @@ b_{11} & 0 & 0 & 0 \\\
 0 & 0  & 0 & 0
 \end{array} \right ]u$$
 
-Finally, we must specify to CHRONOS that it must minimize the difference between the setpoint actions $\omega_i^{ref}$ and the rotor fan speeds states $\omega_i$, e.g. minimize $\omega_i^{ref}-\omega_i$. For this, we will use CHRONOS custom performance vectors $z$, defined as:
+Finally, we must specify to CHRONOS that it must minimize the difference between the setpoint actions $\omega_i^{ref}$ and the rotor fan speeds states $\omega_i$, e.g. minimize $\omega_i^{ref}-\omega_i$. For this, we will use CHRONOS custom performance vectors
 
 $$ z = C_zx + D_zu+D_{zd}d $$
 
-in order to create a new term on the MPC cost function. The performance vectors indicating the fan speed errors to be minimized are then:
+in order to create a new term on the MPC cost function. The performance vectors indicating the fan speed errors to be minimized by CHRONOS can be defined as:
 
 $$z = \omega_i^{ref}-\omega_i=
 \left [\begin{array}{cccccc} 
@@ -136,7 +136,7 @@ $$  \left [\begin{array}{c}
 2.0 
 \end{array} \right ]$$
 
-Due to the highly nonlinear dynamics of the TRMS and the couplings between its vertical and horizontal motions, it is required to provide tracking references to all states to obtain goof control performance. The state references are computed as follows:
+Due to the highly nonlinear dynamics of the TRMS and the couplings between its vertical and horizontal motions, it is required to provide tracking references for all states to obtain good control performance. The state references are computed as follows:
 * $\theta_h^{ref}$, $\theta_v^{ref}$: set points provided to the MPC
 * $\Omega_h^{ref}$, $\Omega_v^{ref}$: computed from the angle error value and a time constant $\tau$ as:
 

@@ -10,7 +10,7 @@ In this folder you will find the following files:
 
 ### TRMS introduction
 
-The TRMS is a simplified representation of a helicotper, it has no translation, however, it can rotate freely on the horizontal and vertical frames. It counts with a main rotor to control the vertical angle enabling the TRMS to pitch and a tail rotor to control the horizontal angle, which allows changes on the TRMS yaw direction. Each rotor operated by a dedicated DC motor. 
+The TRMS is a simplified representation of a helicotper, it has no translation, however, it can rotate freely on the horizontal and vertical frames. It counts with a main rotor to control the vertical angle enabling the TRMS to pitch and a tail rotor to control the horizontal angle, which allows changes on the TRMS yaw angle. Each rotor operated by a dedicated DC motor. 
 
 Existing multiple representations of the TRMS dynamics available in the literature, we borrowed the nonlinear model and parameters identified in [1]. The nonlinear model presented in [1] captures very well the nonlinear dynamics of the vertical and horzizontal TRMS dynamics, their couplings and the effect of friction forces, which are represented by discontinuous equations taking into account the differences between negative and positive displacement directions. The quality of the identification work carried by the authors in [1] is demonstrated by the perfect matching between simulated model response and real data from the physical TRMS behaviour. 
 
@@ -35,7 +35,7 @@ b_{11} & 0 \\\
 0 & 0 
 \end{array} \right ]u$$
 
-The state vector is $x = [\omega_h,\Omega_h,\theta_h,\omega_v,\Omega_v,\theta_v]^T $, with
+The state vector is $x = [\omega_h,\Omega_h,\theta_h,\omega_v,\Omega_v,\theta_v]^T $, where
 
 * $\omega_h$: angular speed of the tail rotor DC fan
 * $\Omega_h$: TRMS angular speed on the horizontal frame
@@ -44,7 +44,7 @@ The state vector is $x = [\omega_h,\Omega_h,\theta_h,\omega_v,\Omega_v,\theta_v]
 * $\Omega_v$: TRMS angular speed on the vertical frame
 * $\theta_v$: TRMS vertical angle
 
-The input vector is  $u = [u_h,u_v]^T$, with
+The input vector is  $u = [u_h,u_v]^T$, where
 
 * $u_h$: DC voltage applied to the tail rotor fan
 * $u_v$: DC voltage applied to the main rotor fan
@@ -59,11 +59,9 @@ In this example, we explore the performance benefits of using a full cascade of 
 * Inner loops often deal with actuator dynamics, which may be nonlinear and difficult to handle with traditional PID or linear controllers. Implementing nonlinear MPC strategies, such as LPV MPC as used in CHRONOS, can significantly enhance control performance in these scenarios.
 * Decomposing a large MIMO control problem into smaller MPC subproblems can reduce computational complexity. Each subproblem is simpler and can be solved faster than a monolithic MPC formulation. Additionally, the prediction horizons of each layer can be tuned independently, offering further flexibility and potentially faster overall response compared to a single, centralized MPC controller.
 
-
-
 For the TRMS MPC cascade architecture, we will create an outer layer MPC controlling the horizontal and vertical dynamics of the TRMS. The output of this MPC will be setpoints for the tail and main rotors fan speeds respectively. Then, the voltage to be applied to each rotor DC motor will be computed by a dedicated SISO MPC.
 
-The model for the MIMO MPC will then have a reduced state vector:
+The model for the outer MIMO MPC will have the reduced state vector:
 
 * $\Omega_h$: TRMS angular speed on the horizontal frame
 * $\theta_h$: TRMS horizontal angle
@@ -98,7 +96,7 @@ b_{22}(\rho) \\\
 0
 \end{array} \right ]u_v $$
 
-Note that the voltage to the main rotor $u_v$ appears in the model as a measured disturbance, not as a control input. Making use of the fact that CHRONOS accepts models of the form
+Note that the voltage to the main rotor $u_v$ appears in the model as a measured disturbance, not as a controllable input of the MIMO MPC. Making use of the fact that CHRONOS accepts models of the form
 
 $$ x^+ = Ax+Bu+B_dd $$
 
@@ -173,7 +171,7 @@ s.t.
 $$ x_h \in [-2.9,2.9] $$
 $$ u_h \in [-2.5, 2.5]$$
 
-Very similarly, the SISO MPC for the main rotor is defined in CHRONOS as:
+Similarly, the SISO MPC for the main rotor is defined in CHRONOS as:
 
 $$\min_{u,x}J = (\omega_{v_N}^{ref}-x_{v_N})^TP(\omega_{v_N}^{ref}-x_{v_N}) + \sum_{i=1}^{N-1} (\omega_{v_i}^{ref}-x_{v_i})^TQ_{e}(\omega_{v_i}^{ref}-x_{v_i}) + \sum_{i=0}^{N_{ctr}-1}\Delta u_{v_i}^TdR_u\Delta u_{v_i} $$
 
