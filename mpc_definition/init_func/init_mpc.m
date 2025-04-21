@@ -1,3 +1,42 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Initializes mpc structure fields and solver hyperparmeters
+%
+% In:
+%   - N: MPC prediction horizon
+%   - N_ctr_hor (optional):  prediction horizon for control actions. If not
+%   specified it is set equal to N
+%
+% Out:
+%   - mpc: initialized mpc structure
+%
+% Hyperparameters:
+%   - mpc.t: tradeoff parameter for cost function vs constraint satisfaction
+%   for the interior-point method. Higher t values give preference to 
+%   minimization of the cost function. Small value for t will make the
+%   solver prefer feasibility and constraint safety.
+%   - mpc.Beta: reduction step for each iteration of the feasibility line
+%   search. Beta must be less than 1 and greater than 0. Values close to 1
+%   ensure a smoother optimization solution between multiple mpc
+%   iterations.
+%   - mpc.min_l: if the line search step fall below min_l the following
+%   iteration of the interior-point method will be cancelled. Allows to
+%   quit the interior-point method quicker when the optimal solution is
+%   close to the constraints limits.
+%   - mpc.eps: interior-point method precision.
+%   - mpc.t_feas: exactly as mpc.t, applied for the feasibility step 0 
+%   solver. The step 0 solver allows to find a feasibile starting point for
+%   the interior-point method if the user provided initial conditions lies
+%   outside of the feasible region.
+%   - mpc.qfeas: cost term penalizing step 0 solver to deviate from initial
+%    iteration point provided
+%   - mpc.v0_feas: initial value for step 0 slack variable
+%   - mpc.feas_lambda: multiplier in case step 0 starting slack variable
+%   value is set too low.
+%   - mpc.max_feas_iter: maximum number of step 0 iteration allowed. If
+%   max_feas_iter is violated it is assumed the problem is unfeasible. 
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [mpc] = init_mpc(N,N_ctr_hor)
 arguments
     N = 2
@@ -88,6 +127,7 @@ mpc.t = 50;
 mpc.Beta = 0.75;
 mpc.min_l = 0.99;
 mpc.eps = 1e-4;
+mpc.max_iter = 10;
 mpc.ter_ingredients = 0;
 mpc.ter_constraint = 0;
 mpc.x_ref_is_y = 0;

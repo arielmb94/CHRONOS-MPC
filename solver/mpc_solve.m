@@ -1,4 +1,4 @@
-function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
+function [u0,J,x,iter,iter_feas] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
 
     % number of variables
     n = length(x0);
@@ -35,6 +35,8 @@ function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
 
     % Set Newton solver condition at start
     continue_Newton = true;
+    iter = 0;
+    iter_feas = 0;
 
     % check if initial state is feasible, it might lead to numerical
     % problems otherwise
@@ -53,13 +55,13 @@ function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
 
     if ~feas
         % If initial point was not feasible, compute new feasible point
-        [x,iter,mpc] = feas_solve(x,mpc,s_prev,u_prev,d,x_ref,di);
+        [x,iter_feas,mpc] = feas_solve(x,mpc,s_prev,u_prev,d,x_ref,di);
 
         % If feas. solver fails skip mpc solver
         if mpc.unfeasible
             continue_Newton = false;
         else
-
+            iter = iter+iter_feas;
             % Get constraint info on new point
             [s,s_all,s_ter,u,du,y,err,yi,...
                 fi_s_min_x0,fi_s_max_x0,fi_s_ter_min_x0,fi_s_ter_max_x0,...
@@ -73,7 +75,15 @@ function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
 
     opts.SYM = true;
     lambda2 = 1;
-    while mpc.eps <= lambda2*0.5 && continue_Newton
+
+    % if the number of feasibility solver iterations surpassed the limit
+    % for mpc iterations but finds a feasible starting point, reduce the
+    % iter counter to at least execute a newton iteration
+    if iter > mpc.max_iter
+        iter = mpc.max_iter-1;
+    end
+
+    while mpc.eps <= lambda2*0.5 && continue_Newton && iter < mpc.max_iter
 
         % Compute gradient:
 
@@ -319,7 +329,7 @@ function [u0,J,x] = mpc_solve(x0,s_prev,u_prev,r,d,mpc,x_ref,dz,di)
                 continue_Newton = false;
             end
         end
-
+        iter = iter+1;
     end
   
     if mpc.unfeasible
