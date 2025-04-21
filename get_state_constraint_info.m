@@ -10,7 +10,7 @@ function [s,s_all,s_ter,u,du,y,err,yi,...
 % control actions
 u = get_u(x,mpc.nx,mpc.nu,mpc.N_ctr_hor,mpc.Nu);
 % differential control action
-du = diff_u(u,u_prev,mpc.nu,mpc.N_ctr_hor,mpc.Nu);
+du = get_diff_u(u,u_prev,mpc.nu,mpc.N_ctr_hor,mpc.Nu);
 % system outputs
 y = get_lin_out(s_all,u,d,mpc.nx,mpc.nu,mpc.ny,mpc.nd,mpc.N,mpc.N_ctr_hor,...
     mpc.Ny,mpc.C,mpc.D,mpc.Dd,mpc.Nd);
