@@ -38,6 +38,14 @@ xf = xf + Ts*(-xf/tau+r(k)/tau);
 x_ref = [xf;xf];
 
 tic;
+% Update LPV model
+% System discretized with forward Euler discretization:
+% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
+A_lpv = eye(2)+Ts*[-sqrt(2*g)*sqrt(h1)/(Ab*h1) 0;
+     sqrt(2*g)*sqrt(h1)/(Ab*h1) -sqrt(2*g)*sqrt(h2)/(Ab*h2)];
+% Update mpc problem dynamics
+mpc = update_mpc_sys_dynamics(mpc,A_lpv,mpc.B,[]);
+
 % Solve mpc iteration
 [u_prev,J,x0] = mpc_solve(x0,x_prev,u_prev,xf,[],mpc,x_ref,[],[]);
 tk = toc;
@@ -50,7 +58,7 @@ u_dat(k) = u_prev;
 t_dat(k) = tk;
 
 % Forward Euler step of Two Tank nonlinear dynamics
-h1 = h1 + Ts*(u_prev/Ab-sqrt(2*g)*sqrt(h1))/Ab;
+h1 = h1 + Ts*(u_prev/Ab-sqrt(2*g)*sqrt(h1)/Ab);
 h2 = h2 + Ts*(sqrt(2*g)*sqrt(h1)/Ab-sqrt(2*g)*sqrt(h2)/Ab);
 % update state vector for the following iteration
 x_prev = [h1;h2];
