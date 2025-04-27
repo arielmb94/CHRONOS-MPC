@@ -71,7 +71,7 @@ Ddi = [];
 
 yi_min = [];
 yi_max = [];
-%mpc = init_mpc_general_lin_ineq_cnstr(mpc,yi_min,yi_max,Ci,Di,Ddi);
+%mpc = init_mpc_lin_custom_cnstr(mpc,yi_min,yi_max,Ci,Di,Ddi);
 
 %% Terminal Ingredients
 

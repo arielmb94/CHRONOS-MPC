@@ -1,3 +1,20 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Define constraints on the state vector x:
+%
+%   x_min <= x <= x_max
+%
+% In:
+%   - mpc: CHRONOS mpc structure
+%   - x_min (optional): nx column vector, lower bound constraint values on 
+%   the state vector
+%   - x_max (optional): nx column vector, upper bound constraint values on 
+%   the state vector
+%
+% Out:
+%   - mpc: updated CHRONOS mpc structure
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mpc = init_mpc_state_cnstr(mpc,x_min,x_max)
 
 mpc.x_min = x_min;

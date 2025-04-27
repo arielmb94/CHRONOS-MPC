@@ -71,7 +71,7 @@ Ddi = [];
 yi_min = [];
 yi_max = [];
 
-%mpc = init_mpc_general_lin_ineq_cnstr(mpc,yi_min,yi_max,Ci,Di,Ddi);
+%mpc = init_mpc_lin_custom_cnstr(mpc,yi_min,yi_max,Ci,Di,Ddi);
 
 %% Terminal Ingredients
 
@@ -112,7 +112,7 @@ Qz = [];    % Quadratic penalty on performance vector: z'*Qz*z
 qz = [];    % Linear penalty on performance vector: qz'*z 
 
 % Init performance cost
-%mpc = init_mpc_LinPerf_cost(mpc,Cz,Dz,Ddz,Qz,qz);
+%mpc = init_mpc_Lin_Custom_cost(mpc,Cz,Dz,Ddz,Qz,qz);
 
 %% Init conditions for simulation
 

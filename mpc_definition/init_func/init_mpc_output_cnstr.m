@@ -1,3 +1,20 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Define constraints on the tracking signal y:
+%
+%   y_min <= y <= y_max
+%
+% In:
+%   - mpc: CHRONOS mpc structure
+%   - y_min (optional): ny column vector, lower bound constraint values on 
+%   the tracking signal
+%   - y_max (optional): ny column vector, upper bound constraint values on 
+%   the tracking signal
+%
+% Out:
+%   - mpc: updated CHRONOS mpc structure
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mpc = init_mpc_output_cnstr(mpc,y_min,y_max)
 
 mpc.y_min = y_min;

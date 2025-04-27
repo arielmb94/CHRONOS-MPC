@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Initializes mpc structure fields and solver hyperparmeters
+% Initializes CHRONOS mpc structure fields and solver hyperparmeters
 %
 % In:
 %   - N: MPC prediction horizon
@@ -8,36 +8,57 @@
 %   specified it is set equal to N
 %
 % Out:
-%   - mpc: initialized mpc structure
+%   - mpc: initialized CRHONOS mpc structure
 %
-% Hyperparameters:
-%   - mpc.t: tradeoff parameter for cost function vs constraint satisfaction
-%   for the interior-point method. Higher t values give preference to 
-%   minimization of the cost function. Small value for t will make the
+% Example Use:
+%
+%   - Same control and prediction horizons:
+%               mpc = init_mpc(N)
+%   - Different control and prediction horizons:  
+%               mpc = init_mpc(N,N_ctr_hor)
+%
+% Hyperparameters (can be modified manually after initialization of the mpc
+% structure):
+%
+%   - mpc.t: interior-point method tradeoff parameter between cost function
+%   minimization vs constraint satisfaction. Large t values give preference
+%   to minimization of the cost function. Small values for t will make the
 %   solver prefer feasibility and constraint safety.
+%
 %   - mpc.Beta: reduction step for each iteration of the feasibility line
 %   search. Beta must be less than 1 and greater than 0. Values close to 1
 %   ensure a smoother optimization solution between multiple mpc
-%   iterations.
+%   iterations at the cost of increased line search iterations.
+%
 %   - mpc.min_l: if the line search step fall below min_l the following
 %   iteration of the interior-point method will be cancelled. Allows to
 %   quit the interior-point method quicker when the optimal solution is
 %   close to the constraints limits.
+%
 %   - mpc.eps: interior-point method precision.
-%   - mpc.t_feas: exactly as mpc.t, applied for the feasibility step 0 
+%
+%   - mpc.max_iter: maximum allowed iterations of the interior-point method
+%   solver
+%
+%   - mpc.t_feas: exactly as mpc.t, applied for the step 0 feasibility
 %   solver. The step 0 solver allows to find a feasibile starting point for
-%   the interior-point method if the user provided initial conditions lies
+%   the interior-point method when providded the initial guess lies
 %   outside of the feasible region.
-%   - mpc.qfeas: cost term penalizing step 0 solver to deviate from initial
-%    iteration point provided
-%   - mpc.v0_feas: initial value for step 0 slack variable
+%
+%   - mpc.qfeas: cost term to penalize large deviation on the solution of
+%   the step 0 solver from the provided initial guess
+%
+%   - mpc.v0_feas: initial value for step 0 solver slack variable
+%
 %   - mpc.feas_lambda: multiplier in case step 0 starting slack variable
-%   value is set too low.
-%   - mpc.max_feas_iter: maximum number of step 0 iteration allowed. If
-%   max_feas_iter is violated it is assumed the problem is unfeasible. 
+%   value is set too low. Must be larger than 1.
+%
+%   - mpc.max_feas_iter: maximum number of step 0 solver iterations 
+%   allowed. If max_feas_iter is violated it is assumed the problem is 
+%   unfeasible. 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [mpc] = init_mpc(N,N_ctr_hor)
+function mpc = init_mpc(N,N_ctr_hor)
 arguments
     N = 2
     N_ctr_hor = 0

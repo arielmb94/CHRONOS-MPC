@@ -1,3 +1,22 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Adds quadratic penalties on the tracking error:
+%
+%   J += (r - y)' * Qe * (r - y)
+%
+% y is the tracking feedback signal, defined during the call to 
+% init_mpc_system(), the reference vector r is introduced during MPC 
+% runtime iterations on the call to mpc_solve().
+%
+% In:
+%   - mpc: CHRONOS mpc structure
+%   - Qe: ny x ny square matrix, weights for the quadratic penalty on the
+%   tracking error
+%
+% Out:
+%   - mpc: updated CHRONOS mpc structure
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mpc = init_mpc_Tracking_cost(mpc,Qe)
 
 mpc.Qe = Qe;
