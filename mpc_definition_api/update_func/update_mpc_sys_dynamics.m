@@ -33,7 +33,7 @@ function mpc = update_mpc_sys_dynamics(mpc,A,B,Bd)
 
 updateEqualities = 0;
 
-if ~isempty(A) && ~isempty(B)
+if ~isempty(A)
     mpc.A = A;
     updateEqualities = 1;
 end
