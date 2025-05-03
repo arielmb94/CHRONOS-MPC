@@ -12,10 +12,10 @@ u = get_u(x,mpc.nx,mpc.nu,mpc.N_ctr_hor,mpc.Nu);
 % differential control action
 du = get_diff_u(u,u_prev,mpc.nu,mpc.N_ctr_hor,mpc.Nu);
 % system outputs
-y = get_lin_out(s_all,u,d,mpc.nx,mpc.nu,mpc.ny,mpc.nd,mpc.N,mpc.N_ctr_hor,...
-    mpc.Ny,mpc.C,mpc.D,mpc.Dd,mpc.Nd);
+y = get_lin_out(s_all,u,d,mpc.nx,mpc.nu,mpc.ny,mpc.nd,mpc.N_ctr_hor,...
+    mpc.Ny,mpc.C,mpc.D,mpc.Dd);
 % error signal
-err = get_error(r,y,mpc.D,mpc.N,mpc.Ny);
+err = get_error(r,y);
 
 feas = 1;
 % State box constraints
@@ -86,8 +86,8 @@ end
 % General Linear Inequalities box constraints
 if feas && (~isempty(mpc.h_min) || ~isempty(mpc.h_max))
     % general constraints
-    h = get_lin_out(s_all,u,dh,mpc.nx,mpc.nu,mpc.nh,mpc.ndh,mpc.N,mpc.N_ctr_hor,...
-        mpc.Nh,mpc.Ch,mpc.Dh,mpc.Ddh,mpc.Ndh);
+    h = get_lin_out(s_all,u,dh,mpc.nx,mpc.nu,mpc.nh,mpc.ndh,mpc.N_ctr_hor,...
+        mpc.Nh,mpc.Ch,mpc.Dh,mpc.Ddh);
 
     [fi_h_min_x0,fi_h_max_x0] = fi_box_fun(h,mpc.h_min,mpc.h_max,mpc.Nh,mpc.nh);
     if any(fi_h_min_x0>0) || any(fi_h_max_x0>0)

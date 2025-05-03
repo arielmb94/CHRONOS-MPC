@@ -43,14 +43,14 @@
 %   x0
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function x_mpc = init_mpc_warm_start(mpc,s_prev,u_prev,d,x_ref,dh,x0)
+function x_mpc = init_mpc_warm_start(mpc,s_prev,u_prev,d_in,x_ref,dh_in,x0)
 arguments
 mpc
 s_prev
 u_prev
-d = [];
+d_in = [];
 x_ref = [];
-dh = [];
+dh_in = [];
 x0 = [];
 end
 
@@ -61,6 +61,20 @@ if isempty(x0)
     % initialize optimization vector to 0
     x0 = zeros(mpc.Nx+mpc.Nu,1);
 end
+
+% handle input vectors size
+if ~isempty(d_in) && length(d_in)< mpc.Nd
+    d = fill_vec(d_in,mpc.nd,mpc.Nd,1);
+else
+    d = d_in;
+end
+
+if ~isempty(dh_in) && length(dh_in)< mpc.Nd
+    dh = fill_vec(dh_in,mpc.ndh,mpc.Ndh,1);
+else
+    dh = dh_in;
+end
+
 
 % update b matrix from equality condition
 mpc = update_mpc_beq(mpc,s_prev,d);

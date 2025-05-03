@@ -12,10 +12,11 @@
 %   value
 %   - u_prev: nu column vector, control action applied to the system on the
 %   previous sampling time
-%   - r: tracking reference for the MPC. It can be a ny column vector (the 
-%   same reference applies for the full prediction horizon) or can be a Ny
-%   column vector (the user passes a unique reference for each step of the
-%   prediction horizon)
+%   - r (optional): tracking reference for the MPC. It can be a ny column 
+%   vector (the same reference applies for the full prediction horizon) or 
+%   can be a Ny column vector (the user passes a unique reference for each 
+%   step of the prediction horizon). If not used, the user must pass an 
+%   empty vector [].
 %   - d (optional): disturbance input to the system dynamics and to the
 %   output signal y models. It can be a nd column vector (the same
 %   disturbance applies for the full prediction horizon) or can be an Nd
@@ -49,17 +50,18 @@
 %   starting point finder 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [u0,x,iter,iter_feas] = mpc_solve(mpc,x0,s_prev,u_prev,r,d,x_ref,dz,dh)
+function [u0,x0,iter,iter_feas] = mpc_solve(mpc,x0,s_prev,u_prev,...
+                                            r_in,d_in,x_ref,dz_in,dh_in)
 arguments
 mpc;
 x0;
 s_prev;
 u_prev;
-r;
-d = [];
+r_in = [];
+d_in = [];
 x_ref = [];
-dz = [];
-dh = [];
+dz_in = [];
+dh_in = [];
 end
 
     % number of variables
@@ -68,20 +70,42 @@ end
     % number of equality constraints
     n_eq = size(mpc.Aeq,1); 
 
-    % update b matrix from equality condition
-    mpc = update_mpc_beq(mpc,s_prev,d);
+    % handle input vector sizes
+    if ~isempty(r_in) && length(r_in) < mpc.Ny
+        r = fill_vec(r_in,mpc.ny,mpc.Ny,1);
+    else
+        r = r_in;
+    end
 
-    x = x0;
+    if ~isempty(d_in) && length(d_in)< mpc.Nd
+        d = fill_vec(d_in,mpc.nd,mpc.Nd,1);
+    else
+        d = d_in;
+    end
+
+    if ~isempty(dz_in) && length(dz_in)< mpc.Nd
+        dz = fill_vec(dz_in,mpc.ndz,mpc.Ndz,1);
+    else
+        dz = dz_in;
+    end
+
+    if ~isempty(dh_in) && length(dh_in)< mpc.Nd
+        dh = fill_vec(dh_in,mpc.ndh,mpc.Ndh,1);
+    else
+        dh = dh_in;
+    end
 
     if mpc.ter_ingredients
         if mpc.x_ref_is_y && isempty(x_ref)
-            x_ref = r;
-            % TODO: account for reference being a sequence
+            x_ref = r(end-mpc.ny+1:end);
         end    
     else 
         x_ref = [];
         grad_ter = [];
     end
+
+    % update b matrix from equality condition
+    mpc = update_mpc_beq(mpc,s_prev,d);
 
     if isempty(mpc.gradPerfQz)
         perfCost = 0;
@@ -112,12 +136,12 @@ end
         fi_u_min_x0,fi_u_max_x0,fi_du_min_x0,fi_du_max_x0,...
         fi_y_min_x0,fi_y_max_x0,fi_ter_x0,...
         fi_h_min_x0,fi_h_max_x0,feas] = ...
-        get_state_constraint_info(x,s_prev,u_prev,r,x_ref,d,dh,mpc);
+        get_state_constraint_info(x0,s_prev,u_prev,r,x_ref,d,dh,mpc);
     end
 
     if ~feas
         % If initial point was not feasible, compute new feasible point
-        [x,iter_feas,mpc] = feas_solve(x,mpc,s_prev,u_prev,d,x_ref,dh);
+        [x0,iter_feas,mpc] = feas_solve(x0,mpc,s_prev,u_prev,d,x_ref,dh);
 
         % If feas. solver fails skip mpc solver
         if mpc.unfeasible
@@ -130,7 +154,7 @@ end
                 fi_u_min_x0,fi_u_max_x0,fi_du_min_x0,fi_du_max_x0,...
                 fi_y_min_x0,fi_y_max_x0,fi_ter_x0,...
                 fi_h_min_x0,fi_h_max_x0,feas] = ...
-                get_state_constraint_info(x,s_prev,u_prev,r,x_ref,d,dh,mpc);
+                get_state_constraint_info(x0,s_prev,u_prev,r,x_ref,d,dh,mpc);
         end
 
     end
@@ -243,8 +267,8 @@ end
         
         % 3. Compute gradient of cost function at x0
         if perfCost
-            z = get_lin_out(s_all,u,dz,mpc.nx,mpc.nu,mpc.nz,mpc.ndz,mpc.N,...
-                mpc.N_ctr_hor,mpc.Nz,mpc.Cz,mpc.Dz,mpc.Ddz,mpc.Ndz);
+            z = get_lin_out(s_all,u,dz,mpc.nx,mpc.nu,mpc.nz,mpc.ndz,...
+                mpc.N_ctr_hor,mpc.Nz,mpc.Cz,mpc.Dz,mpc.Ddz);
         end
 
         grad_f0 = grad_f0_MPC(mpc,err,du,u,grad_ter,z);
@@ -349,7 +373,7 @@ end
         % solve KKT system
         KKT = [hess_J_x0 mpc.Aeq';mpc.Aeq zeros(n_eq)];
 
-        delta_x = - linsolve(KKT,[grad_J_x0;mpc.Aeq*x-mpc.beq],opts);
+        delta_x = - linsolve(KKT,[grad_J_x0;mpc.Aeq*x0-mpc.beq],opts);
         %delta_x = - linsolve(KKT,[grad_J_x0;zeros(n_eq,1)],opts);
         %delta_x = - KKT\[grad_J_x0;mpc.Aeq*x-mpc.beq];
         delta_x_prim = delta_x(1:n);
@@ -360,7 +384,7 @@ end
         % Feasibility line search
 
         l = 1;
-        xhat = x+l*delta_x_prim;
+        xhat = x0+l*delta_x_prim;
 
         [s,s_all,s_ter,u,du,y,err,h,...
         fi_s_min_x0,fi_s_max_x0,fi_s_ter_min_x0,fi_s_ter_max_x0,...
@@ -370,13 +394,13 @@ end
         get_state_constraint_info(xhat,s_prev,u_prev,r,x_ref,d,dh,mpc);
 
         if feas
-            x = xhat;
+            x0 = xhat;
         else
             while ~feas
 
                 l = l*mpc.Beta;
 
-                xhat = x+l*delta_x_prim;
+                xhat = x0+l*delta_x_prim;
 
                 [s,s_all,s_ter,u,du,y,err,h,...
                 fi_s_min_x0,fi_s_max_x0,fi_s_ter_min_x0,fi_s_ter_max_x0,...
@@ -385,7 +409,7 @@ end
                 fi_h_min_x0,fi_h_max_x0,feas] = ...
                 get_state_constraint_info(xhat,s_prev,u_prev,r,x_ref,d,dh,mpc);
             end
-            x = xhat;
+            x0 = xhat;
 
             if l<mpc.min_l
                 continue_Newton = false;
@@ -398,8 +422,8 @@ end
         % if mpc constraints are unfeasible, return first control action 
         % from the optimization vector, reset optimization vector 
         % afterwards
-        u0 = x(1:mpc.nu);
-        x = x*0;
+        u0 = x0(1:mpc.nu);
+        x0 = x0*0;
     else
         % Get first control action
         u0 = u(1:mpc.nu);

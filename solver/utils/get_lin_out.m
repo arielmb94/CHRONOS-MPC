@@ -1,5 +1,5 @@
 % Computes output vectors of the form: y = Cs + Du + Dd
-function y = get_lin_out(s,u,d,nx,nu,ny,nd,N,N_h_ctr,Ny,C,D,Dd,Nd)
+function y = get_lin_out(s,u,d,nx,nu,ny,nd,N_h_ctr,Ny,C,D,Dd)
 
     if isempty(d) || isempty(Dd) % No disturbance term
 
@@ -28,11 +28,6 @@ function y = get_lin_out(s,u,d,nx,nu,ny,nd,N,N_h_ctr,Ny,C,D,Dd,Nd)
         end
     
     else % There are disturbance terms
-
-        % copy d N times if only given for a sampling instance
-        if length(d)<Nd
-            d = repmat(d,N,1);
-        end
 
         y = zeros(Ny,1);
         for k = 1:Ny/ny
