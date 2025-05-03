@@ -1,9 +1,9 @@
-function [s,s_all,s_ter,u,du,y,yi,...
+function [s,s_all,s_ter,u,du,y,h,...
     fi_s_min_x0,fi_s_max_x0,fi_s_ter_min_x0,fi_s_ter_max_x0,...
     fi_u_min_x0,fi_u_max_x0,fi_du_min_x0,fi_du_max_x0,...
     fi_y_min_x0,fi_y_max_x0,fi_ter_x0,...
-    fi_yi_min_x0,fi_yi_max_x0,feas] = ...
-    get_feas_probl_constraint_info(x,s_prev,u_prev,x_ref,d,di,v,mpc)
+    fi_h_min_x0,fi_h_max_x0,feas] = ...
+    get_feas_probl_constraint_info(x,s_prev,u_prev,x_ref,d,dh,v,mpc)
 
 %states
 [s,s_all,s_ter] = get_x(x,s_prev,mpc.nx,mpc.nu,mpc.N,mpc.N_ctr_hor,mpc.Nx);
@@ -82,19 +82,19 @@ else
 end
 
 % General Linear Inequalities box constraints
-if feas && (~isempty(mpc.yi_min) || ~isempty(mpc.yi_max))
+if feas && (~isempty(mpc.h_min) || ~isempty(mpc.h_max))
     % general constraints
-    yi = get_lin_out(s_all,u,di,mpc.nx,mpc.nu,mpc.nyi,mpc.ndi,mpc.N,mpc.N_ctr_hor,...
-        mpc.Nyi,mpc.Ci,mpc.Di,mpc.Ddi,mpc.Ndi);
+    h = get_lin_out(s_all,u,dh,mpc.nx,mpc.nu,mpc.nh,mpc.ndh,mpc.N,mpc.N_ctr_hor,...
+        mpc.Nh,mpc.Ch,mpc.Dh,mpc.Ddh,mpc.Ndh);
 
-    [fi_yi_min_x0,fi_yi_max_x0] = fi_box_fun(yi,mpc.yi_min,mpc.yi_max,mpc.Nyi,mpc.nyi,v);
-    if any(fi_yi_min_x0>0) || any(fi_yi_max_x0>0)
+    [fi_h_min_x0,fi_h_max_x0] = fi_box_fun(h,mpc.h_min,mpc.h_max,mpc.Nh,mpc.nh,v);
+    if any(fi_h_min_x0>0) || any(fi_h_max_x0>0)
         feas = 0;
     end
 else
-    fi_yi_min_x0 = [];
-    fi_yi_max_x0 = [];
-    yi = [];
+    fi_h_min_x0 = [];
+    fi_h_max_x0 = [];
+    h = [];
 end
 
 end

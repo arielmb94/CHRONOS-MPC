@@ -81,18 +81,18 @@ if ~isempty(mpc.y_max)
 end
 
 % General Linear inequalities
-if ~isempty(mpc.yi_min)
-    [b,a] = size(mpc.gradYimin);
-    feas_slv.gradYimin = [mpc.gradYimin;-ones(1,a)];
+if ~isempty(mpc.h_min)
+    [b,a] = size(mpc.gradHmin);
+    feas_slv.gradHmin = [mpc.gradHmin;-ones(1,a)];
 
-    feas_slv.hessYimin = genHessIneq(feas_slv.gradYimin);
+    feas_slv.hessHmin = genHessIneq(feas_slv.gradHmin);
 end
 
-if ~isempty(mpc.yi_max)
-    [b,a] = size(mpc.gradYimax);
-    feas_slv.gradYimax = [mpc.gradYimax;-ones(1,a)];
+if ~isempty(mpc.h_max)
+    [b,a] = size(mpc.gradHmax);
+    feas_slv.gradHmax = [mpc.gradHmax;-ones(1,a)];
 
-    feas_slv.hessYimax = genHessIneq(feas_slv.gradYimax);
+    feas_slv.hessHmax = genHessIneq(feas_slv.gradHmax);
 end
 
 end

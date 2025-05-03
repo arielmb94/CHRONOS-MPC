@@ -69,15 +69,15 @@ y_max = [];
 %% General Linear Inequalities
 
 % General Linear Inequalities are defined as:
-% yi = Ci*x+Di*u+Ddi*di
-Ci = [];
-Di = [];
-Ddi = [];
+% yh = Ch*x+Dh*u+Ddh*di
+Ch = [];
+Dh = [];
+Ddh = [];
 
-yi_min = [];
-yi_max = [];
+h_min = [];
+h_max = [];
 
-%mpc = init_mpc_lin_custom_cnstr(mpc,yi_min,yi_max,Ci,Di,Ddi);
+%mpc = init_mpc_lin_custom_cnstr(mpc,h_min,h_max,Ch,Dh,Ddh);
 
 %% Terminal Ingredients
 

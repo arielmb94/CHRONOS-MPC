@@ -14,8 +14,8 @@
 %   are not enabled, initial feasible guess is provided:
 %           x_mpc = init_mpc_warm_start(mpc,s_prev,u_prev,[],[],[],x0)
 %   - mpc problem has disturbance inputs on user defined constrained signal 
-%   yi but not on system dynamics, terminal set constraints are not enabled
-%           x_mpc = init_mpc_warm_start(mpc,s_prev,u_prev,[],[],di)
+%   h but not on system dynamics, terminal set constraints are not enabled
+%           x_mpc = init_mpc_warm_start(mpc,s_prev,u_prev,[],[],dh)
 %
 % In:
 %   - mpc: CHRONOS mpc structure
@@ -27,9 +27,9 @@
 %   - x_ref (optional): nx column vector, reference value for the terminal 
 %   ingredients set constraint, only required when the terminal set 
 %   constraint is enabled
-%   - di (optional): ndi column vector, vector of known disturbance inputs 
-%   for the custom user defined signal yi, required if the user has defined
-%   custom constraints with disturbance input on the signal yi. 
+%   - dh (optional): ndh column vector, vector of known disturbance inputs 
+%   for the custom user defined signal h, required if the user has defined
+%   custom constraints with disturbance input on the signal h. 
 %   - x0 (optional): Nx + Nu column vector, initial guess for a feasible 
 %   value for the optimization variables vector x0. If the x0 argument is
 %   defined, init_mpc_warm_start() will try to find the closest feasible
@@ -41,14 +41,14 @@
 %   x0
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function x_mpc = init_mpc_warm_start(mpc,s_prev,u_prev,d,x_ref,di,x0)
+function x_mpc = init_mpc_warm_start(mpc,s_prev,u_prev,d,x_ref,dh,x0)
 arguments
 mpc
 s_prev
 u_prev
 d = [];
 x_ref = [];
-di = [];
+dh = [];
 x0 = [];
 end
 
@@ -64,7 +64,7 @@ end
 mpc = update_mpc_beq(mpc,s_prev,d);
 
 % find feasible point
-[x_mpc,iter] = feas_solve(x0,mpc,s_prev,u_prev,d,x_ref,di);
+[x_mpc,iter] = feas_solve(x0,mpc,s_prev,u_prev,d,x_ref,dh);
 
 % disable warm_starting boolean
 mpc.warm_starting = 0;

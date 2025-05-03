@@ -4,34 +4,34 @@
 % re-computes the MPC gradients and Hessians accordingly.
 % 
 % The function can be used to update the model of the user-defined signal 
-% yi:
+% h:
 %
-%   yi = Ci * x + Di * u + Ddi * di
+%   h = Ch * x + Dh * u + Ddh * dh
 %
-% by updating the matrices Ci, Di and Ddi.
+% by updating the matrices Ch, Dh and Ddh.
 %
 % The function can also be called to update the constraint limits:
 %
-%   yi_min <= yi <= yi_max
+%   h_min <= h <= h_max
 %
 % Example uses:
 %
 %   - update only constraint limits: 
-%           mpc = init_mpc_delta_u_cnstr(mpc,[],[],[],yi_min,yi_max)
-%   - update only user-defined signal yi model: 
-%           mpc = init_mpc_delta_u_cnstr(mpc,Ci,Di,Ddi)
-%   - update only input feedthrough Di matrix : 
-%           mpc = init_mpc_delta_u_cnstr(mpc,[],Di,[])
+%           mpc = init_mpc_delta_u_cnstr(mpc,[],[],[],h_min,h_max)
+%   - update only user-defined signal h model: 
+%           mpc = init_mpc_delta_u_cnstr(mpc,Ch,Dh,Ddh)
+%   - update only input feedthrough Dh matrix : 
+%           mpc = init_mpc_delta_u_cnstr(mpc,[],Dh,[])
 %
 % In:
 %   - mpc: CHRONOS mpc structure
-%   - Ci (optional): nyi x nx matrix, state output matrix
-%   - Di (optional): nyi x nu matrix, input feedtrhough matrix
-%   - Ddi (optional): nyi x ndi matrix, disturbance feedtrhough matrix
-%   - yi_min (optional): nyi column vector, lower bound constraint values
-%   on the user defined signal yi
-%   - yi_max (optional): nyi column vector, upper bound constraint values 
-%   on the user defined signal yi
+%   - Ch (optional): nh x nx matrix, state output matrix
+%   - Dh (optional): nh x nu matrix, input feedtrhough matrix
+%   - Ddh (optional): nh x ndh matrix, disturbance feedtrhough matrix
+%   - h_min (optional): nh column vector, lower bound constraint values
+%   on the user defined signal h
+%   - h_max (optional): nh column vector, upper bound constraint values 
+%   on the user defined signal h
 %
 %   All arguments items which do not require to be updated can be passed as
 %   an empty vector [].
@@ -40,52 +40,52 @@
 %   - mpc: updated CHRONOS mpc structure
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mpc = update_mpc_lin_custom_cnstr(mpc,Ci,Di,Ddi,...
-                yi_min,yi_max)
+function mpc = update_mpc_lin_custom_cnstr(mpc,Ch,Dh,Ddh,...
+                h_min,h_max)
 arguments
     mpc
-    Ci
-    Di
-    Ddi
-    yi_min = []
-    yi_max = []
+    Ch
+    Dh
+    Ddh
+    h_min = []
+    h_max = []
 end
 
 update_grads = 0;
 
-if ~isempty(Ci)
-    mpc.Ci = Ci;
+if ~isempty(Ch)
+    mpc.Ch = Ch;
     update_grads = 1;
 end
 
-if ~isempty(Di)
-    mpc.Di = Di;
+if ~isempty(Dh)
+    mpc.Dh = Dh;
     update_grads = 1;
 end
 
-if ~isempty(Ddi)   
-    mpc.Ddi = Ddi;
+if ~isempty(Ddh)   
+    mpc.Ddh = Ddh;
 end
 
-if ~isempty(yi_min)   
-    mpc.yi_min = yi_min;
+if ~isempty(h_min)   
+    mpc.h_min = h_min;
 end
 
-if ~isempty(yi_max)    
-    mpc.yi_max = yi_max;
+if ~isempty(h_max)    
+    mpc.h_max = h_max;
 end
 
 % General Inequalites box constraints
 if update_grads
     
-    [mpc.gradYimin,mpc.gradYimax] = genGradY(mpc.Ci,mpc.Di,mpc.N,mpc.N_ctr_hor,...
-        mpc.Nx,mpc.Nu,mpc.Nyi,mpc.nx,mpc.nu,mpc.nyi);
+    [mpc.gradHmin,mpc.gradHmax] = genGradY(mpc.Ch,mpc.Dh,mpc.N,mpc.N_ctr_hor,...
+        mpc.Nx,mpc.Nu,mpc.Nh,mpc.nx,mpc.nu,mpc.nh);
     
-    if ~isempty(mpc.yi_min)
-        [mpc.hessYimin,~] = genHessIneq(mpc.gradYimin);
+    if ~isempty(mpc.h_min)
+        [mpc.hessHmin,~] = genHessIneq(mpc.gradHmin);
     end
-    if ~isempty(mpc.yi_max)
-        [mpc.hessYimax,~] = genHessIneq(mpc.gradYimax);
+    if ~isempty(mpc.h_max)
+        [mpc.hessHmax,~] = genHessIneq(mpc.gradHmax);
     end
 
 end
