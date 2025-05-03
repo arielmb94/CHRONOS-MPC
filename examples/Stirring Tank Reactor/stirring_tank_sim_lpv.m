@@ -49,7 +49,7 @@ d = [1;vk];
 % Update reference vector
 xref = [ref_c;ref_v];
 % Solve mpc iteration
-[u_prev,J,x0] = mpc_solve(x0,x_prev,u_prev,xref,d,mpc,[],[],[]);
+[u_prev,x0] = mpc_solve(mpc,x0,x_prev,u_prev,xref,d,[],[],[]);
 tk = toc;
 
 % Store variables values for plotting and analysis

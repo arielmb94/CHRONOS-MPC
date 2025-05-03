@@ -40,27 +40,10 @@
 %   vector [].
 %
 % Out:
-%   - u0: nu column vector, first step of the control action sequence
-%   computed as solution to the MPC problem
-%   - x0: Nx+Nu column vector, optimization variables solution vector to
-%   the MPC problem
-%   - iter: number of iterations required for the MPC optimization problem 
-%   - iter_feas: number of iterations required for the step 0 feasibility
-%   starting point finder 
+%   - u0: nu column vector, 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [u0,x,iter,iter_feas] = mpc_solve(mpc,x0,s_prev,u_prev,r,d,x_ref,dz,dh)
-arguments
-mpc;
-x0;
-s_prev;
-u_prev;
-r;
-d = [];
-x_ref = [];
-dz = [];
-dh = [];
-end
 
     % number of variables
     n = length(x0);
