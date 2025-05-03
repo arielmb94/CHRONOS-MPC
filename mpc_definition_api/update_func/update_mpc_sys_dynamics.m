@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = update_mpc_sys_dynamics(mpc,A,B,Bd)
+%
 % Updates the matrices A, B and Bd of the internal MPC Discrete-Time system
 % model:
 % 

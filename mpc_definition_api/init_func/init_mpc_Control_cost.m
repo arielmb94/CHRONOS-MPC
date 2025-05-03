@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = init_mpc_Control_cost(mpc,Ru,ru)
+%
 % Adds quadratic and linear penalties on the control action:
 %
 %   J += u'*Ru*u + ru*u

@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%    mpc = init_mpc_DiffControl_cost(mpc,Rdu)
+%
 % Adds penalty on the control variation between sampling instances:
 %
 %   J += delta_u' * Rdu * delta_u

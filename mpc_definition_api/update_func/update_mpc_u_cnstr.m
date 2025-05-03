@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = update_mpc_u_cnstr(mpc,u_min,u_max)
+%
 % Modifies the constraints limits on the control action
 %
 % In:

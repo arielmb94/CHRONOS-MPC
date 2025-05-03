@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = init_mpc_ter_state_cnstr(mpc,x_ter_min,x_ter_max)
+%
 % Define box constraints only on the final state vector xN of the MPC 
 % prediction horizon:
 %

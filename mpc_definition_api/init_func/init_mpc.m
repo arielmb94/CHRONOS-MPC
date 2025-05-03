@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = init_mpc(N,N_ctr_hor)
+%
 % Initializes CHRONOS mpc structure fields and solver hyperparmeters
 %
 % In:

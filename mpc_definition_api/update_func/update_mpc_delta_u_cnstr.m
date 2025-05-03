@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = update_mpc_delta_u_cnstr(mpc,du_min,du_max)
+%
 % Modifies the constraint limits on the variation of the control action 
 % between consecutive sampling instances.
 %

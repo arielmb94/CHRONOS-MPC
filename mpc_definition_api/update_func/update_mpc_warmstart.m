@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   x0 = update_mpc_warmstart(x,mpc,fill_style)
+%
 % Provides alternative ways for warmstarting the optimization variables
 % vector during runtime MPC executions.
 % 

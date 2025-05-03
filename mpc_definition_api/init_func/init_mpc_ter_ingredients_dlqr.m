@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru, terminal_constraint,x_ref_is_y)
+%
 % Configures the MPC terminal cost ingredient and optionally enables the
 % use of ellipsoidal terminal set contraints.
 %

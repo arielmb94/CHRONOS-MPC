@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = update_mpc_Tracking_cost(mpc,Qe)
+%
 % Updates the tracking error cost weight Qe.
 %
 % In:

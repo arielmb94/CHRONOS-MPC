@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = init_mpc_Lin_Custom_cost(mpc,Cz,Dz,Ddz,Qz,qz)
+%
 % Adds quadratic and linear penalties on a custom user defined signal z:
 %
 %   J += z'*Qz*z + qz*z

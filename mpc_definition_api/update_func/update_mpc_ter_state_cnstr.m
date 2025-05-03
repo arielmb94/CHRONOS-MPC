@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = update_mpc_ter_state_cnstr(mpc,x_ter_min,x_ter_max)
+%
 % Modifies the box constraints limits on the terminal state vector xN.
 %
 % In:

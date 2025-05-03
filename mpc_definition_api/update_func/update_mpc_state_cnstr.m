@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = update_mpc_state_cnstr(mpc,x_min,x_max)
+%
 % Modifies the constraints limits on the state vector x.
 %
 % In:

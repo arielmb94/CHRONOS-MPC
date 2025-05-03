@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = update_mpc_Lin_Custom_cost(mpc,Cz,Dz,Ddz,Qz,qz)
+%
 % Updates the parameters for the user-defined cost term and re-computes the
 % MPC gradients and Hessians accordingly.
 %

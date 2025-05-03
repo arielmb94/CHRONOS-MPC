@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = init_mpc_Tracking_cost(mpc,Qe)
+%
 % Adds quadratic penalties on the tracking error:
 %
 %   J += (r - y)' * Qe * (r - y)

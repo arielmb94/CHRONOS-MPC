@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = update_mpc_output_cnstr(mpc,y_min,y_max)
+%
 % Modifies the constraints limits on the tracking signal y.
 %
 % In:

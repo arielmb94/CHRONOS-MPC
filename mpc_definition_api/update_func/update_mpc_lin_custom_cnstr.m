@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%    mpc = update_mpc_lin_custom_cnstr(mpc,Ch,Dh,Ddh,h_min,h_max)
+%
 % Updates the parameters for the user-defined custom constraint and
 % re-computes the MPC gradients and Hessians accordingly.
 % 

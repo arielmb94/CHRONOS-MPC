@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = init_mpc_system(mpc,A,B,Bd,C,D,Dd)
+%
 % Initializes the MPC Discrete-Time dynamical model :
 %
 %   x+ = A * x + B * u + Bd * d

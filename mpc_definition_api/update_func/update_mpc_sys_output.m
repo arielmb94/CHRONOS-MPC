@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = update_mpc_sys_output(mpc,C,D,Dd,Qe,y_min,y_max)
+%
 % Allows to update all parameters related to the tracking output signal y 
 % in a single function:
 %

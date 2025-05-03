@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = update_mpc_ter_ingredients(mpc,P)
+%
 % Updates the terminal cost weight P associated to the terminal ingredients.
 %
 % In:
@@ -10,7 +12,7 @@
 %   - mpc: updated CHRONOS mpc structure
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [mpc] = update_mpc_ter_ingredients(mpc,P)
+function mpc = update_mpc_ter_ingredients(mpc,P)
 
 mpc.recompute_cost_hess = 1;
 

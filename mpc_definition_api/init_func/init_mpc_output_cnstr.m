@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = init_mpc_output_cnstr(mpc,y_min,y_max)
+%
 % Define constraints on the tracking signal y:
 %
 %   y_min <= y <= y_max

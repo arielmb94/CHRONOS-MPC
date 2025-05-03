@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = update_mpc_Control_cost(mpc,Ru,ru)
+%
 % Modifies the weights Ru and ru for the quadratic and linear control 
 % penalty terms on the control action. The function then updates the MPC 
 % gradients and Hessians accordingly.

@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = init_mpc_state_cnstr(mpc,x_min,x_max)
+%
 % Define constraints on the state vector x:
 %
 %   x_min <= x <= x_max

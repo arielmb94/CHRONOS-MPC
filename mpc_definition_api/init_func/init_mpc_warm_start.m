@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   x_mpc = init_mpc_warm_start(mpc,s_prev,u_prev,d,x_ref,dh,x0)
+%
 % Computes a feasible value for the optimization variables vector x0.
 %
 % Example Use:

@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = init_mpc_u_cnstr(mpc,u_min,u_max)
+%
 % Define limits on the control action:
 %
 %   u_min <= u <= u_max

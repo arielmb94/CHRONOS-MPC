@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = init_mpc_delta_u_cnstr(mpc,du_min,du_max)
+%
 % Define constraint on the control variation between sampling instances:
 %
 %   du_min <= delta_u <= du_max

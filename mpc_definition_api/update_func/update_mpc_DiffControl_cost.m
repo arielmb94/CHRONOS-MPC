@@ -1,5 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+%   mpc = update_mpc_DiffControl_cost(mpc,Rdu)
+%
 % Modifies the weight Rdu for the quadratic penalty term on the control 
 % action variation between sampling instances. The function then updates 
 % the MPC gradients and Hessians accordingly.
