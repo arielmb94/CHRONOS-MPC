@@ -13,7 +13,7 @@ In this folder you will find 3 files with the following objectives:
 The two tanks system is a classical example used in control lectures. It consists of two inter-connected cylindrical tanks, where the first tank receives a steady flow of water, which can be regulated, and the second tank has a downstream discharge of water at its base. The dynamics of the two tank system is the following:
 
 $$ \dot h_1 = u/A_b-\sqrt{2gh_1}/A_b $$
-$$ \dot h2 = \sqrt{2gh_1}/A_b-\sqrt{2gh_2}/A_b $$
+$$ \dot h_2 = \sqrt{2gh_1}/A_b-\sqrt{2gh_2}/A_b $$
 
 where $h_1$ and $h_2$ are the water heights of each tank, $u$ is the controlled water massflow into tank 1 and $A_b$ is the tank area, equal for both tanks. The regulation objective is to control the water level on the second tank, e.g. our tracking target is:
 
@@ -27,9 +27,9 @@ $$ \sqrt{2gh_i} := \frac{\sqrt{2gh_i}}{h_i}h_i  $$
 
 Substituting the linear embeddings on the non-linear dynamics equation, we arrive at the following state-space LPV description of the Two Tank system dynamics:
 
-$$ \left [\begin{array}{c} \dot h_1\\\ \dot h2 \end{array} \right ] =
+$$ \left [\begin{array}{c} \dot h_1\\\ \dot h_2 \end{array} \right ] =
 \left [\begin{array}{cc}  -\sqrt{2gh_1}/(h_1A_b) & 0\\\ \sqrt{2gh_1}/(h_1A_b & -\sqrt{2gh_2}/(h_2A_b)\end{array} \right ]
-\left [\begin{array}{c} h_1\\\  h2 \end{array} \right ] + 
+\left [\begin{array}{c} h_1\\\  h_2 \end{array} \right ] + 
 \left [\begin{array}{c} 1/A_b\\\ 0 \end{array} \right ]u$$
 
 Note that if we expand the state-space LPV model, we recover the exact nonlinear dynamics of the two-tank system. This highlights a key advantage of the LPV representation: it captures the full nonlinear behavior of the system while casting it in a form compatible with convex optimization. As a result, CHRONOS can solve the nonlinear MPC problem exactly, using fast, reliable, and well-established convex optimization algorithms.
