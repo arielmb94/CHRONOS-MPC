@@ -47,7 +47,7 @@ A_lpv = eye(2)+Ts*[-sqrt(2*g)*sqrt(h1)/(Ab*h1) 0;
 mpc = update_mpc_sys_dynamics(mpc,A_lpv,mpc.B,[]);
 
 % Solve mpc iteration
-[u_prev,J,x0] = mpc_solve(x0,x_prev,u_prev,xf,[],mpc,x_ref,[],[]);
+[u_prev,x0] = mpc_solve(mpc,x0,x_prev,u_prev,xf,[],x_ref,[],[]);
 tk = toc;
 
 % Store variables values for plotting and analysis  

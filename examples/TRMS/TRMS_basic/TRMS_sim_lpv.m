@@ -67,7 +67,7 @@ mpc = update_mpc_sys_dynamics(mpc,eye(6)+Ts*sys.A,Ts*sys.B,[]);
 % Adjust Vertical Angle State
 x_mpc = [Wh;Omh;Thth;Wv;Omv;Thtv-Thtv0];
 % Solve mpc iteration
-[u_prev,J,x0] = mpc_solve(x0,x_mpc,u_prev,ref,[],mpc,[],[],[]);
+[u_prev,x0] = mpc_solve(mpc,x0,x_mpc,u_prev,ref,[],[],[],[]);
 ti(i) = toc;
 
 % Assign control actions

@@ -39,7 +39,7 @@ x_ref = [xf;xf];
 
 tic;
 % Solve mpc iteration
-[u_prev,J,x0] = mpc_solve(x0,x_prev,u_prev,xf,[],mpc,x_ref,[],[]);
+[u_prev,x0] = mpc_solve(mpc,x0,x_prev,u_prev,xf,[],x_ref,[],[]);
 tk = toc;
 
 % Store variables values for plotting and analysis  

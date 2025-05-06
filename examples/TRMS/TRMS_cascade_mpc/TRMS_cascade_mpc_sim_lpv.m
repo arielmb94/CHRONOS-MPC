@@ -82,7 +82,7 @@ x_mpc = [Omh;Thth;Omv;Thtv-Thtv0];
 ref = [OmhRef TththRef OmvRef TthtvRef-Thtv0]';
 
 % solve MIMO mpc
-[u_prev,J,x0] = mpc_solve(x0,x_mpc,u_prev,ref,uv,mpc,[],[],[]);
+[u_prev,x0] = mpc_solve(mpc,x0,x_mpc,u_prev,ref,uv,[],[],[]);
 
 % Extract control action sequence from the optimization vector
 W_ref = get_u(x0,mpc.nx,mpc.nu,mpc.N_ctr_hor,mpc.Nu);
@@ -92,9 +92,9 @@ WhRef = W_ref(mask_Wh);
 WvRef = W_ref(mask_Wv);
 
 % solve Horizontal Fan mpc
-[uh,J,x0_h] = mpc_solve(x0_h,Wh,uh,WhRef(1:mpc_h.Nu-1),[],mpc_h,WhRef(end),[],[]);
+[uh,x0_h] = mpc_solve(mpc_h,x0_h,Wh,uh,WhRef(1:mpc_h.Nu-1),[],WhRef(end),[],[]);
 % solve Vertical Fan mpc
-[uv,J,x0_v] = mpc_solve(x0_v,Wv,uv,WvRef(1:mpc_v.Nu-1),[],mpc_v,WvRef(end),[],[]);
+[uv,x0_v] = mpc_solve(mpc_v,x0_v,Wv,uv,WvRef(1:mpc_v.Nu-1),[],WvRef(end),[],[]);
 ti(i) = toc;
 
 % Storoge control action values for plotting and analysis

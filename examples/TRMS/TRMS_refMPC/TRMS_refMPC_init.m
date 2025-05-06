@@ -63,14 +63,15 @@ y_max = [];
 %% General Linear Inequalities
 
 % General Linear Inequalities are defined as:
-% yi = Ci*x+Di*u+Ddi*di
-Ci = [];
-Di = [];
-Ddi = [];
+% yh = Ch*x+Dh*u+Ddh*di
+Ch = [];
+Dh = [];
+Ddh = [];
 
-yi_min = [];
-yi_max = [];
-%mpc = init_mpc_general_lin_ineq_cnstr(mpc,yi_min,yi_max,Ci,Di,Ddi);
+h_min = [];
+h_max = [];
+
+%mpc = init_mpc_lin_custom_cnstr(mpc,h_min,h_max,Ch,Dh,Ddh);
 
 %% Terminal Ingredients
 
@@ -115,7 +116,7 @@ Ddz = 0;
 Qz = diag([100 100]);
 
 % Init performance cost
-mpc = init_mpc_LinPerf_cost(mpc,Cz,Dz,Ddz,Qz);
+mpc = init_mpc_Lin_Custom_cost(mpc,Cz,Dz,Ddz,Qz);
 
 %% Init conditions for simulation
 
