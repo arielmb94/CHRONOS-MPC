@@ -55,7 +55,8 @@ else
 end
 
 % A equality contraint (b equality constraints depends on x0 and d(k)
-mpc.Aeq = genEqualities(A,B,mpc.N,mpc.N_ctr_hor,mpc.Nx,mpc.Nu,mpc.nx,mpc.nu);
+mpc.Aeq = zeros(mpc.Nx,mpc.Nx+mpc.Nu);
+mpc = genEqualities(mpc,A,B,mpc.N,mpc.N_ctr_hor,mpc.nx,mpc.nu);
 mpc.beq = zeros(size(mpc.Aeq,1),1);
 
 end

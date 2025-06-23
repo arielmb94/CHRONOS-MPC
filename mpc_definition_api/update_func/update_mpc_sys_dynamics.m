@@ -48,7 +48,7 @@ end
 if updateEqualities
 
     % A equality contraint 
-    mpc.Aeq = genEqualities(mpc.A,mpc.B,mpc.N,mpc.N_ctr_hor,mpc.Nx,mpc.Nu,...
+    mpc = genEqualities(mpc,mpc.A,mpc.B,mpc.N,mpc.N_ctr_hor,...
         mpc.nx,mpc.nu);
 end
 
