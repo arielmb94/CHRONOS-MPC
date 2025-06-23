@@ -1,12 +1,4 @@
 function [fi_low_x0,fi_up_x0] = fi_box_fun(x,low_lim,up_lim,N,n,v_feas)
-arguments
-x
-low_lim
-up_lim
-N
-n
-v_feas = 0;
-end
 
 if ~isempty(low_lim)
 

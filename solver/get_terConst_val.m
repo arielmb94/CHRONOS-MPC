@@ -1,10 +1,4 @@
 function fi_ter_x0 = get_terConst_val(x_ref,s_ter,P,v_feas)
-arguments
-    x_ref
-    s_ter
-    P
-    v_feas = 0;
-end
 
 % compute error at terminal state
 x_err = x_ref-s_ter;
