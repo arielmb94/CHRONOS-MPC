@@ -89,7 +89,7 @@ function [u0,x0,iter,iter_feas] = mpc_solve(mpc,x0,s_prev,u_prev,...
             x_ref = r(end-mpc.ny+1:end);
         end    
     else 
-        x_ref = [];
+        %x_ref = [];
         grad_ter = [];
     end
 
@@ -102,6 +102,7 @@ function [u0,x0,iter,iter_feas] = mpc_solve(mpc,x0,s_prev,u_prev,...
     else
         perfCost = 1;
     end
+    
     
     % Recompute hessian if cost terms have been updated
     if mpc.recompute_cost_hess
