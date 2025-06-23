@@ -1,14 +1,8 @@
 function v_full = fill_vec(v,n,N,fill_style)
-arguments
-v
-n
-N
-fill_style = 0;
-end
 
 l_v = length(v);
 step_v = l_v/n;      % number of steps filled already
-step_full = N/n;           % number of steps to fill
+step_full = N/n;     % number of steps to fill
 
 miss_step = step_full-step_v; % steps needed to be filled
 

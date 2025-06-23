@@ -52,17 +52,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [u0,x0,iter,iter_feas] = mpc_solve(mpc,x0,s_prev,u_prev,...
                                             r_in,d_in,x_ref,dz_in,dh_in)
-arguments
-mpc;
-x0;
-s_prev;
-u_prev;
-r_in = [];
-d_in = [];
-x_ref = [];
-dz_in = [];
-dh_in = [];
-end
 
     % number of variables
     n = length(x0);
