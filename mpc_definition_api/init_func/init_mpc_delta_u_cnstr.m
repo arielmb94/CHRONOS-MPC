@@ -27,20 +27,24 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mpc = init_mpc_delta_u_cnstr(mpc,du_min,du_max)
 
-mpc.du_min = du_min;
-mpc.du_max = du_max;
+du_cnstr.min = du_min;
+du_cnstr.max = du_max;
 
 % Differential Control box constraints
-[mpc.gradDeltaUmin,mpc.gradDeltaUmax] = genGradDeltaU(mpc.N_ctr_hor,...
+[du_cnstr.grad_min,du_cnstr.grad_max] = genGradDeltaU(mpc.N_ctr_hor,...
                                                 mpc.Nx,mpc.Nu,mpc.nx,mpc.nu);
 
-if ~isempty(mpc.du_min)
-    [mpc.hessDeltaUmin,mi] = genHessIneq(mpc.gradDeltaUmin);
+if ~isempty(du_cnstr.min)
+    du_cnstr.fi_min_x0 = zeros(mpc.Nu,1);
+    [du_cnstr.hess_min,mi] = genHessIneq(du_cnstr.grad_min);
     mpc.m = mpc.m+mi;
 end
-if ~isempty(mpc.du_max)
-    [mpc.hessDeltaUmax,mi] = genHessIneq(mpc.gradDeltaUmax);
+if ~isempty(du_cnstr.max)
+    du_cnstr.fi_max_x0 = zeros(mpc.Nu,1);
+    [du_cnstr.hess_max,mi] = genHessIneq(du_cnstr.grad_max);
     mpc.m = mpc.m+mi;
 end
+
+mpc.du_cnstr = du_cnstr;
 
 end

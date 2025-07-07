@@ -19,20 +19,23 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mpc = init_mpc_output_cnstr(mpc,y_min,y_max)
 
-mpc.y_min = y_min;
-mpc.y_max = y_max;
+y_cnstr.min = y_min;
+y_cnstr.max = y_max;
 
 % Outputs box constraints
-[mpc.gradYmin,mpc.gradYmax] = genGradY(mpc.C,mpc.D,mpc.N,mpc.N_ctr_hor,...
+[y_cnstr.grad_min,y_cnstr.grad_max] = genGradY(mpc.C,mpc.D,mpc.N,mpc.N_ctr_hor,...
     mpc.Nx,mpc.Nu,mpc.Ny,mpc.nx,mpc.nu,mpc.ny);
 
-if ~isempty(mpc.y_min)
-    [mpc.hessYmin,mi] = genHessIneq(mpc.gradYmin);
+if ~isempty(y_cnstr.min)
+    y_cnstr.fi_min_x0 = zeros(mpc.Ny,1);
+    [y_cnstr.hess_min,mi] = genHessIneq(y_cnstr.grad_min);
     mpc.m = mpc.m+mi;
 end
-if ~isempty(mpc.y_max)
-    [mpc.hessYmax,mi] = genHessIneq(mpc.gradYmax);
+if ~isempty(y_cnstr.max)
+    y_cnstr.fi_max_x0 = zeros(mpc.Ny,1);
+    [y_cnstr.hess_max,mi] = genHessIneq(y_cnstr.grad_max);
     mpc.m = mpc.m+mi;
 end
 
+mpc.y_cnstr = y_cnstr;
 end

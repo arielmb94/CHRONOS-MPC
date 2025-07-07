@@ -172,4 +172,13 @@ mpc.warm_starting = 0;
 mpc.feas_lambda = 100;
 mpc.max_feas_iter = 10;
 mpc.unfeasible = 0;
+
+mpc.s_cnstr = [];
+mpc.s_ter_cnstr = [];
+mpc.u_cnstr = [];
+mpc.du_cnstr = [];
+mpc.y_cnstr = [];
+mpc.h_cnstr = [];
+mpc.fi_ter_x0 = [];
+
 end

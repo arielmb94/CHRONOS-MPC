@@ -41,8 +41,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mpc = init_mpc_lin_custom_cnstr(mpc,h_min,h_max,Ch,Dh,Ddh)
 
-mpc.h_min = h_min;
-mpc.h_max = h_max;
+h_cnstr.min = h_min;
+h_cnstr.max = h_max;
 
 % General Inequality Matrix
 mpc.Ch = Ch;
@@ -61,16 +61,20 @@ end
 mpc.Ndh = mpc.N*mpc.ndh;
 
 % General Inequalites box constraints
-[mpc.gradHmin,mpc.gradHmax] = genGradY(mpc.Ch,mpc.Dh,mpc.N,mpc.N_ctr_hor,...
+[h_cnstr.grad_min,h_cnstr.grad_max] = genGradY(mpc.Ch,mpc.Dh,mpc.N,mpc.N_ctr_hor,...
                                 mpc.Nx,mpc.Nu,mpc.Nh,mpc.nx,mpc.nu,mpc.nh);
 
-if ~isempty(mpc.h_min)
-    [mpc.hessHmin,mi] = genHessIneq(mpc.gradHmin);
+if ~isempty(h_cnstr.min)
+    h_cnstr.fi_min_x0 = zeros(mpc.Nh,1);
+    [h_cnstr.hess_min,mi] = genHessIneq(h_cnstr.grad_min);
     mpc.m = mpc.m+mi;
 end
-if ~isempty(mpc.h_max)
-    [mpc.hessHmax,mi] = genHessIneq(mpc.gradHmax);
+if ~isempty(h_cnstr.max)
+    h_cnstr.fi_max_x0 = zeros(mpc.Nh,1);
+    [h_cnstr.hess_max,mi] = genHessIneq(h_cnstr.grad_max);
     mpc.m = mpc.m+mi;
 end
+
+mpc.h_cnstr = h_cnstr;
 
 end

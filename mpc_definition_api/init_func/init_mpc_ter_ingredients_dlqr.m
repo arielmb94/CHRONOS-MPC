@@ -62,6 +62,7 @@ if isempty(mpc.hessCost)
     mpc.hessCost = zeros(mpc.Nu+mpc.Nx);
 end
 
+mpc.fi_ter_x0 = 0;
 mpc.hessTerminalCost = zeros(mpc.Nx+mpc.Nu);
 mpc.hessTerminalCost(end-mpc.nx+1: end,end-mpc.nx+1 : end) = 2*P;
 
