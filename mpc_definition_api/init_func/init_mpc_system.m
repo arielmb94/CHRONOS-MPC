@@ -52,6 +52,7 @@ mpc.s = zeros(mpc.Nx,1);
 mpc.s_all = zeros(mpc.Nx+mpc.nx,1);
 mpc.s_ter = zeros(mpc.nx,1);
 mpc.u = zeros(mpc.Nu,1);
+mpc.du = zeros(mpc.Nu,1);
 
 if mpc.D == 0
     mpc.Ny = (mpc.N-1)*mpc.ny;
