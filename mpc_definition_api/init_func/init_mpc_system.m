@@ -48,11 +48,18 @@ mpc.Nx = mpc.N*mpc.nx;
 mpc.Nu = mpc.N_ctr_hor*mpc.nu;
 mpc.Nd = mpc.N*mpc.nd;
 
+mpc.s = zeros(mpc.Nx,1);
+mpc.s_all = zeros(mpc.Nx+mpc.nx,1);
+mpc.s_ter = zeros(mpc.nx,1);
+mpc.u = zeros(mpc.Nu,1);
+
 if mpc.D == 0
     mpc.Ny = (mpc.N-1)*mpc.ny;
 else
     mpc.Ny = mpc.N*mpc.ny;
 end
+
+mpc.y = zeros(mpc.Ny,1);
 
 % A equality contraint (b equality constraints depends on x0 and d(k)
 mpc.Aeq = zeros(mpc.Nx,mpc.Nx+mpc.Nu);

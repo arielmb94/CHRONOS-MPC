@@ -121,7 +121,7 @@ function [u0,x0,iter,iter_feas] = mpc_solve(mpc,x0,s_prev,u_prev,...
     if feas
         % get mpc variables from optimization vector x and constraint
         % information and feasibility
-        [mpc,s,s_all,s_ter,u,du,y,err,h,feas] = ...
+        [mpc,feas] = ...
         get_state_constraint_info(x0,s_prev,u_prev,r,x_ref,d,dh,mpc);
     end
 
@@ -135,7 +135,7 @@ function [u0,x0,iter,iter_feas] = mpc_solve(mpc,x0,s_prev,u_prev,...
         else
             iter = iter+iter_feas;
             % Get constraint info on new point
-            [mpc,s,s_all,s_ter,u,du,y,err,h,feas] = ...
+            [mpc,feas] = ...
                 get_state_constraint_info(x0,s_prev,u_prev,r,x_ref,d,dh,mpc);
         end
 
@@ -265,7 +265,7 @@ function [u0,x0,iter,iter_feas] = mpc_solve(mpc,x0,s_prev,u_prev,...
         % 2. If enabled, compute terminal ingredients 
         if mpc.ter_ingredients
             [grad_ter,grad_ter_Ind_x0,hess_ter_Ind_x0] = ...
-                ter_set_Ind_fun(x_ref,s_ter,mpc.fi_ter_x0,...
+                ter_set_Ind_fun(x_ref,mpc.s_ter,mpc.fi_ter_x0,...
                 mpc.P,mpc.Nx,mpc.Nu,mpc.nx,mpc.ter_constraint);
             if mpc.ter_constraint
                 grad_fi_Ind = grad_fi_Ind + grad_ter_Ind_x0; 
@@ -274,11 +274,11 @@ function [u0,x0,iter,iter_feas] = mpc_solve(mpc,x0,s_prev,u_prev,...
         
         % 3. Compute gradient of cost function at x0
         if perfCost
-            z = get_lin_out(s_all,u,dz,mpc.nx,mpc.nu,mpc.nz,mpc.ndz,...
+            z = get_lin_out(mpc.s_all,mpc.u,dz,mpc.nx,mpc.nu,mpc.nz,mpc.ndz,...
                 mpc.N_ctr_hor,mpc.Nz,mpc.Cz,mpc.Dz,mpc.Ddz);
         end
 
-        grad_f0 = grad_f0_MPC(mpc,err,du,u,grad_ter,z);
+        grad_f0 = grad_f0_MPC(mpc,mpc.err,mpc.du,mpc.u,grad_ter,z);
         
         % 4. Compute gradient at x0 : grad(J) = t*grad(f0)+grad(Phi)
         grad_J_x0 = mpc.t*grad_f0+grad_fi_Ind;
@@ -417,7 +417,7 @@ function [u0,x0,iter,iter_feas] = mpc_solve(mpc,x0,s_prev,u_prev,...
         l = 1;
         xhat = x0+l*delta_x_prim;
 
-        [mpc,s,s_all,s_ter,u,du,y,err,h,feas] = ...
+        [mpc,feas] = ...
         get_state_constraint_info(xhat,s_prev,u_prev,r,x_ref,d,dh,mpc);
 
         if feas
@@ -429,7 +429,7 @@ function [u0,x0,iter,iter_feas] = mpc_solve(mpc,x0,s_prev,u_prev,...
 
                 xhat = x0+l*delta_x_prim;
 
-                [mpc,s,s_all,s_ter,u,du,y,err,h,feas] = ...
+                [mpc,feas] = ...
                 get_state_constraint_info(xhat,s_prev,u_prev,r,x_ref,d,dh,mpc);
             end
             x0 = xhat;
@@ -449,7 +449,7 @@ function [u0,x0,iter,iter_feas] = mpc_solve(mpc,x0,s_prev,u_prev,...
         x0 = x0*0;
     else
         % Get first control action
-        u0 = u(1:mpc.nu);
+        u0 = mpc.u(1:mpc.nu);
     end
 
 end

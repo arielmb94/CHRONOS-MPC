@@ -1,17 +1,28 @@
-function [mpc,s,s_all,s_ter,u,du,y,err,h,feas] = ...
+function [mpc,feas] = ...
     get_state_constraint_info(x,s_prev,u_prev,r,x_ref,d,dh,mpc)
 
 %states
 [s,s_all,s_ter] = get_x(x,s_prev,mpc.nx,mpc.nu,mpc.N,mpc.N_ctr_hor,mpc.Nx);
+mpc.s = s;
+mpc.s_all = s_all;
+mpc.s_ter = s_ter;
+
 % control actions
 u = get_u(x,mpc.nx,mpc.nu,mpc.N_ctr_hor,mpc.Nu);
+mpc.u = u;
+
 % differential control action
 du = get_diff_u(u,u_prev,mpc.nu,mpc.N_ctr_hor,mpc.Nu);
+mpc.du = du;
+
 % system outputs
 y = get_lin_out(s_all,u,d,mpc.nx,mpc.nu,mpc.ny,mpc.nd,mpc.N_ctr_hor,...
     mpc.Ny,mpc.C,mpc.D,mpc.Dd);
+mpc.y = y;
+
 % error signal
 err = get_error(r,y);
+mpc.err = err;
 
 feas = 1;
 % State box constraints
@@ -49,6 +60,7 @@ if feas && ~isempty(mpc.h_cnstr)
     % general constraints
     h = get_lin_out(s_all,u,dh,mpc.nx,mpc.nu,mpc.nh,mpc.ndh,mpc.N_ctr_hor,...
         mpc.Nh,mpc.Ch,mpc.Dh,mpc.Ddh);
+    mpc.h = h;
 
     mpc.h_cnstr = fi_box_fun(mpc.h_cnstr,h,mpc.Nh,mpc.nh,0);
     feas = fi_box_is_feasible(mpc.h_cnstr);

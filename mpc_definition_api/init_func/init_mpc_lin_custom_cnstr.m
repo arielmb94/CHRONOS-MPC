@@ -58,6 +58,8 @@ else
     mpc.Nh = mpc.N*mpc.nh;
 end
 
+mpc.h = zeros(mpc.Nh,1);
+
 mpc.Ndh = mpc.N*mpc.ndh;
 
 % General Inequalites box constraints
