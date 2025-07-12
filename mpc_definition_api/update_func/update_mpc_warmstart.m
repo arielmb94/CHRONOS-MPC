@@ -32,9 +32,9 @@ arguments
 end
 
     s_prev = zeros(mpc.nx,1); % s_prev is not used in warmstarting
-    s = get_x(x,s_prev,mpc.nx,mpc.nu,mpc.N,mpc.N_ctr_hor,mpc.Nx);
-    u = get_u(x,mpc.nx,mpc.nu,mpc.N_ctr_hor,mpc.Nu);
-
+    mpc = get_mpc_x(x,s_prev,mpc);
+    mpc = get_mpc_u(x,mpc);
+    
     % delete first state step and fill
     s_crop = s(mpc.nx+1:end);
     s_fill = fill_vec(s_crop,mpc.nx,mpc.Nx,fill_style);

@@ -1,5 +1,5 @@
-function error = get_error(r,y)  
+function mpc = get_error(r,y,mpc)  
 
-    error = r-y;
+    mpc.err = r-y;
         
 end

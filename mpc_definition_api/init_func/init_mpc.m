@@ -160,6 +160,7 @@ mpc.u = [];
 mpc.du = [];
 mpc.y = [];
 mpc.h = [];
+mpc.z = [];
 mpc.m = 0;
 mpc.t = 50;
 mpc.Beta = 0.75;

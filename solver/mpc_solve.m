@@ -50,7 +50,7 @@
 %   starting point finder 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [u0,x0,iter,iter_feas] = mpc_solve(mpc,x0,s_prev,u_prev,...
+function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
                                             r_in,d_in,x_ref,dz_in,dh_in)
 
     % number of variables
@@ -96,13 +96,10 @@ function [u0,x0,iter,iter_feas] = mpc_solve(mpc,x0,s_prev,u_prev,...
     % update b matrix from equality condition
     mpc = update_mpc_beq(mpc,s_prev,d);
 
-    if isempty(mpc.gradPerfQz)
-        perfCost = 0;
-        z = [];
-    else
+    perfCost = 0;
+    if ~isempty(mpc.gradPerfQz)
         perfCost = 1;
     end
-    
     
     % Recompute hessian if cost terms have been updated
     if mpc.recompute_cost_hess
@@ -274,11 +271,12 @@ function [u0,x0,iter,iter_feas] = mpc_solve(mpc,x0,s_prev,u_prev,...
         
         % 3. Compute gradient of cost function at x0
         if perfCost
-            z = get_lin_out(mpc.s_all,mpc.u,dz,mpc.nx,mpc.nu,mpc.nz,mpc.ndz,...
-                mpc.N_ctr_hor,mpc.Nz,mpc.Cz,mpc.Dz,mpc.Ddz);
+            % compute vector z
+            mpc.z(:) = get_mpc_lin_out(mpc.s_all,mpc.u,dz,mpc.nx,mpc.nu,mpc.nz,mpc.ndz,...
+                                mpc.N_ctr_hor,mpc.Nz,mpc.Cz,mpc.Dz,mpc.Ddz);
         end
 
-        grad_f0 = grad_f0_MPC(mpc,mpc.err,mpc.du,mpc.u,grad_ter,z);
+        grad_f0 = grad_f0_MPC(mpc,mpc.err,mpc.du,mpc.u,grad_ter,mpc.z);
         
         % 4. Compute gradient at x0 : grad(J) = t*grad(f0)+grad(Phi)
         grad_J_x0 = mpc.t*grad_f0+grad_fi_Ind;

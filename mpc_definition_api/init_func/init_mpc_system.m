@@ -61,6 +61,7 @@ else
 end
 
 mpc.y = zeros(mpc.Ny,1);
+mpc.err = zeros(mpc.Ny,1);
 
 % A equality contraint (b equality constraints depends on x0 and d(k)
 mpc.Aeq = zeros(mpc.Nx,mpc.Nx+mpc.Nu);
