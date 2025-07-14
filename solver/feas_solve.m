@@ -1,13 +1,4 @@
 function [x_mpc,iter,mpc] = feas_solve(x0,mpc,s_prev,u_prev,d,x_ref,dh)
-arguments
-x0
-mpc
-s_prev
-u_prev
-d = [];
-x_ref = [];
-dh = [];
-end
 
     % Set false at start
     mpc.unfeasible = 0;
