@@ -38,11 +38,23 @@ if ~isempty(du_cnstr.min)
     du_cnstr.fi_min_x0 = zeros(mpc.Nu,1);
     [du_cnstr.hess_min,mi] = genHessIneq(du_cnstr.grad_min);
     mpc.m = mpc.m+mi;
+
+    % initialize feasibility solver min condition
+    du_cnstr.grad_min_feas_slv = [du_cnstr.grad_min;-ones(1,mpc.Nu)];
+    
+    du_cnstr.hess_min_feas_slv = genHessIneq(du_cnstr.grad_min_feas_slv);
+
 end
+
 if ~isempty(du_cnstr.max)
     du_cnstr.fi_max_x0 = zeros(mpc.Nu,1);
     [du_cnstr.hess_max,mi] = genHessIneq(du_cnstr.grad_max);
     mpc.m = mpc.m+mi;
+
+    du_cnstr.grad_max_feas_slv = [du_cnstr.grad_max;-ones(1,mpc.Nu)];
+    
+    du_cnstr.hess_max_feas_slv = genHessIneq(du_cnstr.grad_max_feas_slv);
+
 end
 
 mpc.du_cnstr = du_cnstr;

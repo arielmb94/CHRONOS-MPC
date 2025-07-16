@@ -30,11 +30,24 @@ if ~isempty(y_cnstr.min)
     y_cnstr.fi_min_x0 = zeros(mpc.Ny,1);
     [y_cnstr.hess_min,mi] = genHessIneq(y_cnstr.grad_min);
     mpc.m = mpc.m+mi;
+
+    % initialize feasibility solver min condition
+    y_cnstr.grad_min_feas_slv = [y_cnstr.grad_min;-ones(1,mpc.Ny)];
+    
+    y_cnstr.hess_min_feas_slv = genHessIneq(y_cnstr.grad_min_feas_slv);
+
 end
+
 if ~isempty(y_cnstr.max)
     y_cnstr.fi_max_x0 = zeros(mpc.Ny,1);
     [y_cnstr.hess_max,mi] = genHessIneq(y_cnstr.grad_max);
     mpc.m = mpc.m+mi;
+
+    % initialize feasibility solver max condition
+    y_cnstr.grad_max_feas_slv = [y_cnstr.grad_max;-ones(1,mpc.Ny)];
+    
+    y_cnstr.hess_max_feas_slv = genHessIneq(y_cnstr.grad_max_feas_slv);
+
 end
 
 mpc.y_cnstr = y_cnstr;
