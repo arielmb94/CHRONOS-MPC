@@ -57,6 +57,7 @@ mpc.x_ref_is_y = x_ref_is_y;
 [~,P] = dlqr(mpc.A,mpc.B,Qx,Ru);
 
 mpc.P = P;
+mpc.P2 = 2*P;
 
 if isempty(mpc.hessCost)
     mpc.hessCost = zeros(mpc.Nu+mpc.Nx);

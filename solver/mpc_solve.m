@@ -88,6 +88,7 @@ function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
         if mpc.x_ref_is_y && isempty(x_ref)
             x_ref = r(end-mpc.ny+1:end);
         end    
+        grad_ter = zeros(mpc.nx,1);
     else 
         %x_ref = [];
         grad_ter = [];
@@ -263,7 +264,7 @@ function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
         if mpc.ter_ingredients
             [grad_ter,grad_ter_Ind_x0,hess_ter_Ind_x0] = ...
                 ter_set_Ind_fun(x_ref,mpc.s_ter,mpc.fi_ter_x0,...
-                mpc.P,mpc.Nx,mpc.Nu,mpc.nx,mpc.ter_constraint);
+                mpc.P2,mpc.Nx,mpc.Nu,mpc.nx,mpc.ter_constraint);
             if mpc.ter_constraint
                 grad_fi_Ind = grad_fi_Ind + grad_ter_Ind_x0; 
             end
