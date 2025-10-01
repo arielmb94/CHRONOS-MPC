@@ -51,7 +51,7 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
-                                            r_in,d_in,x_ref,dz_in,dh_in)
+                                            r_in,d_in,x_ref_in,dz_in,dh_in)
 
     % number of variables
     n = length(x0);
@@ -85,12 +85,14 @@ function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
     end
 
     if mpc.ter_ingredients
-        if mpc.x_ref_is_y && isempty(x_ref)
+        if mpc.x_ref_is_y && isempty(x_ref_in)
             x_ref = r(end-mpc.ny+1:end);
+        else
+            x_ref = x_ref_in;
         end    
         grad_ter = zeros(mpc.nx,1);
     else 
-        %x_ref = [];
+        x_ref = [];
         grad_ter = [];
     end
 
