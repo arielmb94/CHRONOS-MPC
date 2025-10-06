@@ -57,7 +57,7 @@ end
 
 % Terminal Constraint
 if feas && mpc.ter_ingredients && mpc.ter_constraint
-    mpc.fi_ter_x0 = get_terConst_val(x_ref,mpc.s_ter,mpc.P,v);
+    mpc.fi_ter_x0(:) = get_terConst_val(x_ref,mpc.s_ter,mpc.P,v);
     if mpc.fi_ter_x0>=0 
         feas = 0;
     end
