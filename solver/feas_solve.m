@@ -148,6 +148,7 @@ function [x_mpc,iter,mpc] = feas_solve(x0,mpc,s_prev,u_prev,d,x_ref,dh)
         end
 
         % 2. If enabled, compute terminal constraint gradients 
+        % CODEGEN NOTE: to be commented out if there is not terminal ingredients
         if mpc.ter_ingredients && mpc.ter_constraint
 
             [grad_ter_Ind_x0,hess_ter_Ind_x0] = ...
@@ -270,6 +271,7 @@ function [x_mpc,iter,mpc] = feas_solve(x0,mpc,s_prev,u_prev,d,x_ref,dh)
         end
 
         % 2. If enabled, add terminal constraint hessian term
+        % CODEGEN NOTE: to be commented out if there is not terminal ingredients
         if mpc.ter_ingredients && mpc.ter_constraint
             hess_fi_Ind = hess_fi_Ind + hess_ter_Ind_x0;
         end

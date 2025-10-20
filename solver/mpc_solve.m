@@ -263,6 +263,7 @@ function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
         end
 
         % 2. If enabled, compute terminal ingredients 
+        % CODEGEN NOTE: to be commented out if there is not terminal ingredients
         if mpc.ter_ingredients
             [grad_ter,grad_ter_Ind_x0,hess_ter_Ind_x0] = ...
                 ter_set_Ind_fun(x_ref,mpc.s_ter,mpc.fi_ter_x0,...
@@ -395,6 +396,7 @@ function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
         end
 
         % 2. If enabled, add terminal constraint hessian term
+        % CODEGEN NOTE: to be commented out if there is not terminal ingredients
 %         if mpc.ter_ingredients && mpc.ter_constraint
 %             hess_fi_Ind = hess_fi_Ind + hess_ter_Ind_x0;
 %         end
