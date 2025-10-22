@@ -169,7 +169,7 @@ function [x_mpc,iter,mpc] = feas_solve(x0,mpc,s_prev,u_prev,d,x_ref,dh)
         hess_fi_Ind = zeros(n);
 
         % state inequalities
-        if ~isempty(mpc.s_cnstr.min)
+        if ~isempty(mpc.s_cnstr)
             if ~isempty(mpc.s_cnstr.min)
                 hess_s_min_Ind_x0 = hess_linear_Ind(mpc.s_cnstr.fi_min_x0,...
                                                     mpc.s_cnstr.hess_min_feas_slv);

@@ -10,7 +10,7 @@ function mpc = get_mpc_x(x,s_prev,mpc)
     
     end
 
-    mpc.s_all = [s_prev;mpc.s];
+    mpc.s_all(:) = [s_prev;mpc.s];
     mpc.s_ter(:) = mpc.s((mpc.Nx)-mpc.nx+1 : mpc.Nx);
         
 end
