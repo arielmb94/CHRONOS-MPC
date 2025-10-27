@@ -1,50 +1,32 @@
-function [fi_low_x0,fi_up_x0] = fi_box_fun(x,low_lim,up_lim,N,n,v_feas)
-arguments
-x
-low_lim
-up_lim
-N
-n
-v_feas = 0;
-end
+function cnstr = fi_box_fun(cnstr,x,N,n,v_feas)
 
-if ~isempty(low_lim)
+if ~isempty(cnstr.min)
 
-    fi_low_x0 = zeros(N,1);
     for k = 1:N/n
 
-        fi_low_x0((k-1)*n+1:k*n) = low_lim-x((k-1)*n+1:k*n);
+        cnstr.fi_min_x0((k-1)*n+1:k*n) = cnstr.min-x((k-1)*n+1:k*n);
 
     end
 
     % for feasibility solver: fi - v_feas <= 0
     if v_feas
-        fi_low_x0 = fi_low_x0 - v_feas;
+        cnstr.fi_min_x0 = cnstr.fi_min_x0 - v_feas;
     end
-
-else
-
-    fi_low_x0 = [];
 
 end
 
-if ~isempty(up_lim)
+if ~isempty(cnstr.max)
 
-    fi_up_x0 = zeros(N,1);
     for k = 1:N/n
 
-        fi_up_x0((k-1)*n+1:k*n) = x((k-1)*n+1:k*n)-up_lim;
+        cnstr.fi_max_x0((k-1)*n+1:k*n) = x((k-1)*n+1:k*n)-cnstr.max;
 
     end
 
     % for feasibility solver: fi - v_feas <= 0
     if v_feas
-        fi_up_x0 = fi_up_x0 - v_feas;
+        cnstr.fi_max_x0 = cnstr.fi_max_x0 - v_feas;
     end
-
-else
-
-    fi_up_x0 = [];
 
 end
 

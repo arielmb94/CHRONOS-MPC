@@ -23,8 +23,11 @@ if isempty(mpc.hessCost)
     mpc.hessCost = zeros(mpc.Nu+mpc.Nx);
 end
 
-[mpc.gradDiffCtlrRdu,mpc.hessDiffCtrlTerm] = genDiffControlGradHess(Rdu,mpc.N_ctr_hor,...
-    mpc.Nx,mpc.Nu,mpc.nx,mpc.nu);
+mpc.gradDiffCtlrR = zeros(mpc.Nu+mpc.Nx,mpc.Nu);
+mpc.gradDiffCtlr = zeros(mpc.Nu+mpc.Nx,mpc.Nu);
+mpc.hessDiffCtrlTerm = zeros(mpc.Nu+mpc.Nx);
+
+mpc = genDiffControlGradHess(mpc,Rdu,mpc.N_ctr_hor,mpc.nx,mpc.nu);
 
 mpc.hessCost = mpc.hessCost + mpc.hessDiffCtrlTerm;
 

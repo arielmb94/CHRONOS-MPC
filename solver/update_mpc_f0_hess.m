@@ -1,6 +1,7 @@
 function mpc = update_mpc_f0_hess(mpc)
 
-mpc.hessCost = zeros(mpc.Nu+mpc.Nx);
+% reset Hessian of Cost Function to 0
+mpc.hessCost(:,:) = 0;
 
 if ~isempty(mpc.Qe)
     mpc.hessCost = mpc.hessCost + mpc.hessErrTerm;

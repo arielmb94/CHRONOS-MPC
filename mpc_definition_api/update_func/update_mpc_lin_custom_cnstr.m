@@ -42,16 +42,7 @@
 %   - mpc: updated CHRONOS mpc structure
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mpc = update_mpc_lin_custom_cnstr(mpc,Ch,Dh,Ddh,...
-                h_min,h_max)
-arguments
-    mpc
-    Ch
-    Dh
-    Ddh
-    h_min = []
-    h_max = []
-end
+function mpc = update_mpc_lin_custom_cnstr(mpc,Ch,Dh,Ddh,h_min,h_max)
 
 update_grads = 0;
 
@@ -70,24 +61,24 @@ if ~isempty(Ddh)
 end
 
 if ~isempty(h_min)   
-    mpc.h_min = h_min;
+    mpc.h_cnstr.min = h_min;
 end
 
 if ~isempty(h_max)    
-    mpc.h_max = h_max;
+    mpc.h_cnstr.max = h_max;
 end
 
 % General Inequalites box constraints
 if update_grads
     
-    [mpc.gradHmin,mpc.gradHmax] = genGradY(mpc.Ch,mpc.Dh,mpc.N,mpc.N_ctr_hor,...
+    [mpc.h_cnstr.grad_min(:,:),mpc.h_cnstr.grad_max(:,:)] = genGradY(mpc.Ch,mpc.Dh,mpc.N,mpc.N_ctr_hor,...
         mpc.Nx,mpc.Nu,mpc.Nh,mpc.nx,mpc.nu,mpc.nh);
     
-    if ~isempty(mpc.h_min)
-        [mpc.hessHmin,~] = genHessIneq(mpc.gradHmin);
+    if ~isempty(mpc.h_cnstr.min)
+        [mpc.h_cnstr.hess_min,~] = genHessIneq(mpc.h_cnstr.grad_min);
     end
-    if ~isempty(mpc.h_max)
-        [mpc.hessHmax,~] = genHessIneq(mpc.gradHmax);
+    if ~isempty(mpc.h_cnstr.max)
+        [mpc.h_cnstr.hess_max,~] = genHessIneq(mpc.h_cnstr.grad_max);
     end
 
 end

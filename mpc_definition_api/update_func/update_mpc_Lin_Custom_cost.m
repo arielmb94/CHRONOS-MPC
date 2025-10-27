@@ -45,14 +45,6 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mpc = update_mpc_Lin_Custom_cost(mpc,Cz,Dz,Ddz,Qz,qz)
-arguments
-    mpc
-    Cz
-    Dz
-    Ddz
-    Qz = []
-    qz = []
-end
 
 updatelp = 0;
 updateqp = 0;
@@ -92,7 +84,7 @@ if ~isempty(mpc.Qz) && updateqp
 
     mpc.recompute_cost_hess = 1;
 
-    [mpc.gradPerfQz,mpc.hessPerfTerm] = genLinOutGradHess(mpc.Qz, ...
+    [mpc.gradPerfQz(:,:),mpc.hessPerfTerm(:,:)] = genLinOutGradHess(mpc.Qz, ...
         mpc.Cz,mpc.Dz,mpc.N,mpc.N_ctr_hor,mpc.Nx,mpc.Nu,mpc.Nz,...
         mpc.nx,mpc.nu,mpc.nz);
 
@@ -101,7 +93,7 @@ end
 % Update Linear cost term gradient
 if ~isempty(mpc.qz) && updatelp
 
-    mpc.gradPerfqz = genGenPerfLPGrad(mpc.qz,mpc.Cz,mpc.Dz,...
+    mpc.gradPerfqz(:,:) = genGenPerfLPGrad(mpc.qz,mpc.Cz,mpc.Dz,...
         mpc.N,mpc.N_ctr_hor,mpc.Nx,mpc.Nu,mpc.nx,mpc.nu);
 
 end

@@ -50,19 +50,8 @@
 %   starting point finder 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [u0,x0,iter,iter_feas] = mpc_solve(mpc,x0,s_prev,u_prev,...
-                                            r_in,d_in,x_ref,dz_in,dh_in)
-arguments
-mpc;
-x0;
-s_prev;
-u_prev;
-r_in = [];
-d_in = [];
-x_ref = [];
-dz_in = [];
-dh_in = [];
-end
+function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
+                                            r_in,d_in,x_ref_in,dz_in,dh_in)
 
     % number of variables
     n = length(x0);
@@ -96,9 +85,12 @@ end
     end
 
     if mpc.ter_ingredients
-        if mpc.x_ref_is_y && isempty(x_ref)
+        if mpc.x_ref_is_y && isempty(x_ref_in)
             x_ref = r(end-mpc.ny+1:end);
+        else
+            x_ref = x_ref_in;
         end    
+        grad_ter = zeros(mpc.nx,1);
     else 
         x_ref = [];
         grad_ter = [];
@@ -107,10 +99,8 @@ end
     % update b matrix from equality condition
     mpc = update_mpc_beq(mpc,s_prev,d);
 
-    if isempty(mpc.gradPerfQz)
-        perfCost = 0;
-        z = [];
-    else
+    perfCost = 0;
+    if ~isempty(mpc.gradPerfQz)
         perfCost = 1;
     end
     
@@ -131,11 +121,7 @@ end
     if feas
         % get mpc variables from optimization vector x and constraint
         % information and feasibility
-        [s,s_all,s_ter,u,du,y,err,h,...
-        fi_s_min_x0,fi_s_max_x0,fi_s_ter_min_x0,fi_s_ter_max_x0,...
-        fi_u_min_x0,fi_u_max_x0,fi_du_min_x0,fi_du_max_x0,...
-        fi_y_min_x0,fi_y_max_x0,fi_ter_x0,...
-        fi_h_min_x0,fi_h_max_x0,feas] = ...
+        [mpc,feas] = ...
         get_state_constraint_info(x0,s_prev,u_prev,r,x_ref,d,dh,mpc);
     end
 
@@ -149,11 +135,7 @@ end
         else
             iter = iter+iter_feas;
             % Get constraint info on new point
-            [s,s_all,s_ter,u,du,y,err,h,...
-                fi_s_min_x0,fi_s_max_x0,fi_s_ter_min_x0,fi_s_ter_max_x0,...
-                fi_u_min_x0,fi_u_max_x0,fi_du_min_x0,fi_du_max_x0,...
-                fi_y_min_x0,fi_y_max_x0,fi_ter_x0,...
-                fi_h_min_x0,fi_h_max_x0,feas] = ...
+            [mpc,feas] = ...
                 get_state_constraint_info(x0,s_prev,u_prev,r,x_ref,d,dh,mpc);
         end
 
@@ -178,100 +160,127 @@ end
         grad_fi_Ind = zeros(n,1);
 
         % state inequalities
-        if ~isempty(mpc.x_min)
-            grad_s_min_Ind_x0 = grad_box_Ind(fi_s_min_x0,mpc.gradXmin);
+        if ~isempty(mpc.s_cnstr)
+            if ~isempty(mpc.s_cnstr.min)
+                grad_s_min_Ind_x0 = grad_box_Ind(mpc.s_cnstr.fi_min_x0,...
+                                                 mpc.s_cnstr.grad_min);
+    
+                grad_fi_Ind = grad_fi_Ind + grad_s_min_Ind_x0;
+            end
 
-            grad_fi_Ind = grad_fi_Ind + grad_s_min_Ind_x0;
-        end
-
-        if ~isempty(mpc.x_max)
-            grad_x_max_Ind_x0 = grad_box_Ind(fi_s_max_x0,mpc.gradXmax);
-
-            grad_fi_Ind = grad_fi_Ind + grad_x_max_Ind_x0;
+            if ~isempty(mpc.s_cnstr.max)
+                grad_x_max_Ind_x0 = grad_box_Ind(mpc.s_cnstr.fi_max_x0,...
+                                                 mpc.s_cnstr.grad_max);
+    
+                grad_fi_Ind = grad_fi_Ind + grad_x_max_Ind_x0;
+            end
         end
 
         % terminal state inequalities
-        if ~isempty(mpc.x_ter_min)
-            grad_s_ter_min_Ind_x0 = grad_box_Ind(fi_s_ter_min_x0,mpc.gradXtermin);
+        if ~isempty(mpc.s_ter_cnstr)              
+            if  ~isempty(mpc.s_ter_cnstr.min)
+                grad_s_ter_min_Ind_x0 = grad_box_Ind(mpc.s_ter_cnstr.fi_min_x0,...
+                                                    mpc.s_ter_cnstr.grad_min);
+    
+                grad_fi_Ind = grad_fi_Ind + grad_s_ter_min_Ind_x0;
+            end
 
-            grad_fi_Ind = grad_fi_Ind + grad_s_ter_min_Ind_x0;
-        end
-
-        if ~isempty(mpc.x_ter_max)
-            grad_x_ter_max_Ind_x0 = grad_box_Ind(fi_s_ter_max_x0,mpc.gradXtermax);
-
-            grad_fi_Ind = grad_fi_Ind + grad_x_ter_max_Ind_x0;
+            if ~isempty(mpc.s_ter_cnstr.max)
+                grad_x_ter_max_Ind_x0 = grad_box_Ind(mpc.s_ter_cnstr.fi_max_x0,...
+                                                    mpc.s_ter_cnstr.grad_max);
+    
+                grad_fi_Ind = grad_fi_Ind + grad_x_ter_max_Ind_x0;
+            end
         end
 
         % control inequalities
-        if ~isempty(mpc.u_min)
-            grad_u_min_Ind_x0 = grad_box_Ind(fi_u_min_x0,mpc.gradUmin);
-
-            grad_fi_Ind = grad_fi_Ind + grad_u_min_Ind_x0;
-        end
-
-        if ~isempty(mpc.u_max)
-            grad_u_max_Ind_x0 = grad_box_Ind(fi_u_max_x0,mpc.gradUmax);
-
-            grad_fi_Ind = grad_fi_Ind + grad_u_max_Ind_x0;
+        if ~isempty(mpc.u_cnstr)
+            if ~isempty(mpc.u_cnstr.min)
+                grad_u_min_Ind_x0 = grad_box_Ind(mpc.u_cnstr.fi_min_x0,...
+                                                 mpc.u_cnstr.grad_min);
+    
+    
+                grad_fi_Ind = grad_fi_Ind + grad_u_min_Ind_x0;
+            end
+    
+            if ~isempty(mpc.u_cnstr.max)
+                grad_u_max_Ind_x0 = grad_box_Ind(mpc.u_cnstr.fi_max_x0,...
+                                                 mpc.u_cnstr.grad_max);
+    
+                grad_fi_Ind = grad_fi_Ind + grad_u_max_Ind_x0;
+            end
         end
 
         % control differential inequalities
-        if ~isempty(mpc.du_min)
-            grad_du_min_Ind_x0 = grad_box_Ind(fi_du_min_x0,mpc.gradDeltaUmin);
-
-            grad_fi_Ind = grad_fi_Ind + grad_du_min_Ind_x0;
-        end
-
-        if ~isempty(mpc.du_max)
-            grad_du_max_Ind_x0 = grad_box_Ind(fi_du_max_x0,mpc.gradDeltaUmax);
-
-            grad_fi_Ind = grad_fi_Ind + grad_du_max_Ind_x0;
+        if ~isempty(mpc.du_cnstr)
+            if ~isempty(mpc.du_cnstr.min)
+                grad_du_min_Ind_x0 = grad_box_Ind(mpc.du_cnstr.fi_min_x0,...
+                                                 mpc.du_cnstr.grad_min);
+    
+                grad_fi_Ind = grad_fi_Ind + grad_du_min_Ind_x0;
+            end
+    
+            if ~isempty(mpc.du_cnstr.max)
+                grad_du_max_Ind_x0 = grad_box_Ind(mpc.du_cnstr.fi_max_x0,...
+                                                 mpc.du_cnstr.grad_max);
+    
+                grad_fi_Ind = grad_fi_Ind + grad_du_max_Ind_x0;
+            end
         end
 
         % output inequalities
-        if ~isempty(mpc.y_min)
-            grad_y_min_Ind_x0 = grad_box_Ind(fi_y_min_x0,mpc.gradYmin);
-
-            grad_fi_Ind = grad_fi_Ind + grad_y_min_Ind_x0;
-        end
-
-        if ~isempty(mpc.y_max)
-            grad_y_max_Ind_x0 = grad_box_Ind(fi_y_max_x0,mpc.gradYmax);
-
-            grad_fi_Ind = grad_fi_Ind + grad_y_max_Ind_x0;
+        if ~isempty(mpc.y_cnstr)
+            if ~isempty(mpc.y_cnstr.min)
+                grad_y_min_Ind_x0 = grad_box_Ind(mpc.y_cnstr.fi_min_x0,...
+                                                 mpc.y_cnstr.grad_min);
+    
+                grad_fi_Ind = grad_fi_Ind + grad_y_min_Ind_x0;
+            end
+    
+            if ~isempty(mpc.y_cnstr.max)
+                grad_y_max_Ind_x0 = grad_box_Ind(mpc.y_cnstr.fi_max_x0,...
+                                                 mpc.y_cnstr.grad_max);
+    
+                grad_fi_Ind = grad_fi_Ind + grad_y_max_Ind_x0;
+            end
         end
 
         % General Linear inequalities
-        if ~isempty(mpc.h_min)
-            grad_h_min_Ind_x0 = grad_box_Ind(fi_h_min_x0,mpc.gradHmin);
-
-            grad_fi_Ind = grad_fi_Ind + grad_h_min_Ind_x0;
-        end
-
-        if ~isempty(mpc.h_max)
-            grad_h_max_Ind_x0 = grad_box_Ind(fi_h_max_x0,mpc.gradHmax);
-
-            grad_fi_Ind = grad_fi_Ind + grad_h_max_Ind_x0;
+        if ~isempty(mpc.h_cnstr)
+            if ~isempty(mpc.h_cnstr.min)
+                grad_h_min_Ind_x0 = grad_box_Ind(mpc.h_cnstr.fi_min_x0,...
+                                                 mpc.h_cnstr.grad_min);
+    
+                grad_fi_Ind = grad_fi_Ind + grad_h_min_Ind_x0;
+            end
+    
+            if ~isempty(mpc.h_cnstr.max)
+                grad_h_max_Ind_x0 = grad_box_Ind(mpc.h_cnstr.fi_max_x0,...
+                                                 mpc.h_cnstr.grad_max);
+    
+                grad_fi_Ind = grad_fi_Ind + grad_h_max_Ind_x0;
+            end
         end
 
         % 2. If enabled, compute terminal ingredients 
+        % CODEGEN NOTE: to be commented out if there is not terminal ingredients
         if mpc.ter_ingredients
             [grad_ter,grad_ter_Ind_x0,hess_ter_Ind_x0] = ...
-                ter_set_Ind_fun(x_ref,s_ter,fi_ter_x0,...
-                mpc.P,mpc.Nx,mpc.Nu,mpc.nx,mpc.ter_constraint);
-            if mpc.ter_constraint
-                grad_fi_Ind = grad_fi_Ind + grad_ter_Ind_x0; 
-            end
+                ter_set_Ind_fun(x_ref,mpc.s_ter,mpc.fi_ter_x0,...
+                mpc.P2,mpc.Nx,mpc.Nu,mpc.nx,mpc.ter_constraint);
+%             if mpc.ter_constraint
+%                 grad_fi_Ind = grad_fi_Ind + grad_ter_Ind_x0; 
+%             end
         end
         
         % 3. Compute gradient of cost function at x0
         if perfCost
-            z = get_lin_out(s_all,u,dz,mpc.nx,mpc.nu,mpc.nz,mpc.ndz,...
-                mpc.N_ctr_hor,mpc.Nz,mpc.Cz,mpc.Dz,mpc.Ddz);
+            % compute vector z
+            mpc.z(:) = get_mpc_lin_out(mpc.s_all,mpc.u,dz,mpc.nx,mpc.nu,mpc.nz,mpc.ndz,...
+                                mpc.N_ctr_hor,mpc.Nz,mpc.Cz,mpc.Dz,mpc.Ddz);
         end
 
-        grad_f0 = grad_f0_MPC(mpc,err,du,u,grad_ter,z);
+        grad_f0 = grad_f0_MPC(mpc,mpc.err,mpc.du,mpc.u,grad_ter,mpc.z);
         
         % 4. Compute gradient at x0 : grad(J) = t*grad(f0)+grad(Phi)
         grad_J_x0 = mpc.t*grad_f0+grad_fi_Ind;
@@ -285,87 +294,112 @@ end
         hess_fi_Ind = zeros(n);
 
         % state inequalities
-        if ~isempty(mpc.x_min)
-            hess_s_min_Ind_x0 = hess_linear_Ind(fi_s_min_x0,mpc.hessXmin);
-
-            hess_fi_Ind = hess_fi_Ind + hess_s_min_Ind_x0;
-        end
-
-        if ~isempty(mpc.x_max)
-            hess_s_max_Ind_x0 = hess_linear_Ind(fi_s_max_x0,mpc.hessXmax);
-
-            hess_fi_Ind = hess_fi_Ind + hess_s_max_Ind_x0;
+        if ~isempty(mpc.s_cnstr)
+            if ~isempty(mpc.s_cnstr.min)
+                hess_s_min_Ind_x0 = hess_linear_Ind(mpc.s_cnstr.fi_min_x0,...
+                                                    mpc.s_cnstr.hess_min);
+    
+                hess_fi_Ind = hess_fi_Ind + hess_s_min_Ind_x0;
+            end
+    
+            if ~isempty(mpc.s_cnstr.max)
+                hess_s_max_Ind_x0 = hess_linear_Ind(mpc.s_cnstr.fi_max_x0,...
+                                                    mpc.s_cnstr.hess_max);
+    
+                hess_fi_Ind = hess_fi_Ind + hess_s_max_Ind_x0;
+            end
         end
 
         % terminal state inequalities
-        if ~isempty(mpc.x_ter_min)
-            hess_s_ter_min_Ind_x0 = hess_linear_Ind(fi_s_ter_min_x0,mpc.hessXtermin);
-
-            hess_fi_Ind = hess_fi_Ind + hess_s_ter_min_Ind_x0;
-        end
-
-        if ~isempty(mpc.x_ter_max)
-            hess_s_ter_max_Ind_x0 = hess_linear_Ind(fi_s_ter_max_x0,mpc.hessXtermax);
-
-            hess_fi_Ind = hess_fi_Ind + hess_s_ter_max_Ind_x0;
+        if ~isempty(mpc.s_ter_cnstr)
+            if ~isempty(mpc.s_ter_cnstr.min)
+                hess_s_ter_min_Ind_x0 = hess_linear_Ind(mpc.s_ter_cnstr.fi_min_x0,...
+                                                    mpc.s_ter_cnstr.hess_min);
+    
+                hess_fi_Ind = hess_fi_Ind + hess_s_ter_min_Ind_x0;
+            end
+    
+            if ~isempty(mpc.s_ter_cnstr.max)
+                hess_s_ter_max_Ind_x0 = hess_linear_Ind(mpc.s_ter_cnstr.fi_max_x0,...
+                                                    mpc.s_ter_cnstr.hess_max);
+    
+                hess_fi_Ind = hess_fi_Ind + hess_s_ter_max_Ind_x0;
+            end
         end
 
         % control inequalities
-        if ~isempty(mpc.u_min)
-            hess_u_min_Ind_x0 = hess_linear_Ind(fi_u_min_x0,mpc.hessUmin);
-
-            hess_fi_Ind = hess_fi_Ind + hess_u_min_Ind_x0;
-        end
-
-        if ~isempty(mpc.u_max)
-            hess_u_max_Ind_x0 = hess_linear_Ind(fi_u_max_x0,mpc.hessUmax);
-
-            hess_fi_Ind = hess_fi_Ind + hess_u_max_Ind_x0;
+        if ~isempty(mpc.u_cnstr)
+            if ~isempty(mpc.u_cnstr.min)
+                hess_u_min_Ind_x0 = hess_linear_Ind(mpc.u_cnstr.fi_min_x0,...
+                                                    mpc.u_cnstr.hess_min);
+    
+                hess_fi_Ind = hess_fi_Ind + hess_u_min_Ind_x0;
+            end
+    
+            if ~isempty(mpc.u_cnstr.max)
+                hess_u_max_Ind_x0 = hess_linear_Ind(mpc.u_cnstr.fi_max_x0,...
+                                                    mpc.u_cnstr.hess_max);
+    
+                hess_fi_Ind = hess_fi_Ind + hess_u_max_Ind_x0;
+            end
         end
 
         % control differential inequalities
-        if ~isempty(mpc.du_min)
-            hess_du_min_Ind_x0 = hess_linear_Ind(fi_du_min_x0,mpc.hessDeltaUmin);
-
-            hess_fi_Ind = hess_fi_Ind + hess_du_min_Ind_x0;
-        end
-
-        if ~isempty(mpc.du_max)
-            hess_du_max_Ind_x0 = hess_linear_Ind(fi_du_max_x0,mpc.hessDeltaUmax);
-
-            hess_fi_Ind = hess_fi_Ind + hess_du_max_Ind_x0;
+        if ~isempty(mpc.du_cnstr)
+            if ~isempty(mpc.du_cnstr.min)
+                hess_du_min_Ind_x0 = hess_linear_Ind(mpc.du_cnstr.fi_min_x0,...
+                                                    mpc.du_cnstr.hess_min);
+    
+                hess_fi_Ind = hess_fi_Ind + hess_du_min_Ind_x0;
+            end
+    
+            if ~isempty(mpc.du_cnstr.max)
+                hess_du_max_Ind_x0 = hess_linear_Ind(mpc.du_cnstr.fi_max_x0,...
+                                                    mpc.du_cnstr.hess_max);
+    
+                hess_fi_Ind = hess_fi_Ind + hess_du_max_Ind_x0;
+            end
         end
 
         % output inequalities
-        if ~isempty(mpc.y_min)
-            hess_y_min_Ind_x0 = hess_linear_Ind(fi_y_min_x0,mpc.hessYmin);
-
-            hess_fi_Ind = hess_fi_Ind + hess_y_min_Ind_x0;
-        end
-
-        if ~isempty(mpc.y_max)
-            hess_y_max_Ind_x0 = hess_linear_Ind(fi_y_max_x0,mpc.hessYmax);
-
-            hess_fi_Ind = hess_fi_Ind + hess_y_max_Ind_x0;
+        if ~isempty(mpc.y_cnstr)
+            if ~isempty(mpc.y_cnstr.min)
+                hess_y_min_Ind_x0 = hess_linear_Ind(mpc.y_cnstr.fi_min_x0,...
+                                                    mpc.y_cnstr.hess_min);
+    
+                hess_fi_Ind = hess_fi_Ind + hess_y_min_Ind_x0;
+            end
+    
+            if ~isempty(mpc.y_cnstr.max)
+                hess_y_max_Ind_x0 = hess_linear_Ind(mpc.y_cnstr.fi_max_x0,...
+                                                    mpc.y_cnstr.hess_max);
+    
+                hess_fi_Ind = hess_fi_Ind + hess_y_max_Ind_x0;
+            end
         end
 
         % General Linear inequalities
-        if ~isempty(mpc.h_min)
-            hess_h_min_Ind_x0 = hess_linear_Ind(fi_h_min_x0,mpc.hessHmin);
-
-            hess_fi_Ind = hess_fi_Ind + hess_h_min_Ind_x0;
-        end
-
-        if ~isempty(mpc.h_max)
-            hess_h_max_Ind_x0 = hess_linear_Ind(fi_h_max_x0,mpc.hessHmax);
-
-            hess_fi_Ind = hess_fi_Ind + hess_h_max_Ind_x0;
+        if ~isempty(mpc.h_cnstr)
+            if ~isempty(mpc.h_cnstr.min)
+                hess_h_min_Ind_x0 = hess_linear_Ind(mpc.h_cnstr.fi_min_x0,...
+                                                    mpc.h_cnstr.hess_min);
+    
+                hess_fi_Ind = hess_fi_Ind + hess_h_min_Ind_x0;
+            end
+    
+            if ~isempty(mpc.h_cnstr.max)
+                hess_h_max_Ind_x0 = hess_linear_Ind(mpc.h_cnstr.fi_max_x0,...
+                                                    mpc.h_cnstr.hess_max);
+    
+                hess_fi_Ind = hess_fi_Ind + hess_h_max_Ind_x0;
+            end
         end
 
         % 2. If enabled, add terminal constraint hessian term
-        if mpc.ter_ingredients && mpc.ter_constraint
-            hess_fi_Ind = hess_fi_Ind + hess_ter_Ind_x0;
-        end
+        % CODEGEN NOTE: to be commented out if there is not terminal ingredients
+%         if mpc.ter_ingredients && mpc.ter_constraint
+%             hess_fi_Ind = hess_fi_Ind + hess_ter_Ind_x0;
+%         end
 
         % 3. Compute Hessian of f(x0,t):
         hess_J_x0 = mpc.t*mpc.hessCost+hess_fi_Ind;
@@ -386,11 +420,7 @@ end
         l = 1;
         xhat = x0+l*delta_x_prim;
 
-        [s,s_all,s_ter,u,du,y,err,h,...
-        fi_s_min_x0,fi_s_max_x0,fi_s_ter_min_x0,fi_s_ter_max_x0,...
-        fi_u_min_x0,fi_u_max_x0,fi_du_min_x0,fi_du_max_x0,...
-        fi_y_min_x0,fi_y_max_x0,fi_ter_x0,...
-        fi_h_min_x0,fi_h_max_x0,feas] = ...
+        [mpc,feas] = ...
         get_state_constraint_info(xhat,s_prev,u_prev,r,x_ref,d,dh,mpc);
 
         if feas
@@ -402,11 +432,7 @@ end
 
                 xhat = x0+l*delta_x_prim;
 
-                [s,s_all,s_ter,u,du,y,err,h,...
-                fi_s_min_x0,fi_s_max_x0,fi_s_ter_min_x0,fi_s_ter_max_x0,...
-                fi_u_min_x0,fi_u_max_x0,fi_du_min_x0,fi_du_max_x0,...
-                fi_y_min_x0,fi_y_max_x0,fi_ter_x0,...
-                fi_h_min_x0,fi_h_max_x0,feas] = ...
+                [mpc,feas] = ...
                 get_state_constraint_info(xhat,s_prev,u_prev,r,x_ref,d,dh,mpc);
             end
             x0 = xhat;
@@ -426,7 +452,7 @@ end
         x0 = x0*0;
     else
         % Get first control action
-        u0 = u(1:mpc.nu);
+        u0 = mpc.u(1:mpc.nu);
     end
 
 end

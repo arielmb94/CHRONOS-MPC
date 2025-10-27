@@ -19,19 +19,35 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mpc = init_mpc_state_cnstr(mpc,x_min,x_max)
 
-mpc.x_min = x_min;
-mpc.x_max = x_max;
+s_cnstr.min = x_min;
+s_cnstr.max = x_max;
 
-[mpc.gradXmin,mpc.gradXmax] = genGradX(mpc.N,mpc.N_ctr_hor,...
+[s_cnstr.grad_min,s_cnstr.grad_max] = genGradX(mpc.N,mpc.N_ctr_hor,...
                                 mpc.Nx,mpc.Nu,mpc.nx,mpc.nu);
 
-if ~isempty(mpc.x_min)
-    [mpc.hessXmin,mi] = genHessIneq(mpc.gradXmin);
+if ~isempty(s_cnstr.min)
+    s_cnstr.fi_min_x0 = zeros(mpc.Nx,1);
+    [s_cnstr.hess_min,mi] = genHessIneq(s_cnstr.grad_min);
     mpc.m = mpc.m+mi;
-end
-if ~isempty(mpc.x_max)
-    [mpc.hessXmax,mi] = genHessIneq(mpc.gradXmax);
-    mpc.m = mpc.m+mi;
+
+    % initialize feasibility solver min condition
+    s_cnstr.grad_min_feas_slv = [s_cnstr.grad_min;-ones(1,mpc.Nx)];
+    
+    s_cnstr.hess_min_feas_slv = genHessIneq(s_cnstr.grad_min_feas_slv);
+
 end
 
+if ~isempty(s_cnstr.max)
+    s_cnstr.fi_max_x0 = zeros(mpc.Nx,1);
+    [s_cnstr.hess_max,mi] = genHessIneq(s_cnstr.grad_max);
+    mpc.m = mpc.m+mi;
+
+    % initialize feasibility solver max condition
+    s_cnstr.grad_max_feas_slv = [s_cnstr.grad_max;-ones(1,mpc.Nx)];
+    
+    s_cnstr.hess_max_feas_slv = genHessIneq(s_cnstr.grad_max_feas_slv);
+    
+end
+
+mpc.s_cnstr = s_cnstr;
 end

@@ -65,6 +65,7 @@ else
     mpc.Nz = mpc.N*mpc.nz;
 end
 
+mpc.z = zeros(mpc.Nz,1);
 mpc.Ndz = mpc.N*mpc.ndz;
 
 % Quadratic Cost Term Gradient and Hessian Computation

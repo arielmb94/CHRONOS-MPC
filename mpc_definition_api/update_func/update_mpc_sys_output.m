@@ -41,15 +41,6 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mpc = update_mpc_sys_output(mpc,C,D,Dd,Qe,y_min,y_max)
-arguments
-    mpc
-    C
-    D
-    Dd
-    Qe = []
-    y_min = []
-    y_max = []
-end
 
 update_gradients = 0;
 update_cost_gradient = 0;
@@ -73,12 +64,14 @@ if ~isempty(Qe)
     update_cost_gradient = 1;
 end
 
-if ~isempty(y_min)   
-    mpc.y_min = y_min;
-end
-
-if ~isempty(y_max)    
-    mpc.y_max = y_max;
+if ~isempty(mpc.y_cnstr) 
+    if ~isempty(y_min)   
+        mpc.y_cnstr.min = y_min;
+    end
+    
+    if ~isempty(y_max)    
+        mpc.y_cnstr.max = y_max;
+    end
 end
 
 if update_cost_gradient || update_gradients
@@ -91,15 +84,15 @@ end
 
 if update_gradients
     % If Outputs constraint exists, update box constraints gradients
-    if ~isempty(mpc.y_min) ||  ~isempty(mpc.y_max)
-        [mpc.gradYmin,mpc.gradYmax] = genGradY(mpc.C,mpc.D,mpc.N,mpc.N_ctr_hor,...
+    if ~isempty(mpc.y_cnstr) 
+        [mpc.y_cnstr.grad_min(:,:),mpc.y_cnstr.grad_max(:,:)] = genGradY(mpc.C,mpc.D,mpc.N,mpc.N_ctr_hor,...
             mpc.Nx,mpc.Nu,mpc.Ny,mpc.nx,mpc.nu,mpc.ny);
     
-        if ~isempty(mpc.y_min)
-            [mpc.hessYmin,~] = genHessIneq(mpc.gradYmin);
+        if ~isempty(mpc.y_cnstr.min)
+            [mpc.y_cnstr.hess_min,~] = genHessIneq(mpc.y_cnstr.grad_min);
         end
-        if ~isempty(mpc.y_max)
-            [mpc.hessYmax,~] = genHessIneq(mpc.gradYmax);
+        if ~isempty(mpc.y_cnstr.max)
+            [mpc.y_cnstr.hess_max,~] = genHessIneq(mpc.y_cnstr.grad_max);
         end    
     end
 end
