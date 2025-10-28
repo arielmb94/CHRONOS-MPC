@@ -58,9 +58,11 @@ if exist("x_min_activ")
         s_cnstr.min_activ_indicator = zeros(mpc.nx,1);
     else
         s_cnstr.min_activ_set = 0;
+        s_cnstr.min_activ_indicator = [];
     end
 else
     s_cnstr.min_activ_set = 0;
+    s_cnstr.min_activ_indicator = [];
 end
 
 if exist("x_max_activ")
@@ -70,9 +72,11 @@ if exist("x_max_activ")
         s_cnstr.max_activ_indicator = zeros(mpc.nx,1);
     else
         s_cnstr.max_activ_set = 0;
+        s_cnstr.max_activ_indicator = [];
     end
 else
     s_cnstr.max_activ_set = 0;
+    s_cnstr.max_activ_indicator = [];
 end
 
 mpc.s_cnstr = s_cnstr;
