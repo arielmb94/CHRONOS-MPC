@@ -17,7 +17,7 @@
 %   - mpc: updated CHRONOS mpc structure
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mpc = init_mpc_state_cnstr(mpc,x_min,x_max)
+function mpc = init_mpc_state_cnstr(mpc,x_min,x_max,x_min_activ,x_max_activ)
 
 s_cnstr.min = x_min;
 s_cnstr.max = x_max;
@@ -47,6 +47,32 @@ if ~isempty(s_cnstr.max)
     
     s_cnstr.hess_max_feas_slv = genHessIneq(s_cnstr.grad_max_feas_slv);
     
+end
+
+% Active-set like optimization
+
+if exist("x_min_activ")
+    if ~isempty(x_min_activ)
+        s_cnstr.min_activ_set = 1;
+        s_cnstr.min_activ_lim = x_min_activ;
+        s_cnstr.min_activ_indicator = zeros(mpc.nx,1);
+    else
+        s_cnstr.min_activ_set = 0;
+    end
+else
+    s_cnstr.min_activ_set = 0;
+end
+
+if exist("x_max_activ")
+    if ~isempty(x_max_activ)
+        s_cnstr.max_activ_set = 1;
+        s_cnstr.max_activ_lim = x_max_activ;
+        s_cnstr.max_activ_indicator = zeros(mpc.nx,1);
+    else
+        s_cnstr.max_activ_set = 0;
+    end
+else
+    s_cnstr.max_activ_set = 0;
 end
 
 mpc.s_cnstr = s_cnstr;
