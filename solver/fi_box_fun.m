@@ -17,7 +17,7 @@ if ~isempty(cnstr.min)
             % check wich conditions enabled for the k horizon step
             step_indicator = x((k-1)*n+1:k*n) < cnstr.min_activ_lim;
             % update the active condition indicator vector
-            cnstr.min_activ_indicator = cnstr.min_activ_indicator | step_indicator;
+            cnstr.min_activ_indicator(:) = cnstr.min_activ_indicator | step_indicator;
 
         end
     end
@@ -46,7 +46,7 @@ if ~isempty(cnstr.max)
             % check wich conditions enabled for the k horizon step
             step_indicator = x((k-1)*n+1:k*n) > cnstr.max_activ_lim;
             % update the active condition indicator vector
-            cnstr.max_activ_indicator = cnstr.max_activ_indicator | step_indicator;
+            cnstr.max_activ_indicator(:) = cnstr.max_activ_indicator | step_indicator;
 
         end
     end
