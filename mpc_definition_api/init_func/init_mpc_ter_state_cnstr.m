@@ -18,7 +18,8 @@
 %   - mpc: updated CHRONOS mpc structure
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mpc = init_mpc_ter_state_cnstr(mpc,x_ter_min,x_ter_max)
+function mpc = init_mpc_ter_state_cnstr(mpc,x_ter_min,x_ter_max,...
+                                            x_ter_min_activ,x_ter_max_activ)
 
 s_ter_cnstr.min = x_ter_min; 
 s_ter_cnstr.max = x_ter_max;
@@ -48,6 +49,52 @@ if ~isempty(s_ter_cnstr.max)
     
     s_ter_cnstr.hess_max_feas_slv = genHessIneq(s_ter_cnstr.grad_max_feas_slv);
     
+end
+
+% Active-set like optimization
+
+if exist("x_ter_min_activ")
+
+    if ~isempty(x_ter_min_activ)
+
+        % check that activation range is within variable range
+        index = x_ter_min_activ < x_ter_min;
+        x_ter_min_activ(index) = x_ter_min(index);
+
+        s_ter_cnstr.min_activ_set = 1;
+        s_ter_cnstr.min_activ_lim = x_ter_min_activ;
+        s_ter_cnstr.min_activ_indicator = zeros(mpc.nx,1);
+    else
+        s_ter_cnstr.min_activ_set = 0;
+        s_ter_cnstr.min_activ_lim = [];
+        s_ter_cnstr.min_activ_indicator = [];
+    end
+else
+    s_ter_cnstr.min_activ_set = 0;
+    s_ter_cnstr.min_activ_lim = [];
+    s_ter_cnstr.min_activ_indicator = [];
+end
+
+if exist("x_ter_max_activ")
+
+    if ~isempty(x_ter_max_activ)
+
+        % check that activation range is within variable range
+        index = x_ter_max_activ > x_ter_max;
+        x_ter_max_activ(index) = x_ter_max(index);
+
+        s_ter_cnstr.max_activ_set = 1;
+        s_ter_cnstr.max_activ_lim = x_ter_max_activ;
+        s_ter_cnstr.max_activ_indicator = zeros(mpc.nx,1);
+    else
+        s_ter_cnstr.max_activ_set = 0;
+        s_ter_cnstr.max_activ_lim = [];
+        s_ter_cnstr.max_activ_indicator = [];
+    end
+else
+    s_ter_cnstr.max_activ_set = 0;
+    s_ter_cnstr.max_activ_lim = [];
+    s_ter_cnstr.max_activ_indicator = [];
 end
 
 mpc.s_ter_cnstr = s_ter_cnstr;

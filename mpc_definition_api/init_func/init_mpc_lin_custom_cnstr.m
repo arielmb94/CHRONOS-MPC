@@ -39,7 +39,8 @@
 % the appropiate field on mpc_solve() during runtime MPC execution.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mpc = init_mpc_lin_custom_cnstr(mpc,h_min,h_max,Ch,Dh,Ddh)
+function mpc = init_mpc_lin_custom_cnstr(mpc,Ch,Dh,Ddh,...
+                                        h_min,h_max,h_min_activ,h_max_activ)
 
 h_cnstr.min = h_min;
 h_cnstr.max = h_max;
@@ -87,6 +88,52 @@ if ~isempty(h_cnstr.max)
     
     h_cnstr.hess_max_feas_slv = genHessIneq(h_cnstr.grad_max_feas_slv);
 
+end
+
+% Active-set like optimization
+
+if exist("h_min_activ")
+
+    if ~isempty(h_min_activ)
+
+        % check that activation range is within variable range
+        index = h_min_activ < h_min;
+        h_min_activ(index) = h_min(index);
+
+        h_cnstr.min_activ_set = 1;
+        h_cnstr.min_activ_lim = h_min_activ;
+        h_cnstr.min_activ_indicator = zeros(mpc.nh,1);
+    else
+        h_cnstr.min_activ_set = 0;
+        h_cnstr.min_activ_lim = [];
+        h_cnstr.min_activ_indicator = [];
+    end
+else
+    h_cnstr.min_activ_set = 0;
+    h_cnstr.min_activ_lim = [];
+    h_cnstr.min_activ_indicator = [];
+end
+
+if exist("h_max_activ")
+
+    if ~isempty(h_max_activ)
+
+        % check that activation range is within variable range
+        index = h_max_activ > h_max;
+        h_max_activ(index) = h_max(index);
+
+        h_cnstr.max_activ_set = 1;
+        h_cnstr.max_activ_lim = h_max_activ;
+        h_cnstr.max_activ_indicator = zeros(mpc.nh,1);
+    else
+        h_cnstr.max_activ_set = 0;
+        h_cnstr.max_activ_lim = [];
+        h_cnstr.max_activ_indicator = [];
+    end
+else
+    h_cnstr.max_activ_set = 0;
+    h_cnstr.max_activ_lim = [];
+    h_cnstr.max_activ_indicator = [];
 end
 
 mpc.h_cnstr = h_cnstr;
