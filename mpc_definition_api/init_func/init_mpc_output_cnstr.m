@@ -36,6 +36,12 @@ if ~isempty(y_cnstr.min)
     
     y_cnstr.hess_min_feas_slv = genHessIneq(y_cnstr.grad_min_feas_slv);
 
+    % Active-set like optimization setting
+    if exist("y_min_activ")
+        y_cnstr = set_active_set_min(y_cnstr,y_min,y_min_activ,mpc.ny);
+    else
+        y_cnstr = empty_active_set_min(y_cnstr);
+    end
 end
 
 if ~isempty(y_cnstr.max)
@@ -48,52 +54,12 @@ if ~isempty(y_cnstr.max)
     
     y_cnstr.hess_max_feas_slv = genHessIneq(y_cnstr.grad_max_feas_slv);
 
-end
-
-% Active-set like optimization
-
-if exist("y_min_activ")
-
-    if ~isempty(y_min_activ)
-
-        % check that activation range is within variable range
-        index = y_min_activ < y_min;
-        y_min_activ(index) = y_min(index);
-
-        y_cnstr.min_activ_set = 1;
-        y_cnstr.min_activ_lim = y_min_activ;
-        y_cnstr.min_activ_indicator = zeros(mpc.ny,1);
+    % Active-set like optimization setting
+    if exist("y_max_activ")
+        y_cnstr = set_active_set_max(y_cnstr,y_max,y_max_activ,mpc.ny);
     else
-        y_cnstr.min_activ_set = 0;
-        y_cnstr.min_activ_lim = [];
-        y_cnstr.min_activ_indicator = [];
+        y_cnstr = empty_active_set_max(y_cnstr);
     end
-else
-    y_cnstr.min_activ_set = 0;
-    y_cnstr.min_activ_lim = [];
-    y_cnstr.min_activ_indicator = [];
-end
-
-if exist("y_max_activ")
-
-    if ~isempty(y_max_activ)
-
-        % check that activation range is within variable range
-        index = y_max_activ > y_max;
-        y_max_activ(index) = y_max(index);
-
-        y_cnstr.max_activ_set = 1;
-        y_cnstr.max_activ_lim = y_max_activ;
-        y_cnstr.max_activ_indicator = zeros(mpc.ny,1);
-    else
-        y_cnstr.max_activ_set = 0;
-        y_cnstr.max_activ_lim = [];
-        y_cnstr.max_activ_indicator = [];
-    end
-else
-    y_cnstr.max_activ_set = 0;
-    y_cnstr.max_activ_lim = [];
-    y_cnstr.max_activ_indicator = [];
 end
 
 mpc.y_cnstr = y_cnstr;

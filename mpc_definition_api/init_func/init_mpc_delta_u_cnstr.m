@@ -44,6 +44,13 @@ if ~isempty(du_cnstr.min)
     
     du_cnstr.hess_min_feas_slv = genHessIneq(du_cnstr.grad_min_feas_slv);
 
+    % Active-set like optimization setting
+    if exist("du_min_activ")
+        du_cnstr = set_active_set_min(du_cnstr,du_min,du_min_activ,mpc.nu);
+    else
+        du_cnstr = empty_active_set_min(du_cnstr);
+    end
+
 end
 
 if ~isempty(du_cnstr.max)
@@ -55,52 +62,13 @@ if ~isempty(du_cnstr.max)
     
     du_cnstr.hess_max_feas_slv = genHessIneq(du_cnstr.grad_max_feas_slv);
 
-end
-
-% Active-set like optimization
-
-if exist("du_min_activ")
-
-    if ~isempty(du_min_activ)
-
-        % check that activation range is within variable range
-        index = du_min_activ < du_min;
-        du_min_activ(index) = du_min(index);
-
-        du_cnstr.min_activ_set = 1;
-        du_cnstr.min_activ_lim = du_min_activ;
-        du_cnstr.min_activ_indicator = zeros(mpc.nu,1);
+    % Active-set like optimization setting
+    if exist("du_max_activ")
+        du_cnstr = set_active_set_max(du_cnstr,du_max,du_max_activ,mpc.nu);
     else
-        du_cnstr.min_activ_set = 0;
-        du_cnstr.min_activ_lim = [];
-        du_cnstr.min_activ_indicator = [];
+        du_cnstr = empty_active_set_max(du_cnstr);
     end
-else
-    du_cnstr.min_activ_set = 0;
-    du_cnstr.min_activ_lim = [];
-    du_cnstr.min_activ_indicator = [];
-end
 
-if exist("du_max_activ")
-
-    if ~isempty(du_max_activ)
-
-        % check that activation range is within variable range
-        index = du_max_activ > du_max;
-        du_max_activ(index) = du_max(index);
-
-        du_cnstr.max_activ_set = 1;
-        du_cnstr.max_activ_lim = du_max_activ;
-        du_cnstr.max_activ_indicator = zeros(mpc.nu,1);
-    else
-        du_cnstr.max_activ_set = 0;
-        du_cnstr.max_activ_lim = [];
-        du_cnstr.max_activ_indicator = [];
-    end
-else
-    du_cnstr.max_activ_set = 0;
-    du_cnstr.max_activ_lim = [];
-    du_cnstr.max_activ_indicator = [];
 end
 
 mpc.du_cnstr = du_cnstr;
