@@ -41,6 +41,9 @@ R = x(14)
 servoSIM = ss([0 1; -wn^2 -2*eps*wn],[0; wn^2],[1 0],0);
 servoSIM.InputDelay = tau;
 
+Ts=1/50;
+
+
 
 % BLDC Motor controller and observer
 DOFcontrMotor
@@ -52,6 +55,7 @@ BuildGridCustomLongSF
 %% Lateral controller
 BuildGridCustomSFGridDelay
 
+load("controllers.mat")
 %% Map
 
 Cartoon

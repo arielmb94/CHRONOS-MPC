@@ -39,12 +39,12 @@ input_to_Delay = '[V]';
 cleanupsysic = 'yes';
 P = sysic;
 
-[Kbldc,CL,gamma] = hinfsyn(P,1,1,'method','ric')
+%[Kbldc,CL,gamma] = hinfsyn(P,1,1,'method','ric')
 
 %[Kbldc,gopt,gval,Pcl,CL,Xval,Yval] = lmiHinfDOFDiscrete_PL(P,1,1,0,15,'sdpt3')
 
-close all
-figure
-bodemag(1/We,CL(1,1)/We)
-figure
-bodemag(1/Wu,CL(2,1)/Wu)
+% close all
+% figure
+% bodemag(1/We,CL(1,1)/We)
+% figure
+% bodemag(1/Wu,CL(2,1)/Wu)

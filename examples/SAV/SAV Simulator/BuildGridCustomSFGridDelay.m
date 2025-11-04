@@ -108,29 +108,29 @@ Problem.TotalPoints = GridPoint;
 
 %%
 
-[Klat,X,G,Y,CL,gopt] = lmiHinfExtSFDiscreteGrid2(Problem,1,15,'sdpt3')
+%[Klat,X,G,Y,CL,gopt] = lmiHinfExtSFDiscreteGrid2(Problem,1,15,'sdpt3')
 Welat = We;
 Wulat = Wu;
 
 pathindex = 1;
 
 %%
-close all
-figure(1)
-bodemag(1/We,'k')
-figure(2)
-bodemag(1/Wu,'k')
-
-for i = 1:Problem.TotalPoints
-    figure(1)
-    hold on
-    bodemag(CL{i}(1,1)/We)
-    figure(2)
-    hold on
-    bodemag(CL{i}(2,1)/Wu)
-%     figure(3)
+% close all
+% figure(1)
+% bodemag(1/We,'k')
+% figure(2)
+% bodemag(1/Wu,'k')
+% 
+% for i = 1:Problem.TotalPoints
+%     figure(1)
 %     hold on
-%     bodemag(CL{i}(1,2)/(We*Vx(i)^2))
-
-end
+%     bodemag(CL{i}(1,1)/We)
+%     figure(2)
+%     hold on
+%     bodemag(CL{i}(2,1)/Wu)
+% %     figure(3)
+% %     hold on
+% %     bodemag(CL{i}(1,2)/(We*Vx(i)^2))
+% 
+% end
 

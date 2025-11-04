@@ -49,7 +49,7 @@ H = [G+G'-X G'*A-Y*C G'*Bw-Y*Dw zeros(nx,nz);
      zeros(nz,nx) Cz Dzw gamma*eye(nz)];
   
 Fopt = [X>=0,H>=0,G+G'-X>=0];
-optimize(Fopt,gamma,options);
+%optimize(Fopt,gamma,options);
 gopt = double(gamma);
 gnum = gopt*1.15;
 
@@ -64,7 +64,7 @@ H = [G+G'-X G'*A-Y*C G'*Bw-Y*Dw zeros(nx,nz);
   
 Fopt = [X>=0,H>=0];
 
-optimize(Fopt,[],options);
+%optimize(Fopt,[],options);
 
 Xv = double(X);
 Gv = double(G);

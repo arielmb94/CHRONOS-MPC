@@ -87,38 +87,38 @@ Problem.TotalPoints = GridPoint;
 
 %% Problem Resolution
 
-[Klong,X,G,Y,CL,gamma] = lmiHinfExtSFDiscreteGrid2(Problem,1,15,'sdpt3')
+%[Klong,X,G,Y,CL,gamma] = lmiHinfExtSFDiscreteGrid2(Problem,1,15,'sdpt3')
 
 %%
 
-[Klong,X,Gk,CL,gamma] = lmiHinfExtSFDiscreteGrid_PL_V2(Problem,1,15,'sdpt3')
+%[Klong,X,Gk,CL,gamma] = lmiHinfExtSFDiscreteGrid_PL_V2(Problem,1,15,'sdpt3')
 Welong = We;
 Wulong = Wu;
 pathindex = 1;
 
 
 %%
-close all
-figure(1)
-bodemag(1/We,'k')
-figure(2)
-bodemag(1/Wu,'k')
-figure(3)
-bodemag(1/Wudt,'k')
-
-for i = 1:15:Problem.TotalPoints
-    figure(1)
-    hold on
-    bodemag(CL{i}(1,1)/We)
-    figure(2)
-    hold on
-    bodemag(CL{i}(2,1)/Wu)
-    figure(3)
-    hold on
-    bodemag(CL{i}(3,1)/Wudt)
+% close all
+% figure(1)
+% bodemag(1/We,'k')
+% figure(2)
+% bodemag(1/Wu,'k')
+% figure(3)
+% bodemag(1/Wudt,'k')
+% 
+% for i = 1:15:Problem.TotalPoints
+%     figure(1)
+%     hold on
+%     bodemag(CL{i}(1,1)/We)
+%     figure(2)
+%     hold on
+%     bodemag(CL{i}(2,1)/Wu)
 %     figure(3)
 %     hold on
-%     bodemag(CL{i}(2,1)/(Wu*Int))
-
-end
+%     bodemag(CL{i}(3,1)/Wudt)
+% %     figure(3)
+% %     hold on
+% %     bodemag(CL{i}(2,1)/(Wu*Int))
+% 
+% end
 
