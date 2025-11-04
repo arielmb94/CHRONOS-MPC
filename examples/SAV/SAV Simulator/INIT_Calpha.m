@@ -19,7 +19,6 @@ F_r = xmotor(5)
 
 tau_m = xmotor(6)
 
-
 load('xNL.mat')
 
 C_sigma_2 = x(1)
@@ -37,23 +36,19 @@ tau = x(12)
 Iz = x(13)
 R = x(14)
 
-
 servoSIM = ss([0 1; -wn^2 -2*eps*wn],[0; wn^2],[1 0],0);
 servoSIM.InputDelay = tau;
 
 Ts=1/50;
 
-
-
-% BLDC Motor controller and observer
-DOFcontrMotor
 Observer_Motor_PI
 
-% Longitudinal controller
-BuildGridCustomLongSF
+Servo = ss([0 1; -wn^2 -2*eps*wn],[0; wn^2],[1 0],0);
+d = 9; %tau/Ts
+z = tf('z',Ts);
+delay = ss(z^-d);
 
-%% Lateral controller
-BuildGridCustomSFGridDelay
+Servo = series(delay,c2d(Servo,Ts));
 
 load("controllers.mat")
 %% Map

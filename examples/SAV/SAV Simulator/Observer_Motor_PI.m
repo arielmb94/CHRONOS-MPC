@@ -22,13 +22,7 @@ ts = 0.02;
 sysd = c2d(sys,ts,'Tustin');
 
 
-
-
 %%
-
-options = sdpsettings('solver','sdpt3');
-
-alpha = 0.95;%1;
 
 A = sysd.A;
 Aobs = A;
@@ -37,41 +31,6 @@ Bu = sysd.B(:,nw+1:nw+nu);
 Buobs = Bu;
 Cz = diag([1 1 1 1 100 100]);
 Dzw = zeros(nz,nw);
-
-X = sdpvar(nx,nx);
-G = sdpvar(nx,nx,'full');
-Y = sdpvar(nx,ny,'full');
-gamma = sdpvar;
-
-H = [G+G'-X G'*A-Y*C G'*Bw-Y*Dw zeros(nx,nz);
-     (G'*A-Y*C)' alpha*X zeros(nx,nw) Cz';
-     (G'*Bw-Y*Dw)' zeros(nw,nx) gamma*eye(nw) Dzw';
-     zeros(nz,nx) Cz Dzw gamma*eye(nz)];
-  
-Fopt = [X>=0,H>=0,G+G'-X>=0];
-%optimize(Fopt,gamma,options);
-gopt = double(gamma);
-gnum = gopt*1.15;
-
-X = sdpvar(nx,nx);
-G = sdpvar(nx,nx,'full');
-Y = sdpvar(nx,ny,'full');
-
-H = [G+G'-X G'*A-Y*C G'*Bw-Y*Dw zeros(nx,nz);
-     (G'*A-Y*C)' alpha*X zeros(nx,nw) Cz';
-     (G'*Bw-Y*Dw)' zeros(nw,nx) gnum*eye(nw) Dzw';
-     zeros(nz,nx) Cz Dzw gnum*eye(nz)];
-  
-Fopt = [X>=0,H>=0];
-
-%optimize(Fopt,[],options);
-
-Xv = double(X);
-Gv = double(G);
-Yv = double(Y);
-
-Lobs = inv(Gv)'*Yv
-gopt
 
 %%
 A = [-Ra_l/La_l -K_l/La_l 0 0;
