@@ -6,8 +6,8 @@ function grad_J = grad_f0_MPC(mpc,err,deltaU,U,grad_ter,z)
         grad_J(:) = grad_J - mpc.gradErrQe*err;
     end    
 
-    if ~isempty(mpc.gradDiffCtlrRdu)
-        grad_J(:) = grad_J + mpc.gradDiffCtlrRdu*deltaU;
+    if ~isempty(mpc.gradDiffCtlrR)
+        grad_J(:) = grad_J + mpc.gradDiffCtlrR*deltaU;
     end  
 
     if ~isempty(mpc.gradCtlrRu)
