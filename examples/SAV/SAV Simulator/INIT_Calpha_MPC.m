@@ -65,16 +65,16 @@ X0 = Track.X(1);
 Y0 = Track.Y(1);
 Psi0= -pi/2;
 v0 = 1; %m/s
-tp = 0.95;
+tp = 0.55;
 
-vref = 1.0;
+vref = 1.25;
 
 
 %% Run simulation and plot trajectory
 pathindex = 1;
 
 
-out = sim('CAR_SIM_MPC.slx',40);
+out = sim('CAR_SIM_MPC.slx',100);
 close all
 figure
 plot(Track.X,Track.Y)

@@ -59,8 +59,8 @@ l_f=L-l_r;
 
 %% Create MPC object
 
-N = 35;         % Prediction Horizon
-N_h_ctr = 25;    % Control Horizon
+N = 15;         % Prediction Horizon
+N_h_ctr = 3;    % Control Horizon
 
 % Create mpc struct
 mpc = init_mpc(N,N_h_ctr);
@@ -137,15 +137,15 @@ x_ref_is_y = 0;             % The terminal reference cannnot be extracted
 %% Costs
 
 % Tracking penalty
-Qe = diag(50*ones(mpc.ny,1));
+Qe = diag(100*ones(mpc.ny,1)/(3^2));
 mpc = init_mpc_Tracking_cost(mpc,Qe);
 
 % Control inputs variation penalty
 Rdu = 10;
-mpc = init_mpc_DiffControl_cost(mpc,Rdu);
+%mpc = init_mpc_DiffControl_cost(mpc,Rdu);
 
 % Control penalty
-Ru = 5;    % Quadratic penalty on control action u'*Ru*u
+Ru = 10/(0.7^2);    % Quadratic penalty on control action u'*Ru*u
 ru = [];    % Linear penalty on control action vector: ru'*u 
 mpc = init_mpc_Control_cost(mpc,Ru,ru);
 
@@ -169,3 +169,5 @@ qz = [];    % Linear penalty on performance vector: qz'*z
 x_prev = [0; 0];
 u_prev = 0;
 x0 = init_mpc_warm_start(mpc,x_prev,u_prev);
+
+mpc.t = 500;

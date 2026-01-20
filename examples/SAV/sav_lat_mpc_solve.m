@@ -1,4 +1,4 @@
-function [u,x0] = sav_lat_mpc_solve(mpc,x0,vx,vy,yaw_rate,yaw_rate_ref,...
+function y = sav_lat_mpc_solve(mpc,x0,vx,vy,yaw_rate,yaw_rate_ref,...
                                                     u_prev)
 
 
@@ -10,4 +10,5 @@ x_prev = [vy;yaw_rate];
 
 [u,x0] = mpc_solve(mpc,x0,x_prev,u_prev,yaw_rate_ref,[],[],[],[]);
 
+y = [u;x0];
 end
