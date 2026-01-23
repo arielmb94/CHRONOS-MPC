@@ -41,7 +41,7 @@ servoSIM.InputDelay = tau;
 
 Ts=1/50;
 
-Observer_Motor_PI
+Init_Observer_Motor_PI
 
 Servo = ss([0 1; -wn^2 -2*eps*wn],[0; wn^2],[1 0],0);
 d = 9; %tau/Ts
