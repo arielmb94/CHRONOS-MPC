@@ -17,11 +17,8 @@ mpc = init_mpc(N,N_h_ctr);
 % Init speed
 vx = 1;
 
-C_f = C_alpha_f2*vx^2+C_alpha_f1*vx+C_alpha_f0;
-C_r = C_alpha_r2*vx^2+C_alpha_r1*vx+C_alpha_r0;
-
-A = update_BM(vx);
-B = [C_f/m; C_f*l_f/Iz];
+% Compute Model to current vehicle speed
+[A,B] = update_BM(vx);
 C = [0 1];
 
 

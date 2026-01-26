@@ -2,9 +2,10 @@ function y = sav_lat_mpc_solve(mpc,x0,vx,vy,yaw_rate,yaw_rate_ref,...
                                                     u_prev)
 
 tic
-A = update_BM(vx);
+[A,B] = update_BM(vx);
 Ak = eye(2)+0.0200*A;
-mpc = update_mpc_sys_dynamics(mpc,Ak,[],[]);
+Bk = 0.02*B;
+mpc = update_mpc_sys_dynamics(mpc,Ak,Bk,[]);
 
 x_prev = [vy;yaw_rate];
 

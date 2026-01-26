@@ -1,4 +1,4 @@
-function A = update_BM(vx)
+function [A,B] = update_BM(vx)
 
 m=1.1934; % mass of the vehicle
 l_r=0.1049; % distance from center of gravity to rear wheel
@@ -20,5 +20,7 @@ C_r = C_alpha_r2*vx^2+C_alpha_r1*vx+C_alpha_r0;
 
 A = [-(C_f+C_r)/(m*vx) -vx-(C_f*l_f-C_r*l_r)/(m*vx);
     -(C_f*l_f-C_r*l_r)/(Iz*vx) -((C_f*l_f^2)+(C_r*l_r^2))/(Iz*vx)];
+
+B = [C_f/m; C_f*l_f/Iz];
 
 end
