@@ -100,8 +100,16 @@ ylabel('Yaw Rate [rad/s]')
 subplot(2,1,2)
 plot(out.time,out.deltaK)
 grid on
+axis tight
 legend('Steering Command')
 xlabel('Time [s]')
 ylabel('Steering Angle [deg]')
+
+figure
+plot(out.time,out.SolverTime)
+grid on
+axis tight
+xlabel('CHRONOS Compute Time [s]')
+ylabel('Time [s]')
 
 
