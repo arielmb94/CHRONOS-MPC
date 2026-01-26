@@ -111,5 +111,3 @@ grid on
 axis tight
 xlabel('CHRONOS Compute Time [s]')
 ylabel('Time [s]')
-
-
