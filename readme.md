@@ -1,5 +1,7 @@
 # CHRONOS: solver for reCeding Horizon contROl  of parameter varyiNg cOnvex Systems 
 
+[![Open in MATLAB Online](https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg)](https://matlab.mathworks.com/open/github/v1?repo=arielmb94/CHRONOS-MPC)
+
 CHRONOS is a Model Predictive Control (MPC) solver tailored for Linear Parameter Varying (LPV) systems. Built from the ground up in MATLAB, it leverages mature convex optimization techniques to deliver a robust, high‑performance control engine—while keeping optimization details completely under the hood. Thanks to the MPC‑LPV paradigm, CHRONOS brings the power of nonlinear MPC to real-time applications with the efficiency of convex solvers. You can tackle complex, nonlinear, time‑varying systems without ever writing a single line of optimization code.
 
 ---
