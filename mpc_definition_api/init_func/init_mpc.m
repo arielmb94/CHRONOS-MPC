@@ -178,4 +178,6 @@ mpc.y_cnstr = [];
 mpc.h_cnstr = [];
 mpc.fi_ter_x0 = [];
 
+mpc.Nv = 0;
+
 end
