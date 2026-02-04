@@ -17,6 +17,11 @@ cnstr.grad_min = [cnstr.grad_min;...
 % slack variable index in optimization vector
 cnstr.min_slack_index = [zeros(nv,mpc.Nx+mpc.Nu+mpc.Nv) eye(nv)];
 
+% gradient/hess of constraint: -v<=0 
+cnstr.min_slack_positivity_grad = -1 * cnstr.min_slack_index';
+[cnstr.min_slack_positivity_hess,mi] = genHessIneq(cnstr.min_slack_positivity_grad);
+mpc.m = mpc.m+mi;
+
 % update global counter of slack variables
 mpc.Nv = mpc.Nv+nv;
 

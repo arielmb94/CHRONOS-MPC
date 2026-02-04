@@ -17,6 +17,11 @@ cnstr.grad_max = [cnstr.grad_max;...
 % slack variable index in optimization vector
 cnstr.max_slack_index = [zeros(nv,mpc.Nx+mpc.Nu+mpc.Nv) eye(nv)];
 
+% gradient/hess of constraint: -v<=0 
+cnstr.max_slack_positivity_grad = -1 * cnstr.max_slack_index';
+[cnstr.max_slack_positivity_hess,mi] = genHessIneq(cnstr.max_slack_positivity_grad);
+mpc.m = mpc.m+mi;
+
 % update global counter of slack variables
 mpc.Nv = mpc.Nv+nv;
 
