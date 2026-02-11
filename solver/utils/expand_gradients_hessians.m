@@ -49,6 +49,9 @@ function mpc = expand_gradients_hessians(mpc)
                             zeros(length_diff,n) zeros(length_diff)];
 
         mpc = update_mpc_f0_hess(mpc);
+    else
+        mpc.hessCost = zeros(mpc.Nx+mpc.Nu+mpc.Nv);
+        mpc = update_mpc_f0_hess(mpc);
     end
 
 end

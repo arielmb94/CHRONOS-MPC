@@ -179,5 +179,8 @@ mpc.h_cnstr = [];
 mpc.fi_ter_x0 = [];
 
 mpc.Nv = 0;
+mpc.Qv = 1e5; % Slack variable penalty
+mpc.gradSlackQv = [];
+mpc.hessSlackTerm = [];
 
 end
