@@ -40,6 +40,23 @@ else
     cnstr.max_slack_hard_limit = 0;
 end
 
+% Initialize Penalty term for new slack variables
+if ~isempty(mpc.gradSlackQv)   
+    % expand slack penalty term grad
+    mpc.gradSlackQv = [mpc.gradSlackQv;
+                       zeros(nv,mpc.Nv)];
+    % add columns for new slack
+    mpc.gradSlackQv = [mpc.gradSlackQv cnstr.max_slack_index'*mpc.Qv];
+
+    % expand slack penalty term hess
+    mpc.hessSlackTerm = [mpc.hessSlackTerm zeros(mpc.Nx+mpc.Nu+mpc.Nv,nv);
+                         zeros(nv,mpc.Nx+mpc.Nu+mpc.Nv) eye(nv)*mpc.Qv];
+else
+    mpc.gradSlackQv = cnstr.max_slack_index'*mpc.Qv;
+    mpc.hessSlackTerm = [zeros(mpc.Nx+mpc.Nu) zeros(mpc.Nx+mpc.Nu,nv);
+                         zeros(nv,mpc.Nx+mpc.Nu) eye(nv)*mpc.Qv];
+end
+
 % update global counter of slack variables
 mpc.Nv = mpc.Nv+nv;
 

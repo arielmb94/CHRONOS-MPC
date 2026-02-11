@@ -19,7 +19,7 @@ cnstr.grad_min = [cnstr.grad_min;...
 % slack variable index in optimization vector
 cnstr.min_slack_index = [zeros(nv,mpc.Nx+mpc.Nu+mpc.Nv) eye(nv)];
 
-% gradient/hess of constraint: -v<=0 
+% gradient/hess of constraint: -v<=0 (slack positivity constraint)
 cnstr.min_slack_positivity_grad = -1 * cnstr.min_slack_index';
 [cnstr.min_slack_positivity_hess,mi] = genHessIneq(cnstr.min_slack_positivity_grad);
 mpc.m = mpc.m+mi;
@@ -40,6 +40,23 @@ if ~isempty(hard_limit_vector)
 else
     cnstr.min_slack_hard_limit = 0;
 end  
+
+% Initialize Penalty term for new slack variables
+if ~isempty(mpc.gradSlackQv)   
+    % expand slack penalty term grad
+    mpc.gradSlackQv = [mpc.gradSlackQv;
+                       zeros(nv,mpc.Nv)];
+    % add columns for new slack
+    mpc.gradSlackQv = [mpc.gradSlackQv cnstr.min_slack_index'*mpc.Qv];
+
+    % expand slack penalty term hess
+    mpc.hessSlackTerm = [mpc.hessSlackTerm zeros(mpc.Nx+mpc.Nu+mpc.Nv,nv);
+                         zeros(nv,mpc.Nx+mpc.Nu+mpc.Nv) eye(nv)*mpc.Qv];
+else
+    mpc.gradSlackQv = cnstr.min_slack_index'*mpc.Qv;
+    mpc.hessSlackTerm = [zeros(mpc.Nx+mpc.Nu) zeros(mpc.Nx+mpc.Nu,nv);
+                         zeros(nv,mpc.Nx+mpc.Nu) eye(nv)*mpc.Qv];
+end
 
 % update global counter of slack variables
 mpc.Nv = mpc.Nv+nv;
