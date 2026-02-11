@@ -1,7 +1,7 @@
-function [gradYmin,gradYmax] = genGradY(C,D,N,N_h_ctr,Nx,Nu,Ny,nx,nu,ny)
+function gradYmax = genGradY(C,D,N,N_h_ctr,Nx,Nu,Ny,nx,nu,ny,Nv)
 %optimization variables are stored as [u0 x1 u1 x2 ... xn-1 un-1 xn]^T
 
-gradYmax = zeros(Nx+Nu,Ny);
+gradYmax = zeros(Nx+Nu+Nv,Ny);
 for k = 0:N-1
 
     if k == 0
@@ -46,5 +46,4 @@ for k = 0:N-1
 
 end
 
-gradYmin = -gradYmax;
 end
