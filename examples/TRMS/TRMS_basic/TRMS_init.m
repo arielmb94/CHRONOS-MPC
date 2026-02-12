@@ -72,7 +72,7 @@ Ddh = [];
 h_min = [];
 h_max = [];
 
-%mpc = init_mpc_lin_custom_cnstr(mpc,h_min,h_max,Ch,Dh,Ddh);
+%mpc = init_mpc_lin_custom_cnstr(mpc,Ch,Dh,Ddh,h_min,h_max);
 
 %% Terminal Ingredients
 
