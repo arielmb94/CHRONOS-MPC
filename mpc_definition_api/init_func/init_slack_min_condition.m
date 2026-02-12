@@ -5,6 +5,8 @@ if length(slack_active_vector) == 1
     slack_active_vector = ones(n,1);
 end
 
+cnstr.min_slack_map = create_shifted_identity(slack_active_vector)';
+
 nv = sum(slack_active_vector);
 cnstr.min_slack_nv = nv;
 
