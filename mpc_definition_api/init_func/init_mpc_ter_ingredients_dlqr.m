@@ -48,7 +48,7 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mpc = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,...
-    terminal_constraint,x_ref_is_y)
+                                             terminal_constraint,x_ref_is_y)
 
 mpc.ter_ingredients = 1;
 mpc.ter_constraint = terminal_constraint;
@@ -60,13 +60,49 @@ mpc.P = P;
 mpc.P2 = 2*P;
 
 if isempty(mpc.hessCost)
-    mpc.hessCost = zeros(mpc.Nu+mpc.Nx);
+    mpc.hessCost = zeros(mpc.Nu+mpc.Nx+mpc.Nv);
 end
 
 mpc.fi_ter_x0 = 0;
-mpc.hessTerminalCost = zeros(mpc.Nx+mpc.Nu);
-mpc.hessTerminalCost(end-mpc.nx+1: end,end-mpc.nx+1 : end) = 2*P;
+mpc.hessTerminalCost = zeros(mpc.Nx+mpc.Nu+mpc.Nv);
+N = mpc.Nx+mpc.Nu;
+mpc.hessTerminalCost(N-mpc.nx+1: N,N-mpc.nx+1 : N) = 2*P;
 
 mpc.hessCost = mpc.hessCost + mpc.hessTerminalCost;
+
+if terminal_constraint 
+    % fi_ter = e_xN'*P*e_xN - vi < 0
+    % grad_fi = 2*grad_e_xN*P*e_xN - [0;1]
+    % hess_fi = 2*grad_e_xN*P*grad_e_xN' (same as terminal cost function)
+
+    mpc.ter_cnstr_slack_index = [zeros(1,mpc.Nx+mpc.Nu+mpc.Nv) 1];
+
+    % initialize terminal constraint gradient with constant slack element
+    % -> -[0;1]
+    mpc.ter_cnstr_grad = [zeros(mpc.Nx+mpc.Nu+mpc.Nv,1);
+                            -1];
+
+    % Initialize Penalty term for new slack variables -> Jv = vi'*Qv*vi
+    if ~isempty(mpc.gradSlackQv)
+        % expand slack penalty term grad
+        mpc.gradSlackQv = [mpc.gradSlackQv;
+                           zeros(1,mpc.Nv)];
+        % add columns for new slack
+        mpc.gradSlackQv = [mpc.gradSlackQv mpc.ter_cnstr_slack_index'*mpc.Qv];
+
+        % expand slack penalty term hess
+        mpc.hessSlackTerm = [mpc.hessSlackTerm zeros(mpc.Nx+mpc.Nu+mpc.Nv,1);
+            zeros(1,mpc.Nx+mpc.Nu+mpc.Nv) mpc.Qv];
+    else
+        mpc.gradSlackQv = cnstr.min_slack_index'*mpc.Qv;
+        mpc.hessSlackTerm = [zeros(mpc.Nx+mpc.Nu) zeros(mpc.Nx+mpc.Nu,1);
+            zeros(1,mpc.Nx+mpc.Nu) mpc.Qv];
+    end
+
+    % update global counter of slack variables
+    mpc.Nv = mpc.Nv+1;
+    % adapt gradients/hessians for the new variable vector size
+    mpc = expand_gradients_hessians(mpc);
+end
 
 end

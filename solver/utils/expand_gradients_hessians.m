@@ -40,6 +40,11 @@ function mpc = expand_gradients_hessians(mpc)
         mpc = expand_performance_cost(mpc.Nx+mpc.Nu,mpc.Nv,mpc);
     end
 
+    % Expand Terminal Ingredients
+    if ~isempty(mpc.P)
+        mpc = expand_terminal_ingredients(mpc.Nx+mpc.Nu,mpc.Nv,mpc);
+    end
+
     % Recompute the hessian of the cost function
     if ~isempty(mpc.hessCost)
 
@@ -236,4 +241,25 @@ if ~isempty(mpc.qz)
     end
 end
     
+end
+
+function mpc = expand_terminal_ingredients(N,Nv,mpc)
+
+length_diff = N+Nv - size(mpc.hessTerminalCost,1);
+if length_diff
+    n = size(mpc.hessTerminalCost,1);
+    mpc.hessTerminalCost = [mpc.hessTerminalCost zeros(n,length_diff);
+                            zeros(length_diff,n) zeros(length_diff)];
+end
+
+if mpc.ter_constraint
+    length_diff = N+Nv - size(mpc.ter_cnstr_grad,1);
+
+    if length_diff
+        mpc.ter_cnstr_slack_index = [mpc.ter_cnstr_slack_index zeros(1,length_diff)];
+        mpc.ter_cnstr_grad = [mpc.ter_cnstr_grad;
+                                zeros(length_diff,1)];
+    end
+end
+
 end
