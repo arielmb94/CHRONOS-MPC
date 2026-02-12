@@ -1,7 +1,7 @@
-function [gradCtlrR,hessCtrlTerm] = genControlGradHess(R,N,Nx,Nu,nx,nu)
+function [gradCtlrR,hessCtrlTerm] = genControlGradHess(R,N,Nx,Nu,nx,nu,Nv)
 
-gradCtlrR = zeros(Nx+Nu,Nu);
-gradCtlr = zeros(Nx+Nu,Nu);
+gradCtlrR = zeros(Nx+Nu+Nv,Nu);
+gradCtlr = zeros(Nx+Nu+Nv,Nu);
 for k = 0:N-1
 
     switch k

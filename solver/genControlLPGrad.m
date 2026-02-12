@@ -1,6 +1,6 @@
-function gradCtlrru = genControlLPGrad(r,N,Nx,Nu,nx,nu)
+function gradCtlrru = genControlLPGrad(r,N,Nx,Nu,nx,nu,Nv)
 
-gradCtlrru = zeros(Nx+Nu,1);
+gradCtlrru = zeros(Nx+Nu+Nv,1);
 for k = 0:N-1
 
     switch k

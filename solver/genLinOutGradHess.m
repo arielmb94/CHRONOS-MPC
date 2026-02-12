@@ -18,12 +18,12 @@
 % grad = [C'; D']*Q*z
 % hess = [C' ; D']*Q*[C D]
 
-function [gradQ,hess] = genLinOutGradHess(Q,C,D,N,N_h_ctr,Nx,Nu,Ny,nx,nu,ny)
+function [gradQ,hess] = genLinOutGradHess(Q,C,D,N,N_h_ctr,Nx,Nu,Ny,nx,nu,ny,Nv)
 
 % grad = Grad(y)*Q*y
 % gradQ = Grad(y)*Q
-grad = zeros(Nx+Nu,Ny);
-gradQ = zeros(Nx+Nu,Ny);
+grad = zeros(Nx+Nu+Nv,Ny);
+gradQ = zeros(Nx+Nu+Nv,Ny);
 for k = 0:N-1
 
     if k == 0

@@ -41,11 +41,11 @@ mpc.ru = ru;
 if ~isempty(Ru)
 
     if isempty(mpc.hessCost)
-        mpc.hessCost = zeros(mpc.Nu+mpc.Nx);
+        mpc.hessCost = zeros(mpc.Nu+mpc.Nx+mpc.Nv);
     end
 
     [mpc.gradCtlrRu,mpc.hessCtrlTerm] = genControlGradHess(Ru,mpc.N_ctr_hor,...
-        mpc.Nx,mpc.Nu,mpc.nx,mpc.nu);
+                                        mpc.Nx,mpc.Nu,mpc.nx,mpc.nu,mpc.Nv);
 
     mpc.hessCost = mpc.hessCost + mpc.hessCtrlTerm;
 end
@@ -54,7 +54,7 @@ end
 if ~isempty(ru)
 
     mpc.gradCtlrru = genControlLPGrad(ru,mpc.N_ctr_hor,mpc.Nx,mpc.Nu,...
-                    mpc.nx,mpc.nu);
+                    mpc.nx,mpc.nu,mpc.Nv);
     
 end
 
