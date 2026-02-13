@@ -75,6 +75,9 @@ if terminal_constraint
     % grad_fi = 2*grad_e_xN*P*e_xN - [0;1]
     % hess_fi = 2*grad_e_xN*P*grad_e_xN' (same as terminal cost function)
 
+    mpc.v = [mpc.v;0];
+    mpc.v_ter = 0;
+    mpc.ter_cnstr_map = [zeros(1,mpc.Nv) 1];
     mpc.ter_cnstr_slack_index = [zeros(1,mpc.Nx+mpc.Nu+mpc.Nv) 1];
 
     % initialize terminal constraint gradient with constant slack element

@@ -5,10 +5,15 @@ if length(slack_active_vector) == 1
     slack_active_vector = ones(n,1);
 end
 
-cnstr.min_slack_map = create_shifted_identity(slack_active_vector)';
-
+cnstr.min_slack_active = slack_active_vector;
 nv = sum(slack_active_vector);
 cnstr.min_slack_nv = nv;
+% expand global slack vector
+mpc.v = [mpc.v; zeros(nv,1)];
+% create slack vector for min constraint
+cnstr.min_v = zeros(n,1);
+% map slack value to the appropiate constraint
+cnstr.min_slack_map = [zeros(n,mpc.Nv) create_shifted_identity(slack_active_vector)'];
 
 cnstr.min_slack_positivity_fi_x0 = zeros(nv,1);
 
