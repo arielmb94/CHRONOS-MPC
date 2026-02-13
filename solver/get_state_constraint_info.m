@@ -17,6 +17,11 @@ mpc.y(:) = get_mpc_lin_out(mpc.s_all,mpc.u,d,mpc.nx,mpc.nu,mpc.ny,mpc.nd,...
 % error signal
 mpc = get_error(r,mpc.y,mpc);
 
+% slack variables
+if mpc.Nv
+    mpc = get_mpc_v(x,mpc);
+end
+
 feas = 1;
 % State box constraints
 if ~isempty(mpc.s_cnstr)
