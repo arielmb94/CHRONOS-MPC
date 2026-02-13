@@ -80,14 +80,13 @@ if size(cnstr.grad_min,1) < N+Nv
     length_diff = N+Nv - size(cnstr.grad_min,1);
     cnstr.grad_min = [cnstr.grad_min;
                       zeros(length_diff,size(cnstr.grad_min,2))];
-
-
+                      
     cnstr.hess_min = genHessIneq(cnstr.grad_min);
 
 end
 if size(cnstr.grad_max,1) < N+Nv
     
-    length_diff = N+Nv - size(cnstr.grad_max,1);
+    length_diff = N+Nv - size(cnstr.grad_max,1);   
     cnstr.grad_max = [cnstr.grad_max;
                       zeros(length_diff,size(cnstr.grad_max,2))];
 
@@ -102,7 +101,8 @@ if cnstr.min_slack_nv
     if length_diff
 
         cnstr.min_slack_index = [cnstr.min_slack_index, zeros(size(cnstr.min_slack_index,1),length_diff)];
-
+        cnstr.min_slack_map = [cnstr.min_slack_map...
+                            zeros(size(cnstr.min_slack_map,1),length_diff)];
         cnstr.min_slack_positivity_grad = [cnstr.min_slack_positivity_grad;
                                            zeros(length_diff,size(cnstr.min_slack_positivity_grad,2))];
 
@@ -124,7 +124,8 @@ if cnstr.max_slack_nv
     if length_diff
 
         cnstr.max_slack_index = [cnstr.max_slack_index, zeros(size(cnstr.max_slack_index,1),length_diff)];
-
+        cnstr.max_slack_map = [cnstr.max_slack_map...
+                                zeros(size(cnstr.max_slack_map,1),length_diff)];
         cnstr.max_slack_positivity_grad = [cnstr.max_slack_positivity_grad;
                                            zeros(length_diff,size(cnstr.max_slack_positivity_grad,2))];
 
@@ -257,6 +258,7 @@ if mpc.ter_constraint
 
     if length_diff
         mpc.ter_cnstr_slack_index = [mpc.ter_cnstr_slack_index zeros(1,length_diff)];
+        mpc.ter_cnstr_map = [mpc.ter_cnstr_map zeros(1,length_diff)];
         mpc.ter_cnstr_grad = [mpc.ter_cnstr_grad;
                                 zeros(length_diff,1)];
     end
