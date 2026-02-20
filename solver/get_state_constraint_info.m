@@ -17,9 +17,9 @@ mpc.y(:) = get_mpc_lin_out(mpc.s_all,mpc.u,d,mpc.nx,mpc.nu,mpc.ny,mpc.nd,...
 % error signal
 mpc = get_error(r,mpc.y,mpc);
 
-% slack variables
+% set slack variables to 0 before use in box constraint functions
 if mpc.Nv
-    mpc = get_mpc_v(x,mpc);
+    mpc = reset_mpc_v(mpc);
 end
 
 feas = 1;
