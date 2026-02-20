@@ -7,7 +7,7 @@ x_err = x_ref-s_ter;
 fi_ter_x0 = x_err'*P*x_err;
 
 % compute slack variable value
-mpc.v_ter = max(1, fi_ter_x0 + mpc.slack_ter_epsilon);
+mpc.v_ter = max(1 + mpc.slack_ter_epsilon, fi_ter_x0 + mpc.slack_ter_epsilon);
 
 % Map to global v vector
 mpc.v = mpc.v + mpc.ter_cnstr_map * mpc.v_ter;
