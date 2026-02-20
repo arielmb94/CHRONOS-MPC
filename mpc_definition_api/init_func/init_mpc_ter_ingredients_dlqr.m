@@ -77,7 +77,7 @@ if terminal_constraint
 
     mpc.v = [mpc.v;0];
     mpc.v_ter = 0;
-    mpc.ter_cnstr_map = [zeros(1,mpc.Nv) 1];
+    mpc.ter_cnstr_map = [zeros(mpc.Nv,1); 1];
     mpc.ter_cnstr_slack_index = [zeros(1,mpc.Nx+mpc.Nu+mpc.Nv) 1];
 
     % initialize terminal constraint gradient with constant slack element
