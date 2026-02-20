@@ -183,5 +183,6 @@ mpc.Qv = 1e5; % Slack variable penalty
 mpc.gradSlackQv = [];
 mpc.hessSlackTerm = [];
 mpc.v = [];
+mpc.slack_epsilon = 1e-3;
 
 end
