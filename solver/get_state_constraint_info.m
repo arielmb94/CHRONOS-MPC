@@ -25,31 +25,31 @@ end
 feas = 1;
 % State box constraints
 if ~isempty(mpc.s_cnstr)
-    mpc.s_cnstr = fi_box_fun(mpc.s_cnstr,mpc.s,mpc.Nx,mpc.nx,0);
+    [mpc,mpc.s_cnstr] = fi_box_fun(mpc,mpc.s_cnstr,mpc.s,mpc.Nx,mpc.nx,0);
     feas = fi_box_is_feasible(mpc.s_cnstr);
 end
 
 % Terminal State box constraints
 if feas && ~isempty(mpc.s_ter_cnstr)
-    mpc.s_ter_cnstr = fi_box_fun(mpc.s_ter_cnstr,mpc.s_ter,mpc.nx,mpc.nx,0);
+    [mpc,mpc.s_ter_cnstr] = fi_box_fun(mpc,mpc.s_ter_cnstr,mpc.s_ter,mpc.nx,mpc.nx,0);
     feas = fi_box_is_feasible(mpc.s_ter_cnstr);
 end
     
 % Control box constraints
 if feas && ~isempty(mpc.u_cnstr)
-    mpc.u_cnstr = fi_box_fun(mpc.u_cnstr,mpc.u,mpc.Nu,mpc.nu,0);
+    [mpc,mpc.u_cnstr] = fi_box_fun(mpc,mpc.u_cnstr,mpc.u,mpc.Nu,mpc.nu,0);
     feas = fi_box_is_feasible(mpc.u_cnstr);
 end
 
 % Differential Control box constraints
 if feas && ~isempty(mpc.du_cnstr)
-    mpc.du_cnstr = fi_box_fun(mpc.du_cnstr,mpc.du,mpc.Nu,mpc.nu,0);
+    [mpc,mpc.du_cnstr] = fi_box_fun(mpc,mpc.du_cnstr,mpc.du,mpc.Nu,mpc.nu,0);
     feas = fi_box_is_feasible(mpc.du_cnstr);
 end
 
 % Outputs box constraints
 if feas && ~isempty(mpc.y_cnstr)
-    mpc.y_cnstr = fi_box_fun(mpc.y_cnstr,mpc.y,mpc.Ny,mpc.ny,0);
+    [mpc,mpc.y_cnstr] = fi_box_fun(mpc,mpc.y_cnstr,mpc.y,mpc.Ny,mpc.ny,0);
     feas = fi_box_is_feasible(mpc.y_cnstr);
 end
 
@@ -59,17 +59,14 @@ if feas && ~isempty(mpc.h_cnstr)
     mpc.h(:) = get_mpc_lin_out(mpc.s_all,mpc.u,dh,mpc.nx,mpc.nu,mpc.nh,mpc.ndh,mpc.N_ctr_hor,...
         mpc.Nh,mpc.Ch,mpc.Dh,mpc.Ddh);
 
-    mpc.h_cnstr = fi_box_fun(mpc.h_cnstr,mpc.h,mpc.Nh,mpc.nh,0);
+    [mpc,mpc.h_cnstr] = fi_box_fun(mpc,mpc.h_cnstr,mpc.h,mpc.Nh,mpc.nh,0);
     feas = fi_box_is_feasible(mpc.h_cnstr);
 end
 
 % Terminal Constraint
 % CODEGEN NOTE: to be commented out if there is not terminal ingredients
 if feas && mpc.ter_ingredients && mpc.ter_constraint
-    mpc.fi_ter_x0(:) = get_terConst_val(x_ref,mpc.s_ter,mpc.P,0);
-    if mpc.fi_ter_x0>=0 
-        feas = 0;
-    end
+    mpc = get_terConst_val(mpc,x_ref,mpc.s_ter,mpc.P,0);
 end
 
 end
