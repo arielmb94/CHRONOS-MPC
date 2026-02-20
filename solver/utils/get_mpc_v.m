@@ -30,9 +30,9 @@ end
 % map slack value to constraint for box constraints
 function cnstr = map_slack(mpc,cnstr)
     if cnstr.min_slack_nv
-        cnstr.min_v = cnstr.min_slack_map*mpc.v;
+        cnstr.min_v = cnstr.min_slack_map'*mpc.v;
     end
     if cnstr.max_slack_nv
-        cnstr.max_v = cnstr.max_slack_map*mpc.v;
+        cnstr.max_v = cnstr.max_slack_map'*mpc.v;
     end
 end
