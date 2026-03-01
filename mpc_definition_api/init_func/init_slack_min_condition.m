@@ -12,22 +12,24 @@ cnstr.min_slack_nv = nv;
 mpc.v = [mpc.v; zeros(nv,1)];
 % create slack vector for min constraint
 cnstr.min_v = zeros(n,1);
-% map slack value to the appropiate constraint
-cnstr.min_slack_map = [zeros(n,mpc.Nv) create_shifted_identity(slack_active_vector)']';
+% map to get min_v to size nv
+% vi = min_slack_local_map * min_v
+cnstr.min_slack_local_map = create_shifted_identity(slack_active_vector);
+% get index of vi in global v vector
+cnstr.min_v_global_index = mpc.Nv+1:mpc.Nv+nv;
 
-cnstr.min_slack_positivity_fi_x0 = zeros(nv,1);
-
+% increase constraint gradient vectors with slack variable contribution
 grad_slack = -1 * create_shifted_identity(slack_active_vector);
-
-% increase gradient vectors with slack variable gradient
 cnstr.grad_min = [cnstr.grad_min;...
                   repmat(grad_slack,1,N/n)];
 
-% slack variable index in optimization vector
-cnstr.min_slack_index = [zeros(nv,mpc.Nx+mpc.Nu+mpc.Nv) eye(nv)];
+% slack variable gradient
+min_slack_grad = [zeros(mpc.Nx+mpc.Nu+mpc.Nv,nv);...
+                  eye(nv)];
 
 % gradient/hess of constraint: -v<=0 (slack positivity constraint)
-cnstr.min_slack_positivity_grad = -1 * cnstr.min_slack_index';
+cnstr.min_slack_positivity_fi_x0 = zeros(nv,1);
+cnstr.min_slack_positivity_grad = -1 * min_slack_grad;
 [cnstr.min_slack_positivity_hess,mi] = genHessIneq(cnstr.min_slack_positivity_grad);
 mpc.m = mpc.m+mi;
 
@@ -54,13 +56,13 @@ if ~isempty(mpc.gradSlackQv)
     mpc.gradSlackQv = [mpc.gradSlackQv;
                        zeros(nv,mpc.Nv)];
     % add columns for new slack
-    mpc.gradSlackQv = [mpc.gradSlackQv cnstr.min_slack_index'*mpc.Qv];
+    mpc.gradSlackQv = [mpc.gradSlackQv min_slack_grad*mpc.Qv];
 
     % expand slack penalty term hess
     mpc.hessSlackTerm = [mpc.hessSlackTerm zeros(mpc.Nx+mpc.Nu+mpc.Nv,nv);
                          zeros(nv,mpc.Nx+mpc.Nu+mpc.Nv) eye(nv)*mpc.Qv];
 else
-    mpc.gradSlackQv = cnstr.min_slack_index'*mpc.Qv;
+    mpc.gradSlackQv = min_slack_grad*mpc.Qv;
     mpc.hessSlackTerm = [zeros(mpc.Nx+mpc.Nu) zeros(mpc.Nx+mpc.Nu,nv);
                          zeros(nv,mpc.Nx+mpc.Nu) eye(nv)*mpc.Qv];
 end

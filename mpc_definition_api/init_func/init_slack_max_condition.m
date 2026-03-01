@@ -6,39 +6,41 @@ if length(slack_active_vector) == 1
 end
 
 cnstr.max_slack_active = slack_active_vector;
-
 nv = sum(slack_active_vector);
 cnstr.max_slack_nv = nv;
 % expand global slack vector
 mpc.v = [mpc.v; zeros(nv,1)];
-% create slack vector for min constraint
+% create slack vector for max constraint
 cnstr.max_v = zeros(n,1);
-% map slack value to the appropiate constraint
-cnstr.max_slack_map = [zeros(n,mpc.Nv) create_shifted_identity(slack_active_vector)']';
+% map to get max_v to size nv
+% vi = max_slack_local_map * max_v
+cnstr.max_slack_local_map = create_shifted_identity(slack_active_vector);
+% get index of vi in global v vector
+cnstr.max_v_global_index = mpc.Nv+1:mpc.Nv+nv;
 
-cnstr.max_slack_positivity_fi_x0 = zeros(nv,1);
-
+% increase constraint gradient vectors with slack variable contribution
 grad_slack = -1 * create_shifted_identity(slack_active_vector);
-
-% increase gradient vectors with slack variable gradient
 cnstr.grad_max = [cnstr.grad_max;...
                   repmat(grad_slack,1,N/n)];
 
-% slack variable index in optimization vector
-cnstr.max_slack_index = [zeros(nv,mpc.Nx+mpc.Nu+mpc.Nv) eye(nv)];
+% slack variable gradient
+max_slack_grad = [zeros(mpc.Nx+mpc.Nu+mpc.Nv,nv);...
+                  eye(nv)];
 
-% gradient/hess of constraint: -v<=0 
-cnstr.max_slack_positivity_grad = -1 * cnstr.max_slack_index';
+% gradient/hess of constraint: -v<=0 (slack positivity constraint)
+cnstr.max_slack_positivity_fi_x0 = zeros(nv,1);
+cnstr.max_slack_positivity_grad = -1 * max_slack_grad;
 [cnstr.max_slack_positivity_hess,mi] = genHessIneq(cnstr.max_slack_positivity_grad);
 mpc.m = mpc.m+mi;
 
 % compute vmax
 if ~isempty(hard_limit_vector)
     cnstr.max_slack_hard_limit = 1;
-    index = find(slack_active_vector);
-    cnstr.max_slack_vmax = hard_limit_vector(index)-cnstr.max(index);
 
     cnstr.max_slack_hard_limit_fi_x0 = zeros(nv,1);
+
+    index = find(slack_active_vector);
+    cnstr.max_slack_vmax = cnstr.max(index)-hard_limit_vector(index);
 
     % gradient/hess of constraint: v-vmax<=0 
     cnstr.max_slack_hard_limit_grad = cnstr.max_slack_index';
@@ -46,7 +48,7 @@ if ~isempty(hard_limit_vector)
     mpc.m = mpc.m+mi;
 else
     cnstr.max_slack_hard_limit = 0;
-end
+end  
 
 % Initialize Penalty term for new slack variables
 if ~isempty(mpc.gradSlackQv)   
@@ -54,13 +56,13 @@ if ~isempty(mpc.gradSlackQv)
     mpc.gradSlackQv = [mpc.gradSlackQv;
                        zeros(nv,mpc.Nv)];
     % add columns for new slack
-    mpc.gradSlackQv = [mpc.gradSlackQv cnstr.max_slack_index'*mpc.Qv];
+    mpc.gradSlackQv = [mpc.gradSlackQv max_slack_grad*mpc.Qv];
 
     % expand slack penalty term hess
     mpc.hessSlackTerm = [mpc.hessSlackTerm zeros(mpc.Nx+mpc.Nu+mpc.Nv,nv);
                          zeros(nv,mpc.Nx+mpc.Nu+mpc.Nv) eye(nv)*mpc.Qv];
 else
-    mpc.gradSlackQv = cnstr.max_slack_index'*mpc.Qv;
+    mpc.gradSlackQv = max_slack_grad*mpc.Qv;
     mpc.hessSlackTerm = [zeros(mpc.Nx+mpc.Nu) zeros(mpc.Nx+mpc.Nu,nv);
                          zeros(nv,mpc.Nx+mpc.Nu) eye(nv)*mpc.Qv];
 end
