@@ -96,13 +96,9 @@ end
 % adapt slack variable constraints if existent
 if cnstr.min_slack_nv
     
-    length_diff = N+Nv - size(cnstr.min_slack_index,2);
+    length_diff = N+Nv - size(cnstr.min_slack_positivity_grad,1);
     % adapt positivity constraint
     if length_diff
-
-        cnstr.min_slack_index = [cnstr.min_slack_index, zeros(size(cnstr.min_slack_index,1),length_diff)];
-        cnstr.min_slack_map = [cnstr.min_slack_map;...
-                            zeros(length_diff,size(cnstr.min_slack_map,2))];
         cnstr.min_slack_positivity_grad = [cnstr.min_slack_positivity_grad;
                                            zeros(length_diff,size(cnstr.min_slack_positivity_grad,2))];
 
@@ -119,13 +115,9 @@ if cnstr.min_slack_nv
 end
 if cnstr.max_slack_nv
     
-    length_diff = N+Nv - size(cnstr.max_slack_index,2);
+    length_diff = N+Nv - size(cnstr.max_slack_positivity_grad,1);
     % adapt positivity constraint
     if length_diff
-
-        cnstr.max_slack_index = [cnstr.max_slack_index, zeros(size(cnstr.max_slack_index,1),length_diff)];
-        cnstr.max_slack_map = [cnstr.max_slack_map;...
-                                zeros(length_diff,size(cnstr.max_slack_map,2))];
         cnstr.max_slack_positivity_grad = [cnstr.max_slack_positivity_grad;
                                            zeros(length_diff,size(cnstr.max_slack_positivity_grad,2))];
 
