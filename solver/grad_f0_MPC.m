@@ -1,6 +1,6 @@
 function grad_J = grad_f0_MPC(mpc,err,deltaU,U,grad_ter,z)
 
-    grad_J = zeros(mpc.Nx+mpc.Nu,1);
+    grad_J = zeros(mpc.Nx+mpc.Nu+mpc.Nv,1);
 
     if ~isempty(mpc.gradErrQe)
         grad_J(:) = grad_J - mpc.gradErrQe*err;
@@ -19,7 +19,8 @@ function grad_J = grad_f0_MPC(mpc,err,deltaU,U,grad_ter,z)
     end
 
     if mpc.ter_ingredients
-        grad_J(end-mpc.nx+1:end) = grad_J(end-mpc.nx+1:end) - grad_ter;
+        grad_J(mpc.Nx+mpc.Nu-mpc.nx+1:mpc.Nx+mpc.Nu) = ...
+            grad_J(mpc.Nx+mpc.Nu-mpc.nx+1:mpc.Nx+mpc.Nu) - grad_ter;
     end  
 
     if ~isempty(mpc.gradPerfQz)
@@ -30,4 +31,7 @@ function grad_J = grad_f0_MPC(mpc,err,deltaU,U,grad_ter,z)
         grad_J(:) = grad_J + mpc.gradPerfqz;
     end
 
+    if mpc.Nv
+        grad_J(:) = grad_J + mpc.gradSlackqv;
+    end
 end
