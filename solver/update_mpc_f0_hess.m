@@ -23,8 +23,4 @@ if ~isempty(mpc.Qz)
     mpc.hessCost = mpc.hessCost + mpc.hessPerfTerm;
 end
 
-if ~isempty(mpc.hessSlackTerm)
-    mpc.hessCost = mpc.hessCost + mpc.hessSlackTerm;
-end
-
 end
