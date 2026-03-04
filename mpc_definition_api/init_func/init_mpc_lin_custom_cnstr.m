@@ -155,7 +155,7 @@ if ~isempty(h_cnstr.max)
         [mpc,h_cnstr] = init_slack_max_condition(mpc,h_cnstr,...
                         h_max_slack_active,h_max_hard,mpc.Nh,mpc.nh);
     else
-        h_cnstr.min_slack_nv = 0;
+        h_cnstr.max_slack_nv = 0;
     end
 
     % hessian created after slack is considered on the gradient

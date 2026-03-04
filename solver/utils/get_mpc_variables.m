@@ -11,11 +11,13 @@ if ~isempty(mpc.du_cnstr) || ~isempty(mpc.Rdu)
     mpc = get_mpc_diff_u(u_prev,mpc);
 end
 
-if ~isempty(mpc.Qe)
+if ~isempty(mpc.C)
     % system outputs
     mpc.y(:) = get_mpc_lin_out(mpc.s_all,mpc.u,d,mpc.nx,mpc.nu,mpc.ny,mpc.nd,...
                         mpc.N_ctr_hor,mpc.Ny,mpc.C,mpc.D,mpc.Dd);
-    
+end
+
+if ~isempty(r)
     % error signal
     mpc = get_error(r,mpc.y,mpc);
 end

@@ -160,6 +160,7 @@ mpc.ter_ingredients = 0;
 mpc.ter_constraint = 0;
 mpc.x_ref_is_y = 0;
 mpc.P = [];
+mpc.K = [];
 mpc.hessTerminalCost = [];
 mpc.recompute_cost_hess = 0;
 mpc.t_feas = 500;
