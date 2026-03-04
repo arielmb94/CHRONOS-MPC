@@ -91,11 +91,6 @@ if ~isempty(s_ter_cnstr.min)
     [s_ter_cnstr.hess_min,mi] = genHessIneq(s_ter_cnstr.grad_min);
     mpc.m = mpc.m+mi;
 
-    % initialize feasibility solver min condition
-    s_ter_cnstr.grad_min_feas_slv = [s_ter_cnstr.grad_min;-ones(1,mpc.nx)];
-    
-    s_ter_cnstr.hess_min_feas_slv = genHessIneq(s_ter_cnstr.grad_min_feas_slv);
-
 end
 
 if ~isempty(s_ter_cnstr.max)
@@ -121,11 +116,6 @@ if ~isempty(s_ter_cnstr.max)
     [s_ter_cnstr.hess_max,mi] = genHessIneq(s_ter_cnstr.grad_max);
     mpc.m = mpc.m+mi;
 
-    % initialize feasibility solver max condition
-    s_ter_cnstr.grad_max_feas_slv = [s_ter_cnstr.grad_max;-ones(1,mpc.nx)];
-    
-    s_ter_cnstr.hess_max_feas_slv = genHessIneq(s_ter_cnstr.grad_max_feas_slv);
-    
 end
 
 mpc.s_ter_cnstr = s_ter_cnstr;
