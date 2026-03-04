@@ -134,11 +134,6 @@ if ~isempty(h_cnstr.min)
     [h_cnstr.hess_min,mi] = genHessIneq(h_cnstr.grad_min);
     mpc.m = mpc.m+mi;
 
-    % initialize feasibility solver min condition
-    h_cnstr.grad_min_feas_slv = [h_cnstr.grad_min;-ones(1,mpc.Nh)];
-    
-    h_cnstr.hess_min_feas_slv = genHessIneq(h_cnstr.grad_min_feas_slv);
-
 end
 if ~isempty(h_cnstr.max)
 
@@ -161,11 +156,6 @@ if ~isempty(h_cnstr.max)
     % hessian created after slack is considered on the gradient
     [h_cnstr.hess_max,mi] = genHessIneq(h_cnstr.grad_max);
     mpc.m = mpc.m+mi;
-
-    % initialize feasibility solver max condition
-    h_cnstr.grad_max_feas_slv = [h_cnstr.grad_max;-ones(1,mpc.Nh)];
-    
-    h_cnstr.hess_max_feas_slv = genHessIneq(h_cnstr.grad_max_feas_slv);
 
 end
 
