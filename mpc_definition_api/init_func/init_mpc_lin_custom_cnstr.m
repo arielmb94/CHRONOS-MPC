@@ -74,7 +74,7 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mpc = init_mpc_lin_custom_cnstr(mpc,Ch,Dh,Ddh,h_min,h_max, ...
-                h_min_slack_active,h_max_slack_active,h_min_hard,h_max_hard)
+                h_min_slack_active,h_max_slack_active)
 arguments
     mpc
     Ch
@@ -84,8 +84,6 @@ arguments
     h_max
     h_min_slack_active = []
     h_max_slack_active = []
-    h_min_hard = []
-    h_max_hard = []
 end
 
 % General Inequality Matrix
@@ -125,7 +123,7 @@ if ~isempty(h_cnstr.min)
         is_there_slack = 1;
 
         [mpc,h_cnstr] = init_slack_min_condition(mpc,h_cnstr,...
-                        h_min_slack_active,h_min_hard,mpc.Nh,mpc.nh);
+                        h_min_slack_active,mpc.Nh,mpc.nh);
     else
         h_cnstr.min_slack_nv = 0;
     end
@@ -148,7 +146,7 @@ if ~isempty(h_cnstr.max)
         is_there_slack = 1;
 
         [mpc,h_cnstr] = init_slack_max_condition(mpc,h_cnstr,...
-                        h_max_slack_active,h_max_hard,mpc.Nh,mpc.nh);
+                        h_max_slack_active,mpc.Nh,mpc.nh);
     else
         h_cnstr.max_slack_nv = 0;
     end

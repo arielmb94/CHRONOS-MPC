@@ -50,16 +50,13 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mpc = init_mpc_delta_u_cnstr(mpc,du_min,du_max,...
-               du_min_slack_active,du_max_slack_active,...
-               du_min_hard,du_max_hard)
+               du_min_slack_active,du_max_slack_active)
 arguments
     mpc
     du_min
     du_max
     du_min_slack_active = []
     du_max_slack_active = []
-    du_min_hard = []
-    du_max_hard = []
 end
 
 du_cnstr.min = du_min;
@@ -81,7 +78,7 @@ if ~isempty(du_cnstr.min)
         is_there_slack = 1;
 
         [mpc,du_cnstr] = init_slack_min_condition(mpc,du_cnstr,...
-                        du_min_slack_active,du_min_hard,mpc.Nu,mpc.nu);
+                        du_min_slack_active,mpc.Nu,mpc.nu);
     else
         du_cnstr.min_slack_nv = 0;
     end
@@ -106,7 +103,7 @@ if ~isempty(du_cnstr.max)
         is_there_slack = 1;
 
         [mpc,du_cnstr] = init_slack_max_condition(mpc,du_cnstr,...
-                        du_max_slack_active,du_max_hard,mpc.Nu,mpc.nu);
+                        du_max_slack_active,mpc.Nu,mpc.nu);
     else
         du_cnstr.max_slack_nv = 0;
     end

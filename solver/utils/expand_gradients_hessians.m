@@ -104,14 +104,6 @@ if cnstr.min_slack_nv
 
         cnstr.min_slack_positivity_hess = genHessIneq(cnstr.min_slack_positivity_grad);
     end
-    % adapt hard limit constraint
-    if cnstr.min_slack_hard_limit && length_diff
-
-        cnstr.min_slack_hard_limit_grad = [cnstr.min_slack_hard_limit_grad;
-                                           zeros(length_diff,size(cnstr.min_slack_hard_limit_grad,2))];
-
-        cnstr.min_slack_hard_limit_hess = genHessIneq(cnstr.min_slack_hard_limit_grad);
-    end
 end
 if cnstr.max_slack_nv
     
@@ -122,14 +114,6 @@ if cnstr.max_slack_nv
                                            zeros(length_diff,size(cnstr.max_slack_positivity_grad,2))];
 
         cnstr.max_slack_positivity_hess = genHessIneq(cnstr.max_slack_positivity_grad);
-    end
-    % adapt hard limit constraint
-    if cnstr.max_slack_hard_limit && length_diff
-
-        cnstr.max_slack_hard_limit_grad = [cnstr.max_slack_hard_limit_grad;
-                                           zeros(length_diff,size(cnstr.max_slack_hard_limit_grad,2))];
-
-        cnstr.max_slack_hard_limit_hess = genHessIneq(cnstr.max_slack_hard_limit_grad);
     end
 end
 
