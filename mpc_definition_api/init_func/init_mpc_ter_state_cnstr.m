@@ -51,16 +51,13 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mpc = init_mpc_ter_state_cnstr(mpc,x_ter_min,x_ter_max,...
-                           x_ter_min_slack_active,x_ter_max_slack_active,...
-                           x_ter_min_hard,x_ter_max_hard)
+                           x_ter_min_slack_active,x_ter_max_slack_active)
 arguments
     mpc
     x_ter_min
     x_ter_max
     x_ter_min_slack_active = []
     x_ter_max_slack_active = []
-    x_ter_min_hard = []
-    x_ter_max_hard = []
 end
 
 s_ter_cnstr.min = x_ter_min; 
@@ -82,7 +79,7 @@ if ~isempty(s_ter_cnstr.min)
 
         [mpc,s_ter_cnstr] = init_slack_min_condition(mpc,s_ter_cnstr,...
                             x_ter_min_slack_active,...
-                            x_ter_min_hard,mpc.nx,mpc.nx);
+                            mpc.nx,mpc.nx);
     else
         s_ter_cnstr.min_slack_nv = 0;
     end
@@ -107,7 +104,7 @@ if ~isempty(s_ter_cnstr.max)
 
         [mpc,s_ter_cnstr] = init_slack_max_condition(mpc,s_ter_cnstr,...
                             x_ter_max_slack_active,...
-                            x_ter_max_hard,mpc.nx,mpc.nx);
+                            mpc.nx,mpc.nx);
     else
         s_ter_cnstr.max_slack_nv = 0;
     end

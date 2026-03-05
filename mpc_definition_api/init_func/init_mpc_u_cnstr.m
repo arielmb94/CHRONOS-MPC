@@ -50,15 +50,13 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mpc = init_mpc_u_cnstr(mpc,u_min,u_max,...
-                u_min_slack_active,u_max_slack_active,u_min_hard,u_max_hard)
+                u_min_slack_active,u_max_slack_active)
 arguments
     mpc
     u_min
     u_max
     u_min_slack_active = []
     u_max_slack_active = []
-    u_min_hard = []
-    u_max_hard = []
 end
 
 u_cnstr.min = u_min;
@@ -79,7 +77,7 @@ if ~isempty(u_cnstr.min)
         is_there_slack = 1;
 
         [mpc,u_cnstr] = init_slack_min_condition(mpc,u_cnstr,u_min_slack_active,...
-                        u_min_hard,mpc.Nu,mpc.nu);
+                        mpc.Nu,mpc.nu);
     else
         u_cnstr.min_slack_nv = 0;
     end
@@ -103,7 +101,7 @@ if ~isempty(u_cnstr.max)
         is_there_slack = 1;
 
         [mpc,u_cnstr] = init_slack_max_condition(mpc,u_cnstr,u_max_slack_active,...
-                        u_max_hard,mpc.Nu,mpc.nu);
+                        mpc.Nu,mpc.nu);
     else
         u_cnstr.max_slack_nv = 0;
     end
