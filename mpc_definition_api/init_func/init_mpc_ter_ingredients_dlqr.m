@@ -48,14 +48,24 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function mpc = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,...
-                                             terminal_constraint,x_ref_is_y)
+                                             terminal_constraint,x_ref_is_y, ...
+                                             qv_ter)
+arguments
+    mpc
+    Qx
+    Ru
+    terminal_constraint = 0
+    x_ref_is_y = 0
+    qv_ter = []
+end
 
 mpc.ter_ingredients = 1;
 mpc.ter_constraint = terminal_constraint;
 mpc.x_ref_is_y = x_ref_is_y;
 
-[~,P] = dlqr(mpc.A,mpc.B,Qx,Ru);
+[K,P] = dlqr(mpc.A,mpc.B,Qx,Ru);
 
+mpc.K = K;
 mpc.P = P;
 mpc.P2 = 2*P;
 
@@ -63,7 +73,6 @@ if isempty(mpc.hessCost)
     mpc.hessCost = zeros(mpc.Nu+mpc.Nx+mpc.Nv);
 end
 
-mpc.fi_ter_x0 = 0;
 mpc.hessTerminalCost = zeros(mpc.Nx+mpc.Nu+mpc.Nv);
 N = mpc.Nx+mpc.Nu;
 mpc.hessTerminalCost(N-mpc.nx+1: N,N-mpc.nx+1 : N) = 2*P;
@@ -75,31 +84,32 @@ if terminal_constraint
     % grad_fi = 2*grad_e_xN*P*e_xN - [0;1]
     % hess_fi = 2*grad_e_xN*P*grad_e_xN' (same as terminal cost function)
 
+    mpc.fi_ter_x0 = 0;
+
     mpc.v = [mpc.v;0];
     mpc.v_ter = 0;
-    mpc.ter_cnstr_map = [zeros(mpc.Nv,1); 1];
-    mpc.ter_cnstr_slack_index = [zeros(1,mpc.Nx+mpc.Nu+mpc.Nv) 1];
+    % get index of v_ter in global v vector
+    mpc.v_ter_global_index = mpc.Nv+1;
 
-    % initialize terminal constraint gradient with constant slack element
-    % -> -[0;1]
-    mpc.ter_cnstr_grad = [zeros(mpc.Nx+mpc.Nu+mpc.Nv,1);
-                            -1];
+    % gradient/hess of constraint: -v<=0 (slack positivity constraint)
+    mpc.fi_ter_slack_positivity_x0 = 0;
+    mpc.fi_ter_slack_positivity_grad = -1 * [zeros(mpc.Nx+mpc.Nu+mpc.Nv,1);...
+                                            1];
+    [mpc.fi_ter_slack_positivity_hess,mi] = genHessIneq(mpc.fi_ter_slack_positivity_grad);
+    mpc.m = mpc.m+mi;
 
-    % Initialize Penalty term for new slack variables -> Jv = vi'*Qv*vi
-    if ~isempty(mpc.gradSlackQv)
+    % Initialize Penalty term for new slack variables
+    if isempty(qv_ter)
+        qv_ter = mpc.qv;
+    end
+
+    if ~isempty(mpc.gradSlackqv)
         % expand slack penalty term grad
-        mpc.gradSlackQv = [mpc.gradSlackQv;
-                           zeros(1,mpc.Nv)];
-        % add columns for new slack
-        mpc.gradSlackQv = [mpc.gradSlackQv mpc.ter_cnstr_slack_index'*mpc.Qv];
-
-        % expand slack penalty term hess
-        mpc.hessSlackTerm = [mpc.hessSlackTerm zeros(mpc.Nx+mpc.Nu+mpc.Nv,1);
-            zeros(1,mpc.Nx+mpc.Nu+mpc.Nv) mpc.Qv];
+        mpc.gradSlackqv = [mpc.gradSlackqv;
+                            qv_ter];
     else
-        mpc.gradSlackQv = cnstr.min_slack_index'*mpc.Qv;
-        mpc.hessSlackTerm = [zeros(mpc.Nx+mpc.Nu) zeros(mpc.Nx+mpc.Nu,1);
-            zeros(1,mpc.Nx+mpc.Nu) mpc.Qv];
+        mpc.gradSlackqv = [zeros(mpc.Nx+mpc.Nu,1);
+                            qv_ter];
     end
 
     % update global counter of slack variables
