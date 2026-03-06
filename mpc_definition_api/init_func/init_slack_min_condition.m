@@ -1,5 +1,5 @@
 function [mpc,cnstr] = init_slack_min_condition(mpc,cnstr,slack_active_vector,...
-                       N,n)
+                       qv_min,N,n)
 
 if length(slack_active_vector) == 1
     slack_active_vector = ones(n,1);
@@ -34,13 +34,21 @@ cnstr.min_slack_positivity_grad = -1 * min_slack_grad;
 mpc.m = mpc.m+mi;
 
 % Initialize Penalty term for new slack variables
+if isempty(qv_min)
+    qv_min = mpc.qv*ones(nv,1);
+elseif length(qv_min) == 1
+    qv_min = qv_min*ones(nv,1);
+else
+    qv_min = cnstr.min_slack_local_map*qv_min;
+end
+
 if ~isempty(mpc.gradSlackqv)   
     % expand slack penalty term grad
     mpc.gradSlackqv = [mpc.gradSlackqv;
-                       mpc.qv*ones(nv,1)];
+                       qv_min];
 else
     mpc.gradSlackqv = [zeros(mpc.Nx+mpc.Nu,1);
-                        mpc.qv*ones(nv,1)];
+                        qv_min];
 end
 
 % update global counter of slack variables

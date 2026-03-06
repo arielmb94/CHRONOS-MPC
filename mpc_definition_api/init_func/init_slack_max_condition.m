@@ -1,5 +1,5 @@
 function [mpc,cnstr] = init_slack_max_condition(mpc,cnstr,slack_active_vector,...
-                       N,n)
+                       qv_max,N,n)
 
 if length(slack_active_vector) == 1
     slack_active_vector = ones(n,1);
@@ -34,13 +34,21 @@ cnstr.max_slack_positivity_grad = -1 * max_slack_grad;
 mpc.m = mpc.m+mi;
 
 % Initialize Penalty term for new slack variables
+if isempty(qv_max)
+    qv_max = mpc.qv*ones(nv,1);
+elseif length(qv_max) == 1
+    qv_max = qv_max*ones(nv,1);
+else
+    qv_max = cnstr.max_slack_local_map*qv_max;
+end
+
 if ~isempty(mpc.gradSlackqv)   
     % expand slack penalty term grad
     mpc.gradSlackqv = [mpc.gradSlackqv;
-                       mpc.qv*ones(nv,1)];
+                       qv_max];
 else
     mpc.gradSlackqv = [zeros(mpc.Nx+mpc.Nu);
-                        mpc.qv*ones(nv,1)];
+                        qv_max];
 end
 
 % update global counter of slack variables

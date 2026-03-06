@@ -1,62 +1,50 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% INIT_MPC_U_CNSTR Defines control action constraints and soft-constraint penalties.
 %
-%   mpc = init_mpc_u_cnstr(mpc,u_min,u_max,...
-%                          u_min_slack_active,u_max_slack_active,...
-%                          u_min_hard,u_max_hard)
+%   mpc = INIT_MPC_U_CNSTR(mpc, u_min, u_max) sets strict (hard) lower and 
+%   upper bounds on the control action. The solver will strictly enforce these 
+%   limits.
 %
-% Define limits on the control action:
+%   mpc = INIT_MPC_U_CNSTR(mpc, u_min, u_max, u_min_slack_active, u_max_slack_active, qv_min, qv_max) 
+%   allows you to define specific bounds as "soft" constraints. For control
+%   actions it is advisable to use hard constraints since it is a magnitude
+%   the solver will have direct control over.
 %
-%   u_min <= u <= u_max
+%   INPUTS:
+%       mpc                - CHRONOS MPC structure
+%       u_min              - [nu x 1] Array of lower control action limits (use [] if none).
+%       u_max              - [nu x 1] Array of upper control action limits (use [] if none).
+%       u_min_slack_active - (Optional) [nu x 1] Logical array or scalar. Set to 1 
+%                            to make the corresponding u_min limit soft.
+%       u_max_slack_active - (Optional) [nu x 1] Logical array or scalar. Set to 1 
+%                            to make the corresponding u_max limit soft.
+%       qv_min             - (Optional) [nu x 1] or scalar. Penalty weight for violating 
+%                            the u_min soft limits. Higher values mean stricter enforcement.
+%       qv_max             - (Optional) [nu x 1] or scalar. Penalty weight for violating 
+%                            the u_max soft limits. Higher values mean stricter enforcement.
 %
-% In some scenarios, it is ok if these limits are violated by a small
-% amount. In these cases we can enable slack variables v_i on the
-% constraints to allow for violations of the now soft constraint limits,
-% the constraint now becoming:
+%   OUTPUTS:
+%       mpc                - Updated MPC structure. All necessary background math 
+%                            (constraint gradients, Hessians, and slack variables) 
+%                            are automatically assembled and added to the object.
 %
-%   u_min - u <= v_i
-%   u - u_max <= v_i
-% 
-% Even if small violations on the soft constraints can be tolerated,
-% sometimes there are phisical limits which cannot be surpased. In those 
-% cases we can enable hard limits such that:
-%
-% u_min_hard <= u_min <= u <= u_max <= u_max_hard
-%
-% In:
-%   - mpc: CHRONOS mpc structure
-%
-%   - u_min (optional): nu column vector, lower bound constraint values on
-%   the control action
-%
-%   - u_max (optional): nu column vector, upper bound constraint values on
-%   the control action
-%
-%   - u_min_slack_active (optional): single boolean or nu boolean column 
-%   vector, indicates which elements of the control vector minumum constraints
-%   have slack variables
-%
-%   - u_max_slack_active (optional): single boolean or nu boolean column 
-%   vector, indicates which elements of the control vector maximum constraints
-%   have slack variables
-%
-%   - u_min_hard (optional): nu column vector, maximum lower bound 
-%   constraint values on the control vector
-%
-%   - u_max_hard (optional): nu column vector, maximum upper bound 
-%   constraint values on the control vector
-%
-% Out:
-%   - mpc: updated CHRONOS mpc structure
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mpc = init_mpc_u_cnstr(mpc,u_min,u_max,...
-                u_min_slack_active,u_max_slack_active)
+%   USAGE TIPS:
+%       - If soft constraitns are enabled and qv_min or qv_max are not
+%         passed, the soft constraint penalty weight will default to the value 
+%         stored in mpc.qv
+%       - Passing a scalar to the slack or qv inputs will automatically apply 
+%         that setting across all constrained control actions.
+%       - Example: Passing u_max_slack_active = [0; 1; 0] makes only the second 
+%         control action limit soft, leaving the first and third as hard constraints.
+function mpc = init_mpc_u_cnstr(mpc,u_min,u_max,u_min_slack_active,u_max_slack_active,...
+                                qv_min,qv_max)
 arguments
     mpc
     u_min
     u_max
     u_min_slack_active = []
     u_max_slack_active = []
+    qv_min = []
+    qv_max = []
 end
 
 u_cnstr.min = u_min;
@@ -77,7 +65,7 @@ if ~isempty(u_cnstr.min)
         is_there_slack = 1;
 
         [mpc,u_cnstr] = init_slack_min_condition(mpc,u_cnstr,u_min_slack_active,...
-                        mpc.Nu,mpc.nu);
+                        qv_min,mpc.Nu,mpc.nu);
     else
         u_cnstr.min_slack_nv = 0;
     end
@@ -101,7 +89,7 @@ if ~isempty(u_cnstr.max)
         is_there_slack = 1;
 
         [mpc,u_cnstr] = init_slack_max_condition(mpc,u_cnstr,u_max_slack_active,...
-                        mpc.Nu,mpc.nu);
+                        qv_max,mpc.Nu,mpc.nu);
     else
         u_cnstr.max_slack_nv = 0;
     end

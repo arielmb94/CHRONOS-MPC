@@ -1,61 +1,52 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% INIT_MPC_OUTPUT_CNSTR Defines output constraints and soft-constraint penalties.
 %
-%   mpc = init_mpc_output_cnstr(mpc,y_min,y_max,...
-%         y_min_slack_active,y_max_slack_active,y_min_hard,y_max_hard))
+%   mpc = INIT_MPC_OUTPUT_CNSTR(mpc, y_min, y_max) sets strict (hard) lower and 
+%   upper bounds on the output. The solver will strictly enforce these 
+%   limits. This is suitable for absolute physical boundaries, but may cause 
+%   the solver to crash (go infeasible) if a disturbance pushes the system too far.
 %
-% Define constraints on the tracking signal y:
+%   mpc = INIT_MPC_OUTPUT_CNSTR(mpc, y_min, y_max, y_min_slack_active, y_max_slack_active, qv_min, qv_max) 
+%   allows you to define specific bounds as "soft" constraints. Soft constraints 
+%   can be safely violated during massive disturbances to keep the solver running, 
+%   while applying a customizable penalty to drive the state back within limits 
+%   as quickly as possible.
 %
-%   y_min <= y <= y_max
+%   INPUTS:
+%       mpc                - CHRONOS MPC structure
+%       y_min              - [ny x 1] Array of lower output limits (use [] if none).
+%       y_max              - [ny x 1] Array of upper output limits (use [] if none).
+%       y_min_slack_active - (Optional) [ny x 1] Logical array or scalar. Set to 1 
+%                            to make the corresponding y_min limit soft.
+%       y_max_slack_active - (Optional) [ny x 1] Logical array or scalar. Set to 1 
+%                            to make the corresponding y_max limit soft.
+%       qv_min             - (Optional) [ny x 1] or scalar. Penalty weight for violating 
+%                            the y_min soft limits. Higher values mean stricter enforcement.
+%       qv_max             - (Optional) [ny x 1] or scalar. Penalty weight for violating 
+%                            the y_max soft limits. Higher values mean stricter enforcement.
 %
-% In some scenarios, it is ok if these limits are violated by a small
-% amount. In these cases we can enable slack variables v_i on the
-% constraints to allow for violations of the now soft constraint limits,
-% the constraint now becoming:
+%   OUTPUTS:
+%       mpc                - Updated MPC structure. All necessary background math 
+%                            (constraint gradients, Hessians, and slack variables) 
+%                            are automatically assembled and added to the object.
 %
-%   y_min - y <= v_i
-%   y - y_max <= v_i
-% 
-% Even if small violations on the soft constraints can be tolerated,
-% sometimes there are phisical limits which cannot be surpased. In those 
-% cases we can enable hard limits such that:
-%
-% y_min_hard <= y_min <= y <= y_max <= y_max_hard
-%
-% In:
-%   - mpc: CHRONOS mpc structure
-%
-%   - y_min (optional): ny column vector, lower bound constraint values on 
-%   the tracking signal
-%
-%   - y_max (optional): ny column vector, upper bound constraint values on 
-%   the tracking signal
-%
-%   - y_min_slack_active (optional): single boolean or ny boolean column 
-%   vector, indicates which elements of the output vector minumum constraints
-%   have slack variables
-%
-%   - y_max_slack_active (optional): single boolean or ny boolean column 
-%   vector, indicates which elements of the output vector maximum constraints
-%   have slack variables
-%
-%   - y_min_hard (optional): ny column vector, maximum lower bound 
-%   constraint values on the state vector
-%
-%   - y_max_hard (optional): nx column vector, maximum upper bound 
-%   constraint values on the state vector
-%
-% Out:
-%   - mpc: updated CHRONOS mpc structure
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   USAGE TIPS:
+%       - If soft constraitns are enabled and qv_min or qv_max are not
+%         passed, the soft constraint penalty weight will default to the value 
+%         stored in mpc.qv
+%       - Passing a scalar to the slack or qv inputs will automatically apply 
+%         that setting across all constrained outputs.
+%       - Example: Passing y_max_slack_active = [0; 1; 0] makes only the second 
+%         output limit soft, leaving the first and third as hard constraints.
 function mpc = init_mpc_output_cnstr(mpc,y_min,y_max,...
-                y_min_slack_active,y_max_slack_active)
+                y_min_slack_active,y_max_slack_active,qv_min,qv_max)
 arguments
     mpc
     y_min
     y_max
     y_min_slack_active = []
     y_max_slack_active = []
+    qv_min = []
+    qv_max = []
 end
 
 y_cnstr.min = y_min;
@@ -69,7 +60,7 @@ if ~isempty(y_cnstr.min)
 
     % Outputs box constraints
     y_cnstr.grad_min = -1 * genGradY(mpc.C,mpc.D,mpc.N,mpc.N_ctr_hor,...
-                            mpc.Nx,mpc.Nu,mpc.Ny,mpc.nx,mpc.nu,mpc.ny);
+                            mpc.Nx,mpc.Nu,mpc.Ny,mpc.nx,mpc.nu,mpc.ny,mpc.Nv);
 
     % consider slack variable on the gradient
     if ~isempty(y_min_slack_active)
@@ -77,7 +68,7 @@ if ~isempty(y_cnstr.min)
         is_there_slack = 1;
 
         [mpc,y_cnstr] = init_slack_min_condition(mpc,y_cnstr,...
-                        y_min_slack_active,mpc.Ny,mpc.ny);
+                        y_min_slack_active,qv_min,mpc.Ny,mpc.ny);
     else
         y_cnstr.min_slack_nv = 0;
     end
@@ -94,7 +85,7 @@ if ~isempty(y_cnstr.max)
 
     % Outputs box constraints
     y_cnstr.grad_max = genGradY(mpc.C,mpc.D,mpc.N,mpc.N_ctr_hor,...
-                       mpc.Nx,mpc.Nu,mpc.Ny,mpc.nx,mpc.nu,mpc.ny);
+                       mpc.Nx,mpc.Nu,mpc.Ny,mpc.nx,mpc.nu,mpc.ny,mpc.Nv);
 
     % consider slack variable on the gradient
     if ~isempty(y_max_slack_active)
@@ -102,7 +93,7 @@ if ~isempty(y_cnstr.max)
         is_there_slack = 1;
 
         [mpc,y_cnstr] = init_slack_max_condition(mpc,y_cnstr,...
-                        y_max_slack_active,mpc.Ny,mpc.ny);
+                        y_max_slack_active,qv_max,mpc.Ny,mpc.ny);
     else
         y_cnstr.max_slack_nv = 0;
     end

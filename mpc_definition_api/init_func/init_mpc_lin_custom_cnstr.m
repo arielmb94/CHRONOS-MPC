@@ -1,80 +1,65 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% INIT_MPC_LIN_CUSTOM_CNSTR Defines constraints and soft-penalties on
+% custom user defined signals.
 %
-%   mpc = init_mpc_lin_custom_cnstr(mpc,Ch,Dh,Ddh,h_min,h_max,...
-%           h_min_slack_active,h_max_slack_active,h_min_hard,h_max_hard)
+%   mpc = INIT_MPC_LIN_CUSTOM_CNSTR(mpc, Ch, Dh, Ddh, h_min, h_max) defines a 
+%   custom auxiliary signal 'h' and sets strict (hard) lower and upper bounds 
+%   on it. The custom signal is calculated as:
 %
-% Define constraints on a custom user defined signal h. The signal h is
-% defined as:
+%       h = Ch * x + Dh * u + Ddh * dh
 %
-%   h = Ch * x + Dh * u + Ddh * dh
+%   The solver will strictly enforce h_min <= h <= h_max. This is suitable for 
+%   hard physical limits, but massive disturbances could cause the solver to crash 
+%   (go infeasible) if the limits are impossible to satisfy.
 %
-% The user must define the signal h by selecting appropiate values for the
-% matrices Ch, Dh, Ddh.
-% 
-% The constraints on h are then of the form:
+%   mpc = INIT_MPC_LIN_CUSTOM_CNSTR(mpc, ..., h_min_slack_active, h_max_slack_active, qv_min, qv_max) 
+%   allows you to define these custom bounds as "soft" constraints. Soft constraints 
+%   can be safely violated during severe disturbances to prevent solver crashes, 
+%   while applying a customizable linear penalty to drive the signal back within 
+%   limits as quickly as actuator power allows. It is highly advisible to
+%   enable soft constraint on the custom signals.
 %
-%   h_min <= h <= h_max
+%   INPUTS:
+%       mpc                - CHRONOS MPC structure.
+%       Ch                 - [nh x nx] Matrix mapping states to the custom signal.
+%       Dh                 - [nh x nu] Matrix mapping inputs to the custom signal.
+%       Ddh                - [nh x ndh] Matrix mapping measured disturbances to the custom signal.
+%       h_min              - [nh x 1] Array of lower limits (use [] if none).
+%       h_max              - [nh x 1] Array of upper limits (use [] if none).
+%       h_min_slack_active - (Optional) [nh x 1] Logical array or scalar. Set to 1 
+%                            to make the corresponding h_min limit soft.
+%       h_max_slack_active - (Optional) [nh x 1] Logical array or scalar. Set to 1 
+%                            to make the corresponding h_max limit soft.
+%       qv_min             - (Optional) [nh x 1] or scalar. Penalty weight for violating 
+%                            the h_min soft limits. Higher values mean stricter enforcement.
+%       qv_max             - (Optional) [nh x 1] or scalar. Penalty weight for violating 
+%                            the h_max soft limits. Higher values mean stricter enforcement.
 %
-% In some scenarios, it is ok if these limits are violated by a small
-% amount. In these cases we can enable slack variables v_i on the
-% constraints to allow for violations of the now soft constraint limits,
-% the constraint now becoming:
+%   OUTPUTS:
+%       mpc                - Updated MPC structure. All necessary background math 
+%                            (matrices, gradients, Hessians, and slack variables) 
+%                            are automatically assembled and added to the object.
 %
-%   h_min - h <= v_i
-%   h - h_max <= v_i
-% 
-% Even if small violations on the soft constraints can be tolerated,
-% sometimes there are phisical limits which cannot be surpased. In those 
-% cases we can enable hard limits such that:
+%   EXAMPLE USE CASE: Tracking an input reference (u_star)
+%       We want to limit the variation of the control action with respect to a 
+%       dynamic target value, meaning we want to constrain: h = u - u_star.
+%       To achieve this, we set up our custom signal matrices as:
+%           - Ch  = zeros(nu, nx)
+%           - Dh  = eye(nu)
+%           - Ddh = -eye(nu)
+%       This creates the equation: h = 0*x + 1*u - 1*dh.
+%       During runtime, the user passes 'u_star' into the 'dh' disturbance 
+%       vector, and the solver handles the rest!
 %
-% h_min_hard <= h_min <= x <= h_max <= h_max_hard
-%
-% In:
-%   - mpc: CHRONOS mpc structure
-%
-%   - Ch: nh x nx matrix, states output matrix
-%
-%   - Dh: nh x nu matrix, input feedtrhough matrix
-%
-%   - Ddh: nh x ndh matrix, disturbance feedtrhough matrix
-%
-%   - h_min: nh column vector, lower bound constraint values on the user
-%   defined signal h
-%
-%   - h_max: nh column vector, upper bound constraint values on the user
-%   defined signal h
-%
-%   - h_min_slack_active (optional): single boolean or nh boolean column 
-%   vector, indicates which elements of the user defined signal minumum 
-%   constraints have slack variables
-%
-%   - h_max_slack_active (optional): single boolean or nh boolean column 
-%   vector, indicates which elements of the user defined signal maximum 
-%   constraints have slack variables
-%
-%   - h_min_hard (optional): nh column vector, maximum lower bound 
-%   constraint values on the user defined signal
-%
-%   - h_max_hard (optional): nh column vector, maximum upper bound 
-%   constraint values on the user defined signal
-%
-% Out:
-%   - mpc: updated CHRONOS mpc structure
-%
-% Example:
-% We want to limit the variation of the MPC control action with respect a
-% a given value u_star, e.g. we want to constraint h = u - u_star.
-% To achieve this we define h by selecting:
-%   - Ch = [0 0 ... 0]
-%   - Dh = [1]
-%   - Ddh = [-1]
-% which corresponds to h = [0 0 ... 0] * x + [1] * u + [-1] * dh
-% The "disturbance" term on h corresponds to u_star, to be introduced on 
-% the appropiate field on mpc_solve() during runtime MPC execution.
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   USAGE TIPS:
+%       - If soft constraitns are enabled and qv_min or qv_max are not
+%         passed, the soft constraint penalty weight will default to the value 
+%         stored in mpc.qv
+%       - Passing a scalar to the slack or qv inputs will automatically apply 
+%         that setting across all constrained outputs.
+%       - Example: Passing h_max_slack_active = [0; 1; 0] makes only the second 
+%         output limit soft, leaving the first and third as hard constraints.
 function mpc = init_mpc_lin_custom_cnstr(mpc,Ch,Dh,Ddh,h_min,h_max, ...
-                h_min_slack_active,h_max_slack_active)
+                h_min_slack_active,h_max_slack_active,qv_min,qv_max)
 arguments
     mpc
     Ch
@@ -84,6 +69,8 @@ arguments
     h_max
     h_min_slack_active = []
     h_max_slack_active = []
+    qv_min = []
+    qv_max = []
 end
 
 % General Inequality Matrix
@@ -123,7 +110,7 @@ if ~isempty(h_cnstr.min)
         is_there_slack = 1;
 
         [mpc,h_cnstr] = init_slack_min_condition(mpc,h_cnstr,...
-                        h_min_slack_active,mpc.Nh,mpc.nh);
+                        h_min_slack_active,qv_min,mpc.Nh,mpc.nh);
     else
         h_cnstr.min_slack_nv = 0;
     end
@@ -146,7 +133,7 @@ if ~isempty(h_cnstr.max)
         is_there_slack = 1;
 
         [mpc,h_cnstr] = init_slack_max_condition(mpc,h_cnstr,...
-                        h_max_slack_active,mpc.Nh,mpc.nh);
+                        h_max_slack_active,qv_max,mpc.Nh,mpc.nh);
     else
         h_cnstr.max_slack_nv = 0;
     end
