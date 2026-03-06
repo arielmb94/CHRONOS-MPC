@@ -265,19 +265,27 @@ function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
         % 2. If enabled, compute terminal ingredients 
         % CODEGEN NOTE: to be commented out if there is not terminal ingredients
         if mpc.ter_ingredients
-            [grad_ter,grad_ter_Ind_x0,hess_ter_Ind_x0] = ...
-                ter_set_Ind_fun(x_ref,mpc.s_ter,mpc.fi_ter_x0,...
-                mpc.P2,mpc.Nx,mpc.Nu,mpc.nx,mpc.ter_constraint);
-%             if mpc.ter_constraint
-%                 grad_fi_Ind = grad_fi_Ind + grad_ter_Ind_x0; 
-%             end
-        end
-        
-        % 3. Compute gradient of cost function at x0
-        if perfCost
-            % compute vector z
-            mpc.z(:) = get_mpc_lin_out(mpc.s_all,mpc.u,dz,mpc.nx,mpc.nu,mpc.nz,mpc.ndz,...
-                                mpc.N_ctr_hor,mpc.Nz,mpc.Cz,mpc.Dz,mpc.Ddz);
+            [mpc,grad_ter,grad_ter_Ind_x0,hess_ter_Ind_x0] = ...
+                ter_set_Ind_fun(mpc,x_ref,mpc.s_ter,mpc.fi_ter_x0,...
+                mpc.ter_constraint);
+            if mpc.ter_constraint
+                % add gradient from terminal constraint
+                grad_fi_Ind = grad_fi_Ind + grad_ter_Ind_x0;
+
+                % add gradient from terminal constraint slack variable
+                % positivity constraint
+                grad_ter_slack_Ind_x0 = grad_box_Ind(mpc.fi_ter_slack_positivity_x0,...
+                                            mpc.fi_ter_slack_positivity_grad);
+
+                grad_fi_Ind = grad_fi_Ind + grad_ter_slack_Ind_x0;
+
+                hess_fi_Ind = hess_fi_Ind + hess_ter_Ind_x0;
+
+                hess_ter_slack_Ind_x0 = hess_linear_Ind(mpc.fi_ter_slack_positivity_x0,...
+                                            mpc.fi_ter_slack_positivity_hess);
+
+                hess_fi_Ind = hess_fi_Ind + hess_ter_slack_Ind_x0;
+            end
         end
 
         grad_f0 = grad_f0_MPC(mpc,mpc.err,mpc.du,mpc.u,grad_ter,mpc.z);
