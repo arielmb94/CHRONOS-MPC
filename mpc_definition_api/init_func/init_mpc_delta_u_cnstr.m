@@ -1,62 +1,50 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% INIT_MPC_DELTA_U_CNSTR Defines control action rate constraints and soft-constraint penalties.
 %
-%   mpc = init_mpc_delta_u_cnstr(mpc,du_min,du_max,...
-%                               du_min_slack_active,du_max_slack_active,...
-%                               du_min_hard,du_max_hard)
+%   mpc = INIT_MPC_DELTA_U_CNSTR(mpc, du_min, du_max) sets strict (hard) lower and 
+%   upper bounds on the control action rate. The solver will strictly enforce these 
+%   limits.
 %
-% Define constraint on the control variation between sampling instances:
+%   mpc = INIT_MPC_DELTA_U_CNSTR(mpc, du_min, du_max, du_min_slack_active, du_max_slack_active, qv_min, qv_max) 
+%   allows you to define specific bounds as "soft" constraints. For control
+%   actions it is advisable to use hard constraints since it is a magnitude
+%   the solver will have direct control over.
 %
-%   du_min <= delta_u <= du_max
+%   INPUTS:
+%       mpc                - CHRONOS MPC structure
+%       du_min              - [nu x 1] Array of lower control action rate limits (use [] if none).
+%       du_max              - [nu x 1] Array of upper control action rate limits (use [] if none).
+%       du_min_slack_active - (Optional) [nu x 1] Logical array or scalar. Set to 1 
+%                            to make the corresponding du_min limit soft.
+%       du_max_slack_active - (Optional) [nu x 1] Logical array or scalar. Set to 1 
+%                            to make the corresponding du_max limit soft.
+%       qv_min             - (Optional) [nu x 1] or scalar. Penalty weight for violating 
+%                            the du_min soft limits. Higher values mean stricter enforcement.
+%       qv_max             - (Optional) [nu x 1] or scalar. Penalty weight for violating 
+%                            the du_max soft limits. Higher values mean stricter enforcement.
 %
-% In some scenarios, it is ok if these limits are violated by a small
-% amount. In these cases we can enable slack variables v_i on the
-% constraints to allow for violations of the now soft constraint limits,
-% the constraint now becoming:
+%   OUTPUTS:
+%       mpc                - Updated MPC structure. All necessary background math 
+%                            (constraint gradients, Hessians, and slack variables) 
+%                            are automatically assembled and added to the object.
 %
-%   du_min - delta_u <= v_i
-%   delta_u - du_max <= v_i
-% 
-% Even if small violations on the soft constraints can be tolerated,
-% sometimes there are phisical limits which cannot be surpased. In those 
-% cases we can enable hard limits such that:
-%
-% du_min_hard <= du_min <= delta_u <= du_max <= du_max_hard
-%
-% In:
-%   - mpc: CHRONOS mpc structure
-%
-%   - du_min (optional): nu column vector, lower bound constraint values on
-%   the control variation between sampling instances
-%
-%   - du_max (optional): nu column vector, upper bound constraint values on
-%   the control variation between sampling instances
-%
-%   - du_min_slack_active (optional): single boolean or nu boolean column 
-%   vector, indicates which elements of the differential control vector 
-%   minumum constraints have slack variables
-%
-%   - du_max_slack_active (optional): single boolean or nu boolean column 
-%   vector, indicates which elements of the differential control vector 
-%   maximum constraints have slack variables
-%
-%   - du_min_hard (optional): nu column vector, maximum lower bound 
-%   constraint values on the differential control vector
-%
-%   - du_max_hard (optional): nu column vector, maximum upper bound 
-%   constraint values on the differential control vector
-%
-% Out:
-%   - mpc: updated CHRONOS mpc structure
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   USAGE TIPS:
+%       - If soft constraitns are enabled and qv_min or qv_max are not
+%         passed, the soft constraint penalty weight will default to the value 
+%         stored in mpc.qv
+%       - Passing a scalar to the slack or qv inputs will automatically apply 
+%         that setting across all constrained control actions.
+%       - Example: Passing u_max_slack_active = [0; 1; 0] makes only the second 
+%         control action rate limit soft, leaving the first and third as hard constraints.
 function mpc = init_mpc_delta_u_cnstr(mpc,du_min,du_max,...
-               du_min_slack_active,du_max_slack_active)
+               du_min_slack_active,du_max_slack_active,qv_min,qv_max)
 arguments
     mpc
     du_min
     du_max
     du_min_slack_active = []
     du_max_slack_active = []
+    qv_min = []
+    qv_max = []
 end
 
 du_cnstr.min = du_min;
@@ -78,7 +66,7 @@ if ~isempty(du_cnstr.min)
         is_there_slack = 1;
 
         [mpc,du_cnstr] = init_slack_min_condition(mpc,du_cnstr,...
-                        du_min_slack_active,mpc.Nu,mpc.nu);
+                        du_min_slack_active,qv_min,mpc.Nu,mpc.nu);
     else
         du_cnstr.min_slack_nv = 0;
     end
@@ -103,7 +91,7 @@ if ~isempty(du_cnstr.max)
         is_there_slack = 1;
 
         [mpc,du_cnstr] = init_slack_max_condition(mpc,du_cnstr,...
-                        du_max_slack_active,mpc.Nu,mpc.nu);
+                        du_max_slack_active,qv_max,mpc.Nu,mpc.nu);
     else
         du_cnstr.max_slack_nv = 0;
     end

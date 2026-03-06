@@ -1,63 +1,54 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% INIT_MPC_STATE_TER_CNSTR Defines box constraints and soft-constraint penalties
+%                          on the terminal state.
 %
-%   mpc = init_mpc_ter_state_cnstr(mpc,x_ter_min,x_ter_max,...
-%                           x_ter_min_slack_active,x_ter_max_slack_active,...
-%                           x_ter_min_hard,x_ter_max_hard)
+%   mpc = INIT_MPC_STATE_TER_CNSTR(mpc, x_min, x_max) sets strict (hard) lower and 
+%   upper bounds on the terminal state. The solver will strictly enforce these 
+%   limits. This is suitable for absolute physical boundaries, but may cause 
+%   the solver to crash (go infeasible) if a disturbance pushes the system too far.
 %
-% Define box constraints only on the final state vector xN of the MPC 
-% prediction horizon:
+%   mpc = INIT_MPC_STATE_TER_CNSTR(mpc, x_min, x_max, x_min_slack_active, x_max_slack_active, qv_min, qv_max) 
+%   allows you to define specific bounds as "soft" constraints. Soft constraints 
+%   can be safely violated during massive disturbances to keep the solver running, 
+%   while applying a customizable penalty to drive the state back within limits 
+%   as quickly as possible.
 %
-%   xN_min <= xN <= xN_max
+%   INPUTS:
+%       mpc                - CHRONOS MPC structure
+%       x_min              - [nx x 1] Array of lower state limits (use [] if none).
+%       x_max              - [nx x 1] Array of upper state limits (use [] if none).
+%       x_min_slack_active - (Optional) [nx x 1] Logical array or scalar. Set to 1 
+%                            to make the corresponding x_min limit soft.
+%       x_max_slack_active - (Optional) [nx x 1] Logical array or scalar. Set to 1 
+%                            to make the corresponding x_max limit soft.
+%       qv_min             - (Optional) [nx x 1] or scalar. Penalty weight for violating 
+%                            the x_min soft limits. Higher values mean stricter enforcement.
+%       qv_max             - (Optional) [nx x 1] or scalar. Penalty weight for violating 
+%                            the x_max soft limits. Higher values mean stricter enforcement.
 %
-% In some scenarios, it is ok if these limits are violated by a small
-% amount. In these cases we can enable slack variables v_i on the
-% constraints to allow for violations of the now soft constraint limits,
-% the constraint now becoming:
+%   OUTPUTS:
+%       mpc                - Updated MPC structure. All necessary background math 
+%                            (constraint gradients, Hessians, and slack variables) 
+%                            are automatically assembled and added to the object.
 %
-%   xN_min - x <= v_i
-%   x - xN_max <= v_i
-% 
-% Even if small violations on the soft constraints can be tolerated,
-% sometimes there are phisical limits which cannot be surpased. In those 
-% cases we can enable hard limits such that:
-%
-% xN_min_hard <= xN_min <= x <= xN_max <= xN_max_hard
-%
-% In:
-%   - mpc: CHRONOS mpc structure
-%
-%   - x_ter_min (optional): nx column vector, lower bound constraint values
-%   on the terminal state vector
-%
-%   - x_ter_max (optional): nx column vector, upper bound constraint values
-%   on the terminal state vector
-%
-%   - x_ter_min_slack_active (optional): single boolean or nx boolean column 
-%   vector, indicates which elements of the state vector minumum constraints
-%   have slack variables
-%
-%   - x_ter_max_slack_active (optional): single boolean or nx boolean column 
-%   vector, indicates which elements of the state vector maximum constraints
-%   have slack variables
-%
-%   - x_ter_min_hard (optional): nx column vector, maximum lower bound 
-%   constraint values on the state vector
-%
-%   - x_ter_max_hard (optional): nx column vector, maximum upper bound 
-%   constraint values on the state vector
-%
-% Out:
-%   - mpc: updated CHRONOS mpc structure
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   USAGE TIPS:
+%       - If soft constraitns are enabled and qv_min or qv_max are not
+%         passed, the soft constraint penalty weight will default to the value 
+%         stored in mpc.qv
+%       - Passing a scalar to the slack or qv inputs will automatically apply 
+%         that setting across all constrained states.
+%       - Example: Passing x_max_slack_active = [0; 1; 0] makes only the second 
+%         state limit soft, leaving the first and third as hard constraints.
 function mpc = init_mpc_ter_state_cnstr(mpc,x_ter_min,x_ter_max,...
-                           x_ter_min_slack_active,x_ter_max_slack_active)
+                           x_ter_min_slack_active,x_ter_max_slack_active,...
+                           qv_min,qv_max)
 arguments
     mpc
     x_ter_min
     x_ter_max
     x_ter_min_slack_active = []
     x_ter_max_slack_active = []
+    qv_min = []
+    qv_max = []
 end
 
 s_ter_cnstr.min = x_ter_min; 
@@ -79,7 +70,7 @@ if ~isempty(s_ter_cnstr.min)
 
         [mpc,s_ter_cnstr] = init_slack_min_condition(mpc,s_ter_cnstr,...
                             x_ter_min_slack_active,...
-                            mpc.nx,mpc.nx);
+                            qv_min,mpc.nx,mpc.nx);
     else
         s_ter_cnstr.min_slack_nv = 0;
     end
@@ -104,7 +95,7 @@ if ~isempty(s_ter_cnstr.max)
 
         [mpc,s_ter_cnstr] = init_slack_max_condition(mpc,s_ter_cnstr,...
                             x_ter_max_slack_active,...
-                            mpc.nx,mpc.nx);
+                            qv_max,mpc.nx,mpc.nx);
     else
         s_ter_cnstr.max_slack_nv = 0;
     end
