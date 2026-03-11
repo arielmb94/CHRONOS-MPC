@@ -22,7 +22,7 @@ function mpc = get_mpc_v(x,mpc)
         mpc.h_cnstr = map_slack(mpc,mpc.h_cnstr);
     end
     if mpc.ter_constraint
-        mpc.v_ter = mpc.ter_cnstr_map*mpc.v;
+        mpc.v_ter = mpc.v(mpc.v_ter_global_index);
     end
     
 end

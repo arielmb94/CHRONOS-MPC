@@ -230,13 +230,12 @@ if length_diff
 end
 
 if mpc.ter_constraint
-    length_diff = N+Nv - size(mpc.ter_cnstr_grad,1);
+    length_diff = N+Nv - size(mpc.fi_ter_slack_positivity_grad,1);
 
     if length_diff
-        mpc.ter_cnstr_slack_index = [mpc.ter_cnstr_slack_index zeros(1,length_diff)];
-        mpc.ter_cnstr_map = [mpc.ter_cnstr_map zeros(1,length_diff)];
-        mpc.ter_cnstr_grad = [mpc.ter_cnstr_grad;
-                                zeros(length_diff,1)];
+        mpc.fi_ter_slack_positivity_grad = [mpc.fi_ter_slack_positivity_grad;
+                                            zeros(length_diff,1)];
+        mpc.fi_ter_slack_positivity_hess = genHessIneq(mpc.fi_ter_slack_positivity_grad);
     end
 end
 
