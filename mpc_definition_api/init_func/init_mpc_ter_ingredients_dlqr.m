@@ -1,61 +1,67 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% INIT_MPC_TER_INGREDIENTS_DLQR Initializes terminal cost and constraints for MPC
 %
-%   mpc = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru, terminal_constraint,x_ref_is_y)
-%
-% Configures the MPC terminal cost ingredient and optionally enables the
-% use of ellipsoidal terminal set contraints.
-%
-% The terminal cost adds the following penalty on the final state of the 
-% MPC Prediction Horizon:
+% This function computes the terminal ingredients required to guarantee closed-loop 
+% stability in the MPC formulation. It uses the Discrete Linear Quadratic Regulator 
+% (DLQR) to calculate the infinite-horizon cost-to-go matrix (P) and the optimal 
+% terminal feedback gain (K). The terminal cost adds the following penalty on the
+% final state of the MPC Prediction Horizon:
 %
 %   J += (ref_xN - xN)' * P * (ref_xN - xN)
+% 
+% (Optional, but not recommended) It can also configure a terminal set constraint:
 %
-% where the terminal cost weight P is computed internally from the solution
-% to a discrete Ricatti equation, obtained from:
+%   (ref_xN - xN)' * P * (ref_xN - xN) < 1
 %
-%   P = dlqr(mpc.A,mpc.B,Qx,Ru),
-%
-% xN is the final state on the MPC prediction horizon and ref_xN is
-% the desired value for the MPC final state. ref_xN is to be introduced on
-% mpc_solve() during runtime MPC execution.
-%
-% If the terminal set constraint is enabled, CHRONOS enforces the following
-% ellipsoidal terminal set constraint:
-%
-%   (ref_xN - xN)' * P * (ref_xN - xN) <= 1
+% Usage:
+%   mpc = init_mpc_ter_ingredients_dlqr(mpc, Qx, Ru, x_ref_is_y, terminal_constraint, qv_ter)
 %
 % IMPORTANT: before calling this function you must ensure that the dynamics
 % of the mpc have been initialized with representative values. Proper
 % initialization can be done during the call to init_mpc_system() or by 
 % modifying the MPC struct fields mpc.A and mpc.B manually.
 %
-% In:
-%   - mpc: CHRONOS mpc structure
-%   - Qx: nx x nx matrix, dLQR penalty on the states
-%   - Ru: nu x nu matrix, dLQR penalty on the control action
-%   - terminal_constraint: Boolean. If set to 1 the terminal set is added
-%   to the list of constraints to be satisfied. NOTE: on the current state
-%   of CHRONOS it is not advisible to enable terminal set constraints, once
-%   slack variables have been added to CHRONOS the feasibility issues will
-%   be solved
-%   - x_ref_is_y: Boolean. In cases where the tracking signal is set to the
-%   full state vector, e.g. y = C * x, setting x_ref_is_y to 1 allows you
-%   to avoid defining ref_xN as a seperate argument on mpc_solve() during 
-%   runtime MPC calls.
+% Inputs:
+%   mpc                 - CHRONOS mpc structure.
+%   Qx                  - [nx x nx] State weighting matrix for the DLQR calculation.
+%   Ru                  - [nu x nu] Control weighting matrix for the DLQR calculation.
+%   x_ref_is_y          - (Optional) Boolean flag. In cases where the tracking signal 
+%                         is set to thefull state vector, e.g. y = I * x, setting 
+%                         x_ref_is_y to 1 allows you to avoid defining ref_xN as a 
+%                         seperate argument on mpc_solve() during runtime MPC calls.
+%                         Default is 0.
+%   terminal_constraint - (Optional) Boolean flag to enable the terminal set constraint.
+%                         Default is 0 (Disabled).
+%   qv_ter              - (Optional) Penalty weight for the terminal constraint slack 
+%                         variable. If left empty, it defaults to the global mpc.qv.
 %
-% Out:
-%   - mpc: updated CHRONOS mpc structure
+% Outputs:
+%   mpc                 - Updated MPC structure. All necessary background math 
+%                         (constraint gradients, Hessians, and slack variables) 
+%                         are automatically assembled and added to the object.
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ==============================================================================
+% ⚠️PRACTICAL USAGE NOTE: Terminal Constraints
+% ==============================================================================
+% The 'terminal_constraint' option is included primarily for theoretical 
+% completeness (e.g., rigid proofs of recursive feasibility and stability). 
+% 
+% In practice, ENABLING THIS CONSTRAINT IS NOT RECOMMENDED. If the terminal 
+% region of attraction is too small, it forces the solver against a steep 
+% log-barrier, causing severe numerical stiffness, Hessian blowups, and erratic 
+% control behavior. 
+%
+% For the vast majority of real-world applications, the terminal cost alone 
+% provides more than enough "pull" to stabilize the system and guide it 
+% without sacrificing solver speed or numerical stability.
 function mpc = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,...
-                                             terminal_constraint,x_ref_is_y, ...
-                                             qv_ter)
+                                             x_ref_is_y,...
+                                             terminal_constraint,qv_ter)
 arguments
     mpc
     Qx
     Ru
-    terminal_constraint = 0
     x_ref_is_y = 0
+    terminal_constraint = 0
     qv_ter = []
 end
 

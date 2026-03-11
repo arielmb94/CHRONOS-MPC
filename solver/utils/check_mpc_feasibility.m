@@ -40,7 +40,7 @@ end
 % Terminal Constraint
 % CODEGEN NOTE: to be commented out if there is not terminal ingredients
 if feas && mpc.ter_ingredients && mpc.ter_constraint
-    mpc = get_terConst_val(mpc,x_ref,mpc.s_ter,mpc.P,0);
+    [mpc,feas] = get_terConst_feas(mpc,x_ref);
 end
 
 end
