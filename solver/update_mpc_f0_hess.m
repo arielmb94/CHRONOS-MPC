@@ -23,4 +23,9 @@ if ~isempty(mpc.Qz)
     mpc.hessCost = mpc.hessCost + mpc.hessPerfTerm;
 end
 
+if mpc.Nv
+    mpc.hessCost(mpc.Nx+mpc.Nu+1:mpc.Nx+mpc.Nu+mpc.Nv,...
+        mpc.Nx+mpc.Nu+1:mpc.Nx+mpc.Nu+mpc.Nv) = eye(mpc.Nv)*mpc.eps_thknv;
+end
+
 end

@@ -185,5 +185,6 @@ mpc.gradSlackqv = [];
 mpc.v = [];
 mpc.slack_epsilon = 1e-3;
 mpc.slack_ter_epsilon = 1e-4;
+mpc.eps_thknv = 1e-4;
 
 end

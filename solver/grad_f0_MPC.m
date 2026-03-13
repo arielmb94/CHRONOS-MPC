@@ -32,6 +32,9 @@ function grad_J = grad_f0_MPC(mpc,err,deltaU,U,grad_ter,z)
     end
 
     if mpc.Nv
-        grad_J(:) = grad_J + mpc.gradSlackqv;
+        grad_J(mpc.Nx+mpc.Nu+1:mpc.Nx+mpc.Nu+mpc.Nv) = ...
+            grad_J(mpc.Nx+mpc.Nu+1:mpc.Nx+mpc.Nu+mpc.Nv) + ...
+            mpc.gradSlackqv(mpc.Nx+mpc.Nu+1:mpc.Nx+mpc.Nu+mpc.Nv) + ...
+            mpc.eps_thknv*mpc.v;
     end
 end
