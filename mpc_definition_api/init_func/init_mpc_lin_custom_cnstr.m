@@ -81,6 +81,18 @@ mpc.Ddh = Ddh;
 mpc.ndh = size(Ddh,2);  %number of disturbance inputs to general inequalities
 mpc.nh = size(Ch,1);  %number of general inequalities
 
+% INPUT DIMENSION VALIDATION 
+validate_column_vector(h_min, mpc.nh, 'h_min');
+validate_column_vector(h_max, mpc.nh, 'h_max');
+validate_column_vector(h_min_slack_active, mpc.nh, 'h_min_slack_active');
+validate_column_vector(h_max_slack_active, mpc.nh, 'h_max_slack_active');
+validate_column_vector(qv_min, mpc.nh, 'qv_min');
+validate_column_vector(qv_max, mpc.nh, 'qv_max');
+
+% Expand scalars to full local vectors if needed
+if isscalar(h_min), h_min = h_min * ones(mpc.nh, 1); end
+if isscalar(h_max), h_max = h_max * ones(mpc.nh, 1); end
+
 if mpc.Dh == 0
     mpc.Nh = (mpc.N-1)*mpc.nh;
 else

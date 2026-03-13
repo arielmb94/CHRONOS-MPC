@@ -49,6 +49,18 @@ arguments
     qv_max = []
 end
 
+% INPUT DIMENSION VALIDATION 
+validate_column_vector(y_min, mpc.ny, 'y_min');
+validate_column_vector(y_max, mpc.ny, 'y_max');
+validate_column_vector(y_min_slack_active, mpc.ny, 'y_min_slack_active');
+validate_column_vector(y_max_slack_active, mpc.ny, 'y_max_slack_active');
+validate_column_vector(qv_min, mpc.ny, 'qv_min');
+validate_column_vector(qv_max, mpc.ny, 'qv_max');
+
+% Expand scalars to full local vectors if needed
+if isscalar(y_min), y_min = y_min * ones(mpc.ny, 1); end
+if isscalar(y_max), y_max = y_max * ones(mpc.ny, 1); end
+
 y_cnstr.min = y_min;
 y_cnstr.max = y_max;
 

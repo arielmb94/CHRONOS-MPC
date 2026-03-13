@@ -51,6 +51,18 @@ arguments
     qv_max = []
 end
 
+% INPUT DIMENSION VALIDATION 
+validate_column_vector(x_ter_min, mpc.nx, 'x_ter_min');
+validate_column_vector(x_ter_max, mpc.nx, 'x_ter_max');
+validate_column_vector(x_ter_min_slack_active, mpc.nx, 'x_ter_min_slack_active');
+validate_column_vector(x_ter_max_slack_active, mpc.nx, 'x_ter_max_slack_active');
+validate_column_vector(qv_min, mpc.nx, 'qv_min');
+validate_column_vector(qv_max, mpc.nx, 'qv_max');
+
+% Expand scalars to full local vectors if needed
+if isscalar(x_ter_min), x_ter_min = x_ter_min * ones(mpc.nx, 1); end
+if isscalar(x_ter_max), x_ter_max = x_ter_max * ones(mpc.nx, 1); end
+
 s_ter_cnstr.min = x_ter_min; 
 s_ter_cnstr.max = x_ter_max;
 

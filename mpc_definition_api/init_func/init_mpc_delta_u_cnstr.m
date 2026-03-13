@@ -47,6 +47,18 @@ arguments
     qv_max = []
 end
 
+% INPUT DIMENSION VALIDATION 
+validate_column_vector(du_min, mpc.nu, 'du_min');
+validate_column_vector(du_max, mpc.nu, 'du_max');
+validate_column_vector(du_min_slack_active, mpc.nu, 'du_min_slack_active');
+validate_column_vector(du_max_slack_active, mpc.nu, 'du_max_slack_active');
+validate_column_vector(qv_min, mpc.nu, 'qv_min');
+validate_column_vector(qv_max, mpc.nu, 'qv_max');
+
+% Expand scalars to full local vectors if needed
+if isscalar(du_min), du_min = du_min * ones(mpc.nu, 1); end
+if isscalar(du_max), du_max = du_max * ones(mpc.nu, 1); end
+
 du_cnstr.min = du_min;
 du_cnstr.max = du_max;
 
