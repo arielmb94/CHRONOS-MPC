@@ -86,7 +86,7 @@ if ~isempty(mpc.Qz) && updateqp
 
     [mpc.gradPerfQz(:,:),mpc.hessPerfTerm(:,:)] = genLinOutGradHess(mpc.Qz, ...
         mpc.Cz,mpc.Dz,mpc.N,mpc.N_ctr_hor,mpc.Nx,mpc.Nu,mpc.Nz,...
-        mpc.nx,mpc.nu,mpc.nz);
+        mpc.nx,mpc.nu,mpc.nz,mpc.Nv);
 
 end
 
@@ -94,7 +94,7 @@ end
 if ~isempty(mpc.qz) && updatelp
 
     mpc.gradPerfqz(:,:) = genGenPerfLPGrad(mpc.qz,mpc.Cz,mpc.Dz,...
-        mpc.N,mpc.N_ctr_hor,mpc.Nx,mpc.Nu,mpc.nx,mpc.nu);
+        mpc.N,mpc.N_ctr_hor,mpc.Nx,mpc.Nu,mpc.nx,mpc.nu,mpc.NV);
 
 end
     

@@ -22,6 +22,6 @@ if ~isempty(Qe)
 end
 
 [mpc.gradErrQe(:,:),mpc.hessErrTerm(:,:)] = genLinOutGradHess(mpc.Qe,mpc.C,mpc.D,...
-            mpc.N,mpc.N_ctr_hor,mpc.Nx,mpc.Nu,mpc.Ny,mpc.nx,mpc.nu,mpc.ny);
+        mpc.N,mpc.N_ctr_hor,mpc.Nx,mpc.Nu,mpc.Ny,mpc.nx,mpc.nu,mpc.ny,mpc.Nv);
 
 end

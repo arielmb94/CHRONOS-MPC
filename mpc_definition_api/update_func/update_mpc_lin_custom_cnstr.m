@@ -71,13 +71,16 @@ end
 % General Inequalites box constraints
 if update_grads
     
-    [mpc.h_cnstr.grad_min(:,:),mpc.h_cnstr.grad_max(:,:)] = genGradY(mpc.Ch,mpc.Dh,mpc.N,mpc.N_ctr_hor,...
-        mpc.Nx,mpc.Nu,mpc.Nh,mpc.nx,mpc.nu,mpc.nh);
-    
     if ~isempty(mpc.h_cnstr.min)
+        mpc.h_cnstr.grad_min(:,:) = -1 * genGradY(mpc.Ch,mpc.Dh,mpc.N,mpc.N_ctr_hor,...
+                            mpc.Nx,mpc.Nu,mpc.Nh,mpc.nx,mpc.nu,mpc.nh,mpc.Nv);
+
         [mpc.h_cnstr.hess_min,~] = genHessIneq(mpc.h_cnstr.grad_min);
     end
     if ~isempty(mpc.h_cnstr.max)
+        mpc.h_cnstr.grad_max(:,:) = genGradY(mpc.Ch,mpc.Dh,mpc.N,mpc.N_ctr_hor,...
+                            mpc.Nx,mpc.Nu,mpc.Nh,mpc.nx,mpc.nu,mpc.nh,mpc.Nv);
+
         [mpc.h_cnstr.hess_max,~] = genHessIneq(mpc.h_cnstr.grad_max);
     end
 
