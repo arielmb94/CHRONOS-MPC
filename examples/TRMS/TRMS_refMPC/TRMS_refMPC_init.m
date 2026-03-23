@@ -78,12 +78,12 @@ h_max = [];
 % Terminal ingredients are computed using the dLQR method
 Qx = diag([1 1 50 1 1 1000]);   % State Penalty
 Ru = 0.01;                      % Control Penalty
-ter_constraint = 0;             % Only terminal cost
 x_ref_is_y = 0;                 % The terminal reference cannnot be extracted 
                                 % from the mpc tracking reference
+ter_constraint = 0;             % Only terminal cost
 
 % Initialize terminal ingredients using the dLQR method
-[mpc] = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,ter_constraint,x_ref_is_y);
+[mpc] = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,x_ref_is_y,ter_constraint);
 
 %% Costs
 
@@ -122,4 +122,4 @@ mpc = init_mpc_Lin_Custom_cost(mpc,Cz,Dz,Ddz,Qz);
 
 % use warm start function initialize the optimization vector
 u_prev = [0;0;0;0];
-x0 = init_mpc_warm_start(mpc,x,u_prev);
+x0 = init_initial_guess(mpc,x,u_prev);
