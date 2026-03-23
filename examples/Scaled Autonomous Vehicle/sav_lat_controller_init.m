@@ -53,4 +53,4 @@ mpc = init_mpc_Control_cost(mpc,Ru,ru);
 % use warm start function to get optimization vector initial value
 x_prev = [0; 0];
 u_prev = 0;
-x0 = init_mpc_warm_start(mpc,x_prev,u_prev);
+x0 = init_initial_guess(mpc,x_prev,u_prev);
