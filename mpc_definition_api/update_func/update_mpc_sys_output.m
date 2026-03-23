@@ -85,13 +85,18 @@ end
 if update_gradients
     % If Outputs constraint exists, update box constraints gradients
     if ~isempty(mpc.y_cnstr) 
-        [mpc.y_cnstr.grad_min(:,:),mpc.y_cnstr.grad_max(:,:)] = genGradY(mpc.C,mpc.D,mpc.N,mpc.N_ctr_hor,...
-            mpc.Nx,mpc.Nu,mpc.Ny,mpc.nx,mpc.nu,mpc.ny);
     
         if ~isempty(mpc.y_cnstr.min)
+            mpc.y_cnstr.grad_min(:,:) = -1 * genGradY(mpc.C,mpc.D,mpc.N,mpc.N_ctr_hor,...
+                            mpc.Nx,mpc.Nu,mpc.Ny,mpc.nx,mpc.nu,mpc.ny,mpc.Nv);
+
             [mpc.y_cnstr.hess_min,~] = genHessIneq(mpc.y_cnstr.grad_min);
         end
+        
         if ~isempty(mpc.y_cnstr.max)
+            mpc.y_cnstr.grad_max(:,:) = genGradY(mpc.C,mpc.D,mpc.N,mpc.N_ctr_hor,...
+                            mpc.Nx,mpc.Nu,mpc.Ny,mpc.nx,mpc.nu,mpc.ny,mpc.Nv);
+
             [mpc.y_cnstr.hess_max,~] = genHessIneq(mpc.y_cnstr.grad_max);
         end    
     end
