@@ -52,6 +52,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
                                             r_in,d_in,x_ref_in,dz_in,dh_in)
+    % previous optimal solution array
+    x0_prev = x0;
 
     % number of variables
     n = length(x0);
@@ -442,6 +444,12 @@ function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
             end
         end
         iter = iter+1;
+    end
+
+    if iter >= mpc.max_iter
+        % if the iterations violates the limit,
+        % call the fallback control
+        mpc.u = fallback_control(u_prev, x0, x0_prev, s_prev, r, mpc);
     end
   
     if mpc.unfeasible
