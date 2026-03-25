@@ -1,7 +1,7 @@
 function mpc = get_mpc_v(x,mpc)
     
     % extract updated slack values
-    mpc.v = x(mpc.Nx+mpc.Nu+1:mpc.Nx+mpc.Nu+mpc.Nv);
+    mpc.v(:) = x(mpc.Nx+mpc.Nu+1:mpc.Nx+mpc.Nu+mpc.Nv);
 
     if ~isempty(mpc.s_cnstr)
         mpc.s_cnstr = map_slack(mpc,mpc.s_cnstr);
@@ -25,16 +25,4 @@ function mpc = get_mpc_v(x,mpc)
         mpc.v_ter = mpc.v(mpc.v_ter_global_index);
     end
     
-end
-
-% map slack value to constraint for box constraints
-function cnstr = map_slack(mpc,cnstr)
-    if cnstr.min_slack_nv
-        vi = mpc.v(cnstr.min_v_global_index);
-        cnstr.min_v = cnstr.min_slack_local_map'*vi;
-    end
-    if cnstr.max_slack_nv
-        vi = mpc.v(cnstr.max_v_global_index);
-        cnstr.max_v = cnstr.max_slack_local_map'*vi;
-    end
 end

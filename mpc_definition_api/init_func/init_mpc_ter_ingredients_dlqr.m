@@ -122,6 +122,12 @@ if terminal_constraint
     mpc.Nv = mpc.Nv+1;
     % adapt gradients/hessians for the new variable vector size
     mpc = expand_gradients_hessians(mpc);
+else
+    mpc.v_ter = [];
+    mpc.v_ter_global_index = [];
+    mpc.fi_ter_slack_positivity_x0 = [];
+    mpc.fi_ter_slack_positivity_grad = [];
+    mpc.fi_ter_slack_positivity_hess = genHessIneq(mpc.fi_ter_slack_positivity_grad);
 end
 
 end

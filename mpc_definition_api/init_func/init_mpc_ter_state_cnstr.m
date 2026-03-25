@@ -84,7 +84,7 @@ if ~isempty(s_ter_cnstr.min)
                             x_ter_min_slack_active,...
                             qv_min,mpc.nx,mpc.nx);
     else
-        s_ter_cnstr.min_slack_nv = 0;
+        s_ter_cnstr = init_slack_min_empty(s_ter_cnstr);
     end
 
     % hessian created after slack is considered on the gradient
@@ -109,7 +109,7 @@ if ~isempty(s_ter_cnstr.max)
                             x_ter_max_slack_active,...
                             qv_max,mpc.nx,mpc.nx);
     else
-        s_ter_cnstr.max_slack_nv = 0;
+        s_ter_cnstr = init_slack_max_empty(s_ter_cnstr);
     end
 
     % hessian created after slack is considered on the gradient
