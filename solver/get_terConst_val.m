@@ -3,6 +3,9 @@ function fi_ter_x0 = get_terConst_val(x_ref,s_ter,P,v_feas)
 % compute error at terminal state
 x_err = x_ref-s_ter;
 
+% force x_err to be a column (for mex purposes)
+x_err = x_err(:);
+
 % Terminal Set Constraint Evaluation
 fi_ter_x0 = x_err'*P*x_err-1;
 
