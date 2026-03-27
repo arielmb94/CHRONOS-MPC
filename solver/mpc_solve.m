@@ -266,7 +266,7 @@ function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
 
         % 2. If enabled, compute terminal ingredients 
         % CODEGEN NOTE: to be commented out if there is not terminal ingredients
-        if mpc.ter_ingredients
+        if mpc.ter_ingredients && isfield(mpc, 'P2')
             [grad_ter,grad_ter_Ind_x0,hess_ter_Ind_x0] = ...
                 ter_set_Ind_fun(x_ref,mpc.s_ter,mpc.fi_ter_x0,...
                 mpc.P2,mpc.Nx,mpc.Nu,mpc.nx,mpc.ter_constraint);
@@ -445,12 +445,6 @@ function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
         end
         iter = iter+1;
     end
-
-    if iter >= mpc.max_iter
-        % if the iterations violates the limit,
-        % call the fallback control
-        mpc.u = fallback_control(u_prev, x0, x0_prev, s_prev, r, mpc);
-    end
   
     if mpc.unfeasible
         % if mpc constraints are unfeasible, return first control action 
@@ -459,8 +453,14 @@ function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
         u0 = x0(1:mpc.nu);
         x0 = x0*0;
     else
-        % Get first control action
-        u0 = mpc.u(1:mpc.nu);
+        if iter >= mpc.max_iter
+            % if the iterations violates the limit,
+            % call the fallback control
+            u0 = fallback_control(x0, x0_prev, s_prev, r, d, mpc);
+        else
+            % Get first control action
+            u0 = mpc.u(1:mpc.nu);
+        end
     end
 
 end

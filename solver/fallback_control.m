@@ -1,13 +1,24 @@
-function [u] = fallback_control(u_prev, x0, x0_prev, x_prev, r, mpc)
+function [u] = fallback_control(x0, x0_prev, x_prev, r, d, mpc)
     x_ref = r(1:mpc.nx);
     ref_xN = r(end-mpc.nx+1:end);
     u_incomplete = x0(1:mpc.nu);
     xN_incomplete = x0(end-mpc.nx+1:end);
+    u_prev = x0_prev(mpc.nu + mpc.nx + 1: mpc.nu + mpc.nu + mpc.nx);
     xN_prev = x0_prev(end-mpc.nx+1:end);
 
+    % Compute prediction
     pred_x_prev = mpc.A*x_prev + mpc.B*u_prev;
-    pred_x_incomplete = mpc.A*x_prev + mpc.B*u_incomplete(1);
+    pred_x_incomplete = mpc.A*x_prev + mpc.B*u_incomplete;
+
+    if ~isempty(mpc.Bd) && ~isempty(d)
+        d = d(1:mpc.nd);
+        disturbance_effect = mpc.Bd*d;
+        disturbance_effect = disturbance_effect(:); % for mex purposes
+        pred_x_prev = pred_x_prev + disturbance_effect;
+        pred_x_incomplete = pred_x_incomplete + disturbance_effect;
+    end
     
+    % Compute cost
     J_prev = 0;
     J_incomplete = 0;
 
@@ -36,6 +47,7 @@ function [u] = fallback_control(u_prev, x0, x0_prev, x_prev, r, mpc)
         J_incomplete = J_incomplete + (ref_xN - xN_incomplete)' * mpc.P * (ref_xN - xN_incomplete);
     end
 
+    % Evaluate smaller cost
     if J_prev < J_incomplete
         u = u_prev;
     else
