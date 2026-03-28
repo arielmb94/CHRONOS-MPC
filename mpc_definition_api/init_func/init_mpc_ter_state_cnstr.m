@@ -16,10 +16,6 @@
 %       mpc                - CHRONOS MPC structure
 %       x_min              - [nx x 1] Array of lower state limits (use [] if none).
 %       x_max              - [nx x 1] Array of upper state limits (use [] if none).
-%       x_min_slack_active - (Optional) [nx x 1] Logical array or scalar. Set to 1 
-%                            to make the corresponding x_min limit soft.
-%       x_max_slack_active - (Optional) [nx x 1] Logical array or scalar. Set to 1 
-%                            to make the corresponding x_max limit soft.
 %       qv_min             - (Optional) [nx x 1] or scalar. Penalty weight for violating 
 %                            the x_min soft limits. Higher values mean stricter enforcement.
 %       qv_max             - (Optional) [nx x 1] or scalar. Penalty weight for violating 
@@ -31,22 +27,16 @@
 %                            are automatically assembled and added to the object.
 %
 %   USAGE TIPS:
-%       - If soft constraitns are enabled and qv_min or qv_max are not
-%         passed, the soft constraint penalty weight will default to the value 
-%         stored in mpc.qv
+%       - If qv_min or qv_max are not passed, the soft constraint penalty 
+%         weight will default to the value stored in mpc.qv
 %       - Passing a scalar to the slack or qv inputs will automatically apply 
 %         that setting across all constrained states.
-%       - Example: Passing x_max_slack_active = [0; 1; 0] makes only the second 
-%         state limit soft, leaving the first and third as hard constraints.
 function mpc = init_mpc_ter_state_cnstr(mpc,x_ter_min,x_ter_max,...
-                           x_ter_min_slack_active,x_ter_max_slack_active,...
                            qv_min,qv_max)
 arguments
     mpc
-    x_ter_min
-    x_ter_max
-    x_ter_min_slack_active = []
-    x_ter_max_slack_active = []
+    x_ter_min = []
+    x_ter_max = []
     qv_min = []
     qv_max = []
 end
@@ -54,8 +44,6 @@ end
 % INPUT DIMENSION VALIDATION 
 validate_column_vector(x_ter_min, mpc.nx, 'x_ter_min');
 validate_column_vector(x_ter_max, mpc.nx, 'x_ter_max');
-validate_column_vector(x_ter_min_slack_active, mpc.nx, 'x_ter_min_slack_active');
-validate_column_vector(x_ter_max_slack_active, mpc.nx, 'x_ter_max_slack_active');
 validate_column_vector(qv_min, mpc.nx, 'qv_min');
 validate_column_vector(qv_max, mpc.nx, 'qv_max');
 
@@ -66,8 +54,6 @@ if isscalar(x_ter_max), x_ter_max = x_ter_max * ones(mpc.nx, 1); end
 s_ter_cnstr.min = x_ter_min; 
 s_ter_cnstr.max = x_ter_max;
 
-is_there_slack = 0;
-
 if ~isempty(s_ter_cnstr.min)
 
     s_ter_cnstr.fi_min_x0 = zeros(mpc.nx,1);
@@ -76,21 +62,12 @@ if ~isempty(s_ter_cnstr.min)
     mpc.Nx,mpc.Nu,mpc.nx,mpc.nu,mpc.Nv);
     
     % consider slack variable on the gradient
-    if ~isempty(x_ter_min_slack_active)
-
-        is_there_slack = 1;
-
-        [mpc,s_ter_cnstr] = init_slack_min_condition(mpc,s_ter_cnstr,...
-                            x_ter_min_slack_active,...
-                            qv_min,mpc.nx,mpc.nx);
-    else
-        s_ter_cnstr = init_slack_min_empty(s_ter_cnstr);
-    end
-
+    [mpc,s_ter_cnstr] = init_slack_min_condition(mpc,s_ter_cnstr,...
+                        qv_min,mpc.nx,mpc.nx);
+    
     % hessian created after slack is considered on the gradient
     [s_ter_cnstr.hess_min,mi] = genHessIneq(s_ter_cnstr.grad_min);
     mpc.m = mpc.m+mi;
-
 end
 
 if ~isempty(s_ter_cnstr.max)
@@ -101,27 +78,17 @@ if ~isempty(s_ter_cnstr.max)
                             mpc.Nx,mpc.Nu,mpc.nx,mpc.nu,mpc.Nv);
     
     % consider slack variable on the gradient
-    if ~isempty(x_ter_max_slack_active)
-
-        is_there_slack = 1;
-
-        [mpc,s_ter_cnstr] = init_slack_max_condition(mpc,s_ter_cnstr,...
-                            x_ter_max_slack_active,...
-                            qv_max,mpc.nx,mpc.nx);
-    else
-        s_ter_cnstr = init_slack_max_empty(s_ter_cnstr);
-    end
+    [mpc,s_ter_cnstr] = init_slack_max_condition(mpc,s_ter_cnstr, ...
+                        qv_max,mpc.nx,mpc.nx);
 
     % hessian created after slack is considered on the gradient
     [s_ter_cnstr.hess_max,mi] = genHessIneq(s_ter_cnstr.grad_max);
     mpc.m = mpc.m+mi;
-
 end
 
 mpc.s_ter_cnstr = s_ter_cnstr;
 
-if is_there_slack
-    mpc = expand_gradients_hessians(mpc);
-end
+% adapt gradients due to added slack variables
+mpc = expand_gradients_hessians(mpc);
 
 end
