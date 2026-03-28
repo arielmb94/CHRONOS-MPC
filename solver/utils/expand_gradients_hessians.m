@@ -1,61 +1,67 @@
 function mpc = expand_gradients_hessians(mpc)
 
+    N = mpc.Nx+mpc.Nu;
+
     % Expand Equality constraints
-    mpc = expand_equalities(mpc.Nx+mpc.Nu,mpc.Nv,mpc);
+    mpc = expand_equalities(N,mpc.Nv,mpc);
 
     % Expand the data for each constraint
     if ~isempty(mpc.s_cnstr)
-        mpc.s_cnstr = expand_constraint(mpc.Nx+mpc.Nu,mpc.Nv,mpc.s_cnstr);
+        mpc.s_cnstr = expand_constraint(N,mpc.Nv,mpc.s_cnstr);
+        mpc.s_cnstr = mpc_expand_slack_gradients(N,mpc.Nv,mpc.nx,mpc.s_cnstr);
     end
     if ~isempty(mpc.s_ter_cnstr)
-        mpc.s_ter_cnstr = expand_constraint(mpc.Nx+mpc.Nu,mpc.Nv,mpc.s_ter_cnstr);
+        mpc.s_ter_cnstr = expand_constraint(N,mpc.Nv,mpc.s_ter_cnstr);
+        mpc.s_ter_cnstr = mpc_expand_slack_gradients(N,mpc.Nv,mpc.nx,mpc.s_ter_cnstr);
     end
     if ~isempty(mpc.u_cnstr)
-        mpc.u_cnstr = expand_constraint(mpc.Nx+mpc.Nu,mpc.Nv,mpc.u_cnstr);
+        mpc.u_cnstr = expand_constraint(N,mpc.Nv,mpc.u_cnstr);
     end
     if ~isempty(mpc.du_cnstr)
-        mpc.du_cnstr = expand_constraint(mpc.Nx+mpc.Nu,mpc.Nv,mpc.du_cnstr);
+        mpc.du_cnstr = expand_constraint(N,mpc.Nv,mpc.du_cnstr);
     end
     if ~isempty(mpc.y_cnstr)
-        mpc.y_cnstr = expand_constraint(mpc.Nx+mpc.Nu,mpc.Nv,mpc.y_cnstr);
+        mpc.y_cnstr = expand_constraint(N,mpc.Nv,mpc.y_cnstr);
+        mpc.y_cnstr = mpc_expand_slack_gradients(N,mpc.Nv,mpc.ny,mpc.y_cnstr);
     end
     if ~isempty(mpc.h_cnstr)
-        mpc.h_cnstr = expand_constraint(mpc.Nx+mpc.Nu,mpc.Nv,mpc.h_cnstr);
+        mpc.h_cnstr = expand_constraint(N,mpc.Nv,mpc.h_cnstr);
+        mpc.h_cnstr = mpc_expand_slack_gradients(N,mpc.Nv,mpc.nh,mpc.h_cnstr);
     end
 
     % Expand Tracking Cost
     if ~isempty(mpc.Qe)
-        mpc = expand_tracking_cost(mpc.Nx+mpc.Nu,mpc.Nv,mpc);
+        mpc = expand_tracking_cost(N,mpc.Nv,mpc);
     end
     % Expand Control Cost
     if ~isempty(mpc.Ru) ||  ~isempty(mpc.ru)
-        mpc = expand_control_cost(mpc.Nx+mpc.Nu,mpc.Nv,mpc);
+        mpc = expand_control_cost(N,mpc.Nv,mpc);
     end
     % Expand Differential Control Cost
     if ~isempty(mpc.Rdu)
-        mpc = expand_diff_control_cost(mpc.Nx+mpc.Nu,mpc.Nv,mpc);
+        mpc = expand_diff_control_cost(N,mpc.Nv,mpc);
     end
     % Expand Performance Cost
     if ~isempty(mpc.Qz) ||  ~isempty(mpc.qz)
-        mpc = expand_performance_cost(mpc.Nx+mpc.Nu,mpc.Nv,mpc);
+        mpc = expand_performance_cost(N,mpc.Nv,mpc);
     end
 
     % Expand Terminal Ingredients
     if ~isempty(mpc.P)
-        mpc = expand_terminal_ingredients(mpc.Nx+mpc.Nu,mpc.Nv,mpc);
+        mpc = expand_terminal_ingredients(N,mpc.Nv,mpc);
     end
 
     % Recompute the hessian of the cost function
     if ~isempty(mpc.hessCost)
 
         n = size(mpc.hessCost,1);
-        length_diff = mpc.Nx+mpc.Nu+mpc.Nv - n;
+        length_diff = N+mpc.Nv - n;
         mpc.hessCost = [mpc.hessCost zeros(n,length_diff);
                             zeros(length_diff,n) zeros(length_diff)];
 
         mpc = update_mpc_f0_hess(mpc);
     else
-        mpc.hessCost = zeros(mpc.Nx+mpc.Nu+mpc.Nv);
+        mpc.hessCost = zeros(N+mpc.Nv);
         mpc = update_mpc_f0_hess(mpc);
     end
 
@@ -74,50 +80,60 @@ end
 
 function cnstr = expand_constraint(N,Nv,cnstr)
 
-% gradients and Hessian min/max
-if size(cnstr.grad_min,1) < N+Nv
+if ~isempty(cnstr.min)
+    % gradients and Hessian min/max
+    if size(cnstr.grad_min,1) < N+Nv
+        
+        length_diff = N+Nv - size(cnstr.grad_min,1);
+        cnstr.grad_min = [cnstr.grad_min;
+                          zeros(length_diff,size(cnstr.grad_min,2))];
+                          
+        cnstr.hess_min = genHessIneq(cnstr.grad_min);
     
-    length_diff = N+Nv - size(cnstr.grad_min,1);
-    cnstr.grad_min = [cnstr.grad_min;
-                      zeros(length_diff,size(cnstr.grad_min,2))];
-                      
-    cnstr.hess_min = genHessIneq(cnstr.grad_min);
-
-end
-if size(cnstr.grad_max,1) < N+Nv
-    
-    length_diff = N+Nv - size(cnstr.grad_max,1);   
-    cnstr.grad_max = [cnstr.grad_max;
-                      zeros(length_diff,size(cnstr.grad_max,2))];
-
-    cnstr.hess_max = genHessIneq(cnstr.grad_max);
+    end
 end
 
+if ~isempty(cnstr.max)
+    if size(cnstr.grad_max,1) < N+Nv
+        
+        length_diff = N+Nv - size(cnstr.grad_max,1);   
+        cnstr.grad_max = [cnstr.grad_max;
+                          zeros(length_diff,size(cnstr.grad_max,2))];
+    
+        cnstr.hess_max = genHessIneq(cnstr.grad_max);
+    end
+end
+
+end
+
+
+function cnstr = mpc_expand_slack_gradients(N,Nv,n,cnstr)
 % adapt slack variable constraints if existent
-if cnstr.min_slack_nv
+if ~isempty(cnstr.min)
     
     length_diff = N+Nv - size(cnstr.min_slack_positivity_grad,1);
     % adapt positivity constraint
     if length_diff
         cnstr.min_slack_positivity_grad = [cnstr.min_slack_positivity_grad;
-                                           zeros(length_diff,size(cnstr.min_slack_positivity_grad,2))];
+                                           zeros(length_diff,n)];
 
         cnstr.min_slack_positivity_hess = genHessIneq(cnstr.min_slack_positivity_grad);
     end
 end
-if cnstr.max_slack_nv
+if ~isempty(cnstr.max)
     
     length_diff = N+Nv - size(cnstr.max_slack_positivity_grad,1);
     % adapt positivity constraint
     if length_diff
         cnstr.max_slack_positivity_grad = [cnstr.max_slack_positivity_grad;
-                                           zeros(length_diff,size(cnstr.max_slack_positivity_grad,2))];
+                                           zeros(length_diff,n)];
 
         cnstr.max_slack_positivity_hess = genHessIneq(cnstr.max_slack_positivity_grad);
     end
 end
 
 end
+
 
 function mpc = expand_tracking_cost(N,Nv,mpc)
     length_diff = N+Nv - size(mpc.gradErrQe,1);
