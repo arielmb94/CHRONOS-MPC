@@ -50,7 +50,7 @@
 %   starting point finder 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
+function [u0,x0, mpc_maps] = mpc_solve_kkt_warm_start(mpc,x0,s_prev,u_prev,...
                                             r_in,d_in,x_ref_in,dz_in,dh_in)
 
     % number of variables
@@ -407,14 +407,9 @@ function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
         % solve KKT system
         KKT = [hess_J_x0 mpc.Aeq';mpc.Aeq zeros(n_eq)];
 
-        %delta_x = - linsolve(KKT,[grad_J_x0;mpc.Aeq*x0-mpc.beq],opts);
-        %delta_x = - solveLinearSystemLDL_mex(KKT,[grad_J_x0;mpc.Aeq*x0-mpc.beq], mpc.L_map);
-        %[delta_x, delta_y] = kkt_solve_combined(KKT, [grad_J_x0;mpc.Aeq*x0-mpc.beq],mpc.Nx+mpc.Nu);
-        [delta_x, delta_y] = kkt_solve_combined_fast(KKT, [grad_J_x0;mpc.Aeq*x0-mpc.beq],mpc.Nx+mpc.Nu, mpc.maps);
-        %[delta_x, delta_y] = kkt_solve_combined_fast_mex_loop_unr_c(KKT, [grad_J_x0;mpc.Aeq*x0-mpc.beq],mpc.Nx+mpc.Nu, mpc.maps);
-        %delta_x = - solveLinearSystemLDL_original_mex(KKT,[grad_J_x0;mpc.Aeq*x0-mpc.beq]);
-        %delta_x = - linsolve(KKT,[grad_J_x0;zeros(n_eq,1)],opts);
-        %delta_x = - KKT\[grad_J_x0;mpc.Aeq*x0-mpc.beq];
+        delta_x = - linsolve(KKT,[grad_J_x0;mpc.Aeq*x0-mpc.beq],opts);
+
+        mpc_maps = init_kkt_combined_warm_start(KKT,mpc.Nx+mpc.Nu);
         delta_x_prim = delta_x(1:n);
 
         % compute lambda^2

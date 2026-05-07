@@ -15,6 +15,16 @@ ref_c_vec(time < 90) = 0.27 + (0.65 - 0.27) * time(time < 90) / 90;
 ref_c_vec(time >= 90 & time < 180) = 0.65;
 ref_c_vec(time >= 180) = 0.65 - (0.65 - 0.3) * (time(time >= 180) - 180) / 60;
 
+ref_c = ref_c_vec(1);
+ref_v = - M/(log(1/(theta_f*k*ref_c)*(1-ref_c)));
+
+%[u_prev,x0, L] = mpc_solve_LDL_warm_start(mpc,x0,x_prev,u_prev,[ref_c;ref_v],d,[],[],[]);
+
+%mpc.L_map = createMap(L);
+
+[u_prev,x0, mpc_maps] = mpc_solve_kkt_warm_start(mpc,x0,x_prev,u_prev,[ref_c;ref_v],d,[],[],[]);
+mpc.maps = mpc_maps;
+
 %% Run Simulation
 
 % clear storage variables
@@ -104,3 +114,6 @@ xlim([0 240])
 title('Compute Time (s)')
 xlabel('Time (s)')
 grid on
+
+%save("LDL_custom", "t_dat")
+mean(t_dat(3:end))
