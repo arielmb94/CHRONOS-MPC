@@ -30,7 +30,7 @@
 %
 %   OUTPUTS:
 %       x0     - Primal vector [u_0; x_1; u_1; ... x_Nc; ... x_N; v] 
-function x0 = init_initial_guess(mpc,s_prev,u_prev,x_ref,d_in,dh_in)
+function x0 = build_chronos_mpc(mpc,s_prev,u_prev,x_ref,d_in,dh_in)
 arguments
     mpc
     s_prev
@@ -208,4 +208,8 @@ end
             warning(msg);
         end
     end
+
+    
+
+
 end
