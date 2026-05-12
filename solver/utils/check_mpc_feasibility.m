@@ -6,12 +6,6 @@ if ~isempty(mpc.s_cnstr)
     mpc.s_cnstr = fi_box_feas_fun(mpc,mpc.s_cnstr,mpc.s,mpc.Nx,mpc.nx);
     feas = fi_box_is_feasible(mpc.s_cnstr);
 end
-
-% Terminal State box constraints
-if feas && ~isempty(mpc.s_ter_cnstr)
-    mpc.s_ter_cnstr = fi_box_feas_fun(mpc,mpc.s_ter_cnstr,mpc.s_ter,mpc.nx,mpc.nx);
-    feas = fi_box_is_feasible(mpc.s_ter_cnstr);
-end
     
 % Control box constraints
 if feas && ~isempty(mpc.u_cnstr)

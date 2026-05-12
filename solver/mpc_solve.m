@@ -136,12 +136,6 @@ function [u0,x0,iter,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
                 gradient_Hessian_Indicator_fun(mpc.s_cnstr,grad_fi_Ind,hess_fi_Ind);
         end
 
-        % terminal state inequalities
-        if ~isempty(mpc.s_ter_cnstr)              
-            [grad_fi_Ind(:),hess_fi_Ind(:,:)] = ...
-                gradient_Hessian_Indicator_fun(mpc.s_ter_cnstr,grad_fi_Ind,hess_fi_Ind);
-        end
-
         % control inequalities
         if ~isempty(mpc.u_cnstr)
             [grad_fi_Ind(:),hess_fi_Ind(:,:)] = ...

@@ -10,10 +10,6 @@ function mpc = expand_gradients_hessians(mpc)
         mpc.s_cnstr = expand_constraint(N,mpc.Nv,mpc.s_cnstr);
         mpc.s_cnstr = mpc_expand_slack_gradients(N,mpc.Nv,mpc.nx,mpc.s_cnstr);
     end
-    if ~isempty(mpc.s_ter_cnstr)
-        mpc.s_ter_cnstr = expand_constraint(N,mpc.Nv,mpc.s_ter_cnstr);
-        mpc.s_ter_cnstr = mpc_expand_slack_gradients(N,mpc.Nv,mpc.nx,mpc.s_ter_cnstr);
-    end
     if ~isempty(mpc.u_cnstr)
         mpc.u_cnstr = expand_constraint(N,mpc.Nv,mpc.u_cnstr);
     end

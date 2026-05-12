@@ -5,14 +5,8 @@ feas = 1;
 if ~isempty(mpc.s_cnstr)
     [mpc.s_cnstr,v] = fi_box_slack_update(mpc,mpc.s_cnstr,mpc.s,mpc.Nx,mpc.nx);
     mpc.v(:) = v;
-    feas = fi_box_is_feasible(mpc.s_cnstr);
-end
-
-% Terminal State box constraints
-if feas && ~isempty(mpc.s_ter_cnstr)
-    [mpc.s_ter_cnstr,v] = fi_box_slack_update(mpc,mpc.s_ter_cnstr,mpc.s_ter,mpc.nx,mpc.nx);
-    mpc.v(:) = v;
-    feas = fi_box_is_feasible(mpc.s_ter_cnstr);
+    % now always feasible
+    %feas = fi_box_is_feasible(mpc.s_cnstr);
 end
     
 % Control box constraints

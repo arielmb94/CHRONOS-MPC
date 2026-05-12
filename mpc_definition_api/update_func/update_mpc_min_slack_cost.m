@@ -9,7 +9,6 @@
 %   The list of available CHRONOS box constraint structures is:
 %
 %   mpc.s_cnstr            - box constraint on the states
-%   mpc.s_ter_cnstr        - box constraint on the terminal state
 %   mpc.u_cnstr            - box constraint on the control action
 %   mpc.du_cnstr           - box constraint on the control action rate
 %   mpc.y_cnstr            - box constraint on the output tracking signals

@@ -172,7 +172,6 @@ mpc.max_feas_iter = 10;
 mpc.unfeasible = 0;
 
 mpc.s_cnstr = [];
-mpc.s_ter_cnstr = [];
 mpc.u_cnstr = [];
 mpc.du_cnstr = [];
 mpc.y_cnstr = [];
