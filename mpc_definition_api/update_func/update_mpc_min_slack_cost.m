@@ -6,11 +6,10 @@
 %   penalty weights of the slack values active on the minimum limits of the
 %   given constraint and adapts the CHRONOS mpc gradients accordignly. 
 %
-%   The list of available CHRONOS box constraint structures is:
+%   The list of available CHRONOS box constraint structures with slack
+%   variables is:
 %
 %   mpc.s_cnstr            - box constraint on the states
-%   mpc.u_cnstr            - box constraint on the control action
-%   mpc.du_cnstr           - box constraint on the control action rate
 %   mpc.y_cnstr            - box constraint on the output tracking signals
 %   mpc.h_cnstr            - box constraint on the user defined constraints
 % 
@@ -49,7 +48,6 @@ else
     qv_min(:) = qv_min_in;
 end
 
-mpc.gradSlackqv(mpc.Nx+mpc.Nu+cnstr.min_v_global_index) = ...
-        cnstr.min_slack_local_map*qv_min;
+mpc.gradSlackqv(mpc.Nx+mpc.Nu+cnstr.min_v_global_index) = qv_min;
 
 end
