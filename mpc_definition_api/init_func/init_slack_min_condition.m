@@ -27,7 +27,7 @@ mpc.m = mpc.m+mi;
 if isempty(qv_min)
     % if qv isnt defined, it is not initialized until build_chronos_mpc(), 
     % but we need to make space
-    qv_min = mpc.qv*zeros(n,1);
+    qv_min = zeros(n,1);
 elseif length(qv_min) == 1
     qv_min = qv_min*ones(n,1);
 end

@@ -106,7 +106,7 @@ if terminal_constraint
 
     % Initialize Penalty term for new slack variables
     if isempty(qv_ter)
-        qv_ter = mpc.qv;
+        qv_ter = 0;
     end
 
     if ~isempty(mpc.gradSlackqv)
