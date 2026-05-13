@@ -1,6 +1,5 @@
 function [mpc,cnstr] = init_slack_max_condition(mpc,cnstr,qv_max,N,n)
 
-cnstr.has_slacks = 1;
 % expand global slack vector
 mpc.v = [mpc.v; zeros(n,1)];
 % create slack vector for max constraint

@@ -98,6 +98,8 @@ h_cnstr.max = h_max;
 
 if ~isempty(h_cnstr.min)
 
+    h_cnstr.min_limit = 1;
+
     h_cnstr.fi_min_x0 = zeros(mpc.Nh,1);
 
     h_cnstr.grad_min = -1 * genGradY(mpc.Ch,mpc.Dh,mpc.N,mpc.N_ctr_hor,...
@@ -110,9 +112,12 @@ if ~isempty(h_cnstr.min)
     % hessian created after slack is considered on the gradient
     [h_cnstr.hess_min,mi] = genHessIneq(h_cnstr.grad_min);
     mpc.m = mpc.m+mi;
-
+else
+    h_cnstr.min_limit = 0;
 end
 if ~isempty(h_cnstr.max)
+
+    h_cnstr.max_limit = 1;
 
     h_cnstr.fi_max_x0 = zeros(mpc.Nh,1);
 
@@ -126,7 +131,8 @@ if ~isempty(h_cnstr.max)
     % hessian created after slack is considered on the gradient
     [h_cnstr.hess_max,mi] = genHessIneq(h_cnstr.grad_max);
     mpc.m = mpc.m+mi;
-
+else
+    h_cnstr.max_limit = 0;
 end
 
 mpc.h_cnstr = h_cnstr;

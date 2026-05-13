@@ -39,21 +39,40 @@ arguments
     d_in = []
     dh_in = []
 end
-    
-    x0 = zeros(mpc.Nx+mpc.Nu+mpc.Nv,1);
 
-    % handle input vectors size
+    % compute primal variables vector
+    x0 = rollstates(mpc,s_prev,u_prev,x_ref,d_in);
+
+    % set x_ref to s_prev if user does not pass x_ref but there are
+    % terminal constraints
+    if isempty(x_ref) && mpc.ter_constraint
+        x_ref = s_prev;
+    end
+
+    % handle disturbance input vectors size
     if ~isempty(d_in) && length(d_in)< mpc.Nd
         d = fill_vec(d_in,mpc.nd,mpc.Nd,1);
     else
         d = d_in;
     end
-
+    
     if ~isempty(dh_in) && length(dh_in)< mpc.Nd
         dh = fill_vec(dh_in,mpc.ndh,mpc.Ndh,1);
     else
         dh = dh_in;
     end
+    
+    if mpc.Nv
+        x0(mpc.Nx+mpc.Nu+1:mpc.Nx+mpc.Nu+mpc.Nv) = mpc.slack_epsilon*2;
+        mpc = get_mpc_variables(mpc,x0,s_prev,u_prev,[],d,dh,[]);
+        [mpc,x0] = mpc_slack_update(mpc,x0,x_ref);
+    end
+
+end
+
+function x0 = rollstates(mpc,s_prev,u_prev,x_ref,d_in)
+
+    x0 = zeros(mpc.Nx+mpc.Nu+mpc.Nv,1);
     
     x_k = s_prev;
     u_k_prev = u_prev;
@@ -67,75 +86,70 @@ end
             % Option 1: Constant previous input
             u_raw = u_k_prev;
         end
-        
+    
         u_k = u_raw;
-        
+    
         % 2. Clip for Rate Constraints (Delta u)
         if ~isempty(mpc.du_cnstr)
             % Check minimum rate limit
-            if ~isempty(mpc.du_cnstr.min)
+            if mpc.du_cnstr.min_limit
                 du_min_strict = mpc.du_cnstr.min + mpc.slack_epsilon;
                 u_k = max(u_k_prev + du_min_strict, u_k);
             end
             % Check maximum rate limit
-            if ~isempty(mpc.du_cnstr.max)
+            if mpc.du_cnstr.max_limit
                 du_max_strict = mpc.du_cnstr.max - mpc.slack_epsilon;
                 u_k = min(u_k_prev + du_max_strict, u_k);
             end
         end
-        
+    
         % 3. Clip for Absolute Constraints (u)
         if ~isempty(mpc.u_cnstr)
             % Check minimum absolute limit
-            if ~isempty(mpc.u_cnstr.min)
+            if mpc.u_cnstr.min_limit
                 u_min_strict = mpc.u_cnstr.min + mpc.slack_epsilon;
                 u_k = max(u_min_strict, u_k);
             end
             % Check maximum absolute limit
-            if ~isempty(mpc.u_cnstr.max)
+            if mpc.u_cnstr.max_limit
                 u_max_strict = mpc.u_cnstr.max - mpc.slack_epsilon;
                 u_k = min(u_max_strict, u_k);
             end
         end
-        
+    
         % 4. Propagate Dynamics
         % x_{k+1} = A*x_k + B*u_k + D*d_k
-        % Assuming d_seq is [nd x N]
         x_next = mpc.A * x_k + mpc.B * u_k;
         if ~isempty(mpc.Bd) && ~isempty(d_in)
             x_next = x_next + mpc.Bd * d_in;
         end
-        % clamp x
+        % clamp x: for safety net in case we are dealing with unstable
+        % system
         if ~isempty(mpc.s_cnstr)
             % Check minimum state limits
-            if ~isempty(mpc.s_cnstr.min)
-                % Only clamp if this constraint DOES NOT have a slack variable
-                if ~mpc.s_cnstr.min_slack_nv 
-                    s_min_strict = mpc.s_cnstr.min + mpc.slack_epsilon;
-                    x_next = max(s_min_strict, x_next);
-                end
+            if mpc.s_cnstr.min_limit
+                s_min_strict = mpc.s_cnstr.min + mpc.slack_epsilon;
+                x_next = max(s_min_strict, x_next);
             end
-            
+    
             % Check maximum state limits
-            if ~isempty(mpc.s_cnstr.max)
-                % Only clamp if this constraint DOES NOT have a slack variable
-                if ~mpc.s_cnstr.max_slack_nv
-                    s_max_strict = mpc.s_cnstr.max - mpc.slack_epsilon;
-                    x_next = min(s_max_strict, x_next);
-                end
+            if mpc.s_cnstr.max_limit
+                s_max_strict = mpc.s_cnstr.max - mpc.slack_epsilon;
+                x_next = min(s_max_strict, x_next);
+    
             end
         end
-        
+    
         % 5. Map to Primal Optimization Vector
         % Indexing math for [u0; x1; u1; x2; ...]
         idx_start = (k - 1) * (mpc.nu + mpc.nx);
-        
+    
         % Insert u_k
         x0(idx_start + 1 : idx_start + mpc.nu) = u_k;
-        
+    
         % Insert x_{next}
         x0(idx_start + mpc.nu + 1 : idx_start + mpc.nu + mpc.nx) = x_next;
-        
+    
         % 6. Prepare for next step
         x_k = x_next;
         u_k_prev = u_k;
@@ -144,6 +158,7 @@ end
     if mpc.N_ctr_hor < mpc.N
         u_N_ctr_hor = u_k;
         idx_start_N_ctr_hor = (mpc.N_ctr_hor-1)*(mpc.nu + mpc.nx) + mpc.nu;
+
         for k = mpc.N_ctr_hor + 1 : mpc.N
             % 4. Propagate Dynamics
             % x_{k+1} = A*x_k + B*u_k + D*d_k
@@ -151,25 +166,20 @@ end
             if ~isempty(mpc.Bd) && ~isempty(d_in)
                 x_next = x_next + mpc.Bd * d_in;
             end
-            % clamp x
+            % clamp x 
             if ~isempty(mpc.s_cnstr)
                 % Check minimum state limits
-                if ~isempty(mpc.s_cnstr.min)
-                    % Only clamp if this constraint DOES NOT have a slack variable
-                    if ~mpc.s_cnstr.min_slack_nv
-                        s_min_strict = mpc.s_cnstr.min + mpc.slack_epsilon;
-                        x_next = max(s_min_strict, x_next);
-                    end
+                if mpc.s_cnstr.min_limit
+    
+                    s_min_strict = mpc.s_cnstr.min + mpc.slack_epsilon;
+                    x_next = max(s_min_strict, x_next);
                 end
-
-                % Check maximum state limits
-                if ~isempty(mpc.s_cnstr.max)
-                    % Only clamp if this constraint DOES NOT have a slack variable
-                    if ~mpc.s_cnstr.max_slack_nv
-                        s_max_strict = mpc.s_cnstr.max - mpc.slack_epsilon;
-                        x_next = min(s_max_strict, x_next);
-                    end
-                end
+            end
+            % Check maximum state limits
+            if mpc.s_cnstr.max_limit
+    
+                s_max_strict = mpc.s_cnstr.max - mpc.slack_epsilon;
+                x_next = min(s_max_strict, x_next);
             end
 
             % 5. Map to Primal Optimization Vector
@@ -181,35 +191,8 @@ end
 
             % 6. Prepare for next step
             x_k = x_next;
-        end
-    end
 
-    % set x_ref to s_prev if user does not pass x_ref but there are
-    % terminal constraints
-    if isempty(x_ref) && mpc.ter_constraint
-        x_ref = s_prev;
+        end  
     end
-    
-    if mpc.Nv
-        x0(mpc.Nx+mpc.Nu+1:mpc.Nx+mpc.Nu+mpc.Nv) = mpc.slack_epsilon*2;
-        mpc = get_mpc_variables(mpc,x0,s_prev,u_prev,[],d,dh,[]);
-        [~,x0,feas] = mpc_slack_update(mpc,x0,x_ref);
-        if ~feas
-            msg = ['Cannot find feasible initial guess due to hard constraints, ' ...
-                'enable slack variables on output/custom constraints'];
-            warning(msg);
-        end
-    else
-        mpc = get_mpc_variables(mpc,x0,s_prev,u_prev,[],d,dh,[]);
-        [~,feas] = check_mpc_feasibility(mpc,x_ref);
-        if ~feas
-            msg = ['Cannot find feasible initial guess due to hard constraints, ' ...
-                'enable slack variables on output/custom constraints'];
-            warning(msg);
-        end
-    end
-
-    
-
 
 end

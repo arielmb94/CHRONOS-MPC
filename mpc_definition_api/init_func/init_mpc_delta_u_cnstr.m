@@ -33,6 +33,8 @@ du_cnstr.max = du_max;
 
 if ~isempty(du_cnstr.min)
 
+    du_cnstr.min_limit = 1;
+
     du_cnstr.fi_min_x0 = zeros(mpc.Nu,1);
 
     % Differential Control box constraints
@@ -41,10 +43,13 @@ if ~isempty(du_cnstr.min)
 
     [du_cnstr.hess_min,mi] = genHessIneq(du_cnstr.grad_min);
     mpc.m = mpc.m+mi;
-
+else
+    du_cnstr.min_limit = 0;
 end
 
 if ~isempty(du_cnstr.max)
+
+    du_cnstr.max_limit = 1;
     
     du_cnstr.fi_max_x0 = zeros(mpc.Nu,1);
 
@@ -54,7 +59,8 @@ if ~isempty(du_cnstr.max)
 
     [du_cnstr.hess_max,mi] = genHessIneq(du_cnstr.grad_max);
     mpc.m = mpc.m+mi;
-
+else
+    du_cnstr.max_limit = 0;
 end
 
 mpc.du_cnstr = du_cnstr;

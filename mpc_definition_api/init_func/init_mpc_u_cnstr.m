@@ -37,6 +37,9 @@ u_cnstr.min = u_min;
 u_cnstr.max = u_max;
 
 if ~isempty(u_cnstr.min)
+
+    u_cnstr.min_limit = 1;
+
     u_cnstr.fi_min_x0 = zeros(mpc.Nu,1);
 
     % Control box constraints
@@ -45,10 +48,14 @@ if ~isempty(u_cnstr.min)
 
     [u_cnstr.hess_min,mi] = genHessIneq(u_cnstr.grad_min);
     mpc.m = mpc.m+mi;
-
+else
+    u_cnstr.min_limit = 0;
 end
 
 if ~isempty(u_cnstr.max)
+
+    u_cnstr.max_limit = 1;
+
     u_cnstr.fi_max_x0 = zeros(mpc.Nu,1);
 
     % Control box constraints
@@ -58,6 +65,8 @@ if ~isempty(u_cnstr.max)
     [u_cnstr.hess_max,mi] = genHessIneq(u_cnstr.grad_max);
     mpc.m = mpc.m+mi;
     
+else
+    u_cnstr.max_limit = 0;
 end
 
 mpc.u_cnstr = u_cnstr;

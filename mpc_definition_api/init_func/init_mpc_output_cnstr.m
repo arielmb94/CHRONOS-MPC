@@ -54,6 +54,8 @@ y_cnstr.max = y_max;
 
 if ~isempty(y_cnstr.min)
 
+    y_cnstr.min_limit = 1;
+
     y_cnstr.fi_min_x0 = zeros(mpc.Ny,1);
 
     % Outputs box constraints
@@ -67,10 +69,13 @@ if ~isempty(y_cnstr.min)
     % hessian created after slack is considered on the gradient
     [y_cnstr.hess_min,mi] = genHessIneq(y_cnstr.grad_min);
     mpc.m = mpc.m+mi;
-    
+else
+    y_cnstr.min_limit = 0;
 end
 
 if ~isempty(y_cnstr.max)
+
+    y_cnstr.max_limit = 1;
 
     y_cnstr.fi_max_x0 = zeros(mpc.Ny,1);
 
@@ -85,7 +90,8 @@ if ~isempty(y_cnstr.max)
     % hessian created after slack is considered on the gradient
     [y_cnstr.hess_max,mi] = genHessIneq(y_cnstr.grad_max);
     mpc.m = mpc.m+mi;
-
+else
+    y_cnstr.max_limit = 0;
 end
 
 mpc.y_cnstr = y_cnstr;
