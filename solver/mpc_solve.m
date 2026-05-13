@@ -111,12 +111,13 @@ function [u0,x0,iter,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
     % get mpc variables from optimization vector x and constraint
     % information and feasibility
     mpc = get_mpc_variables(mpc,x0,s_prev,u_prev,r,d,dh,dz);
-    [mpc,feas] = check_mpc_feasibility(mpc,x_ref);
     % If exists, update slack variables
     if mpc.Nv
-        [mpc,x0,feas] = mpc_slack_update(mpc,x0,x_ref);
+        [mpc,x0] = mpc_slack_update(mpc,x0,x_ref);
     end
-
+    % compute fi
+    [mpc,~] = check_mpc_feasibility(mpc,x_ref);
+    
     opts.SYM = true;
     lambda2 = 1;
 
@@ -133,31 +134,37 @@ function [u0,x0,iter,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
         % state inequalities
         if ~isempty(mpc.s_cnstr)
             [grad_fi_Ind(:),hess_fi_Ind(:,:)] = ...
-                gradient_Hessian_Indicator_fun(mpc.s_cnstr,grad_fi_Ind,hess_fi_Ind);
+                gradient_Hessian_box_Indicator_fun(mpc.s_cnstr,grad_fi_Ind,hess_fi_Ind);
+            [grad_fi_Ind(:),hess_fi_Ind(:,:)] = ...
+                gradient_Hessian_slack_Indicator_fun(mpc.s_cnstr,grad_fi_Ind,hess_fi_Ind);
         end
 
         % control inequalities
         if ~isempty(mpc.u_cnstr)
             [grad_fi_Ind(:),hess_fi_Ind(:,:)] = ...
-                gradient_Hessian_Indicator_fun(mpc.u_cnstr,grad_fi_Ind,hess_fi_Ind);
+                gradient_Hessian_box_Indicator_fun(mpc.u_cnstr,grad_fi_Ind,hess_fi_Ind);
         end
 
         % control differential inequalities
         if ~isempty(mpc.du_cnstr)
             [grad_fi_Ind(:),hess_fi_Ind(:,:)] = ...
-                gradient_Hessian_Indicator_fun(mpc.du_cnstr,grad_fi_Ind,hess_fi_Ind);
+                gradient_Hessian_box_Indicator_fun(mpc.du_cnstr,grad_fi_Ind,hess_fi_Ind);
         end
 
         % output inequalities
         if ~isempty(mpc.y_cnstr)
             [grad_fi_Ind(:),hess_fi_Ind(:,:)] = ...
-                gradient_Hessian_Indicator_fun(mpc.y_cnstr,grad_fi_Ind,hess_fi_Ind);
+                gradient_Hessian_box_Indicator_fun(mpc.y_cnstr,grad_fi_Ind,hess_fi_Ind);
+            [grad_fi_Ind(:),hess_fi_Ind(:,:)] = ...
+                gradient_Hessian_slack_Indicator_fun(mpc.y_cnstr,grad_fi_Ind,hess_fi_Ind);
         end
 
         % General Linear inequalities
         if ~isempty(mpc.h_cnstr)
             [grad_fi_Ind(:),hess_fi_Ind(:,:)] = ...
-                gradient_Hessian_Indicator_fun(mpc.h_cnstr,grad_fi_Ind,hess_fi_Ind);
+                gradient_Hessian_box_Indicator_fun(mpc.h_cnstr,grad_fi_Ind,hess_fi_Ind);
+            [grad_fi_Ind(:),hess_fi_Ind(:,:)] = ...
+                gradient_Hessian_slack_Indicator_fun(mpc.h_cnstr,grad_fi_Ind,hess_fi_Ind);
         end
 
         % 2. If enabled, compute terminal ingredients 
