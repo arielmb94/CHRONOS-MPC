@@ -75,12 +75,12 @@ end
         if ~isempty(mpc.y_cnstr)
             mpc = init_gradSlack(mpc,mpc.y_cnstr);
         end
-         if ~isempty(mpc.h_cnstr)
+        if ~isempty(mpc.h_cnstr)
             mpc = init_gradSlack(mpc,mpc.h_cnstr);
-         end
-         if mpc.ter_constraint
+        end
+        if mpc.ter_constraint
             mpc = init_ter_gradSlack(mpc);
-         end
+        end
 
     end
 
@@ -228,12 +228,12 @@ function x0 = rollstates(mpc,s_prev,u_prev,x_ref,d_in)
                     s_min_strict = mpc.s_cnstr.min + mpc.slack_epsilon;
                     x_next = max(s_min_strict, x_next);
                 end
-            end
-            % Check maximum state limits
-            if mpc.s_cnstr.max_limit
-    
-                s_max_strict = mpc.s_cnstr.max - mpc.slack_epsilon;
-                x_next = min(s_max_strict, x_next);
+                % Check maximum state limits
+                if mpc.s_cnstr.max_limit
+
+                    s_max_strict = mpc.s_cnstr.max - mpc.slack_epsilon;
+                    x_next = min(s_max_strict, x_next);
+                end
             end
 
             % 5. Map to Primal Optimization Vector
