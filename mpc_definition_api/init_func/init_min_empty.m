@@ -1,9 +1,10 @@
-function cnstr = init_slack_min_empty(cnstr)
+function cnstr = init_min_empty(cnstr)
 
-cnstr.min_slack_nv = 0;
-cnstr.min_slack_active = [];
+cnstr.min_limit = 0;
+cnstr.fi_min_x0 = [];
+cnstr.grad_min = [];
+cnstr.hess_min = genHessIneq(cnstr.grad_min);
 cnstr.min_v = [];
-cnstr.min_slack_local_map = [];
 cnstr.min_v_global_index = [];
 cnstr.min_slack_positivity_fi_x0 = [];
 cnstr.min_slack_positivity_grad = [];

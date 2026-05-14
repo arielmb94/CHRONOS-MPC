@@ -1,6 +1,6 @@
 function [mpc,feas] = check_mpc_feasibility(mpc,x_ref)
 
-feas = 1;
+feas = true;
 % State box constraints
 if ~isempty(mpc.s_cnstr)
 
