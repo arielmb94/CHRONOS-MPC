@@ -45,9 +45,9 @@ end
 
     % set x_ref to s_prev if user does not pass x_ref but there are
     % terminal constraints
-    if isempty(x_ref) && mpc.ter_constraint
-        x_ref = s_prev;
-    end
+%    if isempty(x_ref) && mpc.ter_constraint
+%        x_ref = s_prev;
+%    end
 
     % handle disturbance input vectors size
     if ~isempty(d_in) && length(d_in)< mpc.Nd
@@ -78,9 +78,9 @@ end
         if ~isempty(mpc.h_cnstr)
             mpc = init_gradSlack(mpc,mpc.h_cnstr);
         end
-        if mpc.ter_constraint
-            mpc = init_ter_gradSlack(mpc);
-        end
+%         if mpc.ter_constraint
+%             mpc = init_ter_gradSlack(mpc);
+%         end
 
     end
 

@@ -20,9 +20,9 @@ end
 
 % Terminal Constraint
 % CODEGEN NOTE: to be commented out if there is not terminal ingredients
-if mpc.ter_ingredients && mpc.ter_constraint
-    mpc = get_terConst_slack_update(mpc,x_ref);
-end
+% if mpc.ter_ingredients && mpc.ter_constraint
+%     mpc = get_terConst_slack_update(mpc,x_ref);
+% end
 
 % update primal vector with updated slack values
 x0(mpc.Nx+mpc.Nu+1:mpc.Nx+mpc.Nu+mpc.Nv) = mpc.v;

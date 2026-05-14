@@ -30,8 +30,8 @@ function mpc = get_mpc_v(x,mpc)
         end
     end
 
-    if mpc.ter_constraint
-        mpc.v_ter = mpc.v(mpc.v_ter_global_index);
-    end
+ %   if mpc.ter_constraint
+ %       mpc.v_ter = mpc.v(mpc.v_ter_global_index);
+ %   end
     
 end

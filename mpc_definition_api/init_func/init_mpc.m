@@ -176,7 +176,7 @@ mpc.u_cnstr = [];
 mpc.du_cnstr = [];
 mpc.y_cnstr = [];
 mpc.h_cnstr = [];
-mpc.fi_ter_x0 = [];
+mpc.fi_ter_x0 = 0;
 
 mpc.Nv = 0;
 mpc.qv = 1e3; % Slack variable penalty

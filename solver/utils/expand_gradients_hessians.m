@@ -241,14 +241,14 @@ if length_diff
                             zeros(length_diff,n) zeros(length_diff)];
 end
 
-if mpc.ter_constraint
-    length_diff = N+Nv - size(mpc.fi_ter_slack_positivity_grad,1);
-
-    if length_diff
-        mpc.fi_ter_slack_positivity_grad = [mpc.fi_ter_slack_positivity_grad;
-                                            zeros(length_diff,1)];
-        mpc.fi_ter_slack_positivity_hess = genHessIneq(mpc.fi_ter_slack_positivity_grad);
-    end
-end
+%if mpc.ter_constraint
+%    length_diff = N+Nv - size(mpc.fi_ter_slack_positivity_grad,1);
+%
+%    if length_diff
+%        mpc.fi_ter_slack_positivity_grad = [mpc.fi_ter_slack_positivity_grad;
+%                                            zeros(length_diff,1)];
+%        mpc.fi_ter_slack_positivity_hess = genHessIneq(mpc.fi_ter_slack_positivity_grad);
+%    end
+%end
 
 end
