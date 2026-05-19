@@ -72,11 +72,11 @@ mpc.Ndz = mpc.N*mpc.ndz;
 if ~isempty(Qz)
     
     if isempty(mpc.hessCost)
-        mpc.hessCost = zeros(mpc.Nu+mpc.Nx);
+        mpc.hessCost = zeros(mpc.Nu+mpc.Nx+mpc.Nv);
     end
     
     [mpc.gradPerfQz,mpc.hessPerfTerm] = genLinOutGradHess(Qz,Cz,Dz,mpc.N,...
-        mpc.N_ctr_hor,mpc.Nx,mpc.Nu,mpc.Nz,mpc.nx,mpc.nu,mpc.nz);
+        mpc.N_ctr_hor,mpc.Nx,mpc.Nu,mpc.Nz,mpc.nx,mpc.nu,mpc.nz,mpc.Nv);
 
     mpc.hessCost = mpc.hessCost + mpc.hessPerfTerm;
 
@@ -86,7 +86,7 @@ end
 if ~isempty(qz)
 
     mpc.gradPerfqz = genGenPerfLPGrad(qz,Cz,Dz,mpc.N,mpc.N_ctr_hor,...
-                        mpc.Nx,mpc.Nu,mpc.nx,mpc.nu);
+                        mpc.Nx,mpc.Nu,mpc.nx,mpc.nu,mpc.Nv);
 
 end
     

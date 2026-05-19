@@ -153,13 +153,14 @@ mpc.z = [];
 mpc.m = 0;
 mpc.t = 50;
 mpc.Beta = 0.75;
-mpc.min_l = 0.99;
+mpc.min_l = 1e-6;
 mpc.eps = 1e-4;
 mpc.max_iter = 10;
 mpc.ter_ingredients = 0;
 mpc.ter_constraint = 0;
 mpc.x_ref_is_y = 0;
 mpc.P = [];
+mpc.K = [];
 mpc.hessTerminalCost = [];
 mpc.recompute_cost_hess = 0;
 mpc.t_feas = 500;
@@ -171,11 +172,18 @@ mpc.max_feas_iter = 10;
 mpc.unfeasible = 0;
 
 mpc.s_cnstr = [];
-mpc.s_ter_cnstr = [];
 mpc.u_cnstr = [];
 mpc.du_cnstr = [];
 mpc.y_cnstr = [];
 mpc.h_cnstr = [];
-mpc.fi_ter_x0 = [];
+mpc.fi_ter_x0 = 0;
+
+mpc.Nv = 0;
+mpc.qv = 1e3; % Slack variable penalty
+mpc.gradSlackqv = [];
+mpc.v = [];
+mpc.slack_epsilon = 1e-3;
+mpc.slack_ter_epsilon = 1e-4;
+mpc.eps_thknv = 1e-4;
 
 end

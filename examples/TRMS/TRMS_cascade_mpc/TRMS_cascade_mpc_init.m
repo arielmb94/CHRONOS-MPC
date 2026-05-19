@@ -60,7 +60,7 @@ mpc_v = init_mpc_system(mpc_v,1+Ts*Av,Ts*Bv,0,1,0,0);
 % MIMO mpc state constraints
 x_min = [-1; -1.7; -0.6; -0.5];
 x_max = [ 1;  1.2;  0.6;  1];
-mpc = init_mpc_state_cnstr(mpc,x_min,x_max);
+mpc = init_mpc_state_cnstr(mpc,x_min,x_max,10,10);
 
 % MIMO mpc input constraints
 u_min = [-2.9; -1.6];
@@ -70,7 +70,7 @@ mpc = init_mpc_u_cnstr(mpc,u_min,u_max);
 % Horizontal Fan state constraints
 x_min = -2.9;
 x_max = 2.9;
-mpc_h = init_mpc_state_cnstr(mpc_h,x_min,x_max);
+mpc_h = init_mpc_state_cnstr(mpc_h,x_min,x_max,10,10);
 
 % Horizontal Fan input constraints
 u_min = -2.5;
@@ -80,7 +80,7 @@ mpc_h = init_mpc_u_cnstr(mpc_h,u_min,u_max);
 % Vertical Fan state constraints
 x_min = -1.6;
 x_max = 1.6;
-mpc_v = init_mpc_state_cnstr(mpc_v,x_min,x_max);
+mpc_v = init_mpc_state_cnstr(mpc_v,x_min,x_max,10,10);
 
 % Vertical Fan input constraints
 u_min = -2;
@@ -92,26 +92,29 @@ mpc_v = init_mpc_u_cnstr(mpc_v,u_min,u_max);
 % MIMO mpc terminal ingredients computed using the dLQR method
 Qx = diag([1 50 1 50]);     % State Penalty
 Ru = 0.1;                   % Control Penalty
-ter_constraint = 0;         % Only terminal cost
 x_ref_is_y = 1;             % The terminal reference can be extracted 
                             % mpc tracking reference
-mpc = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,ter_constraint,x_ref_is_y);
+ter_constraint = 0;         % Only terminal cost
+
+mpc = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,x_ref_is_y,ter_constraint);
 
 % Horizontal Fan mpc terminal ingredients computed using the dLQR method
 Qx = 50;                    % State Penalty
 Ru = 1;                     % Control Penalty
-ter_constraint = 0;         % Only terminal cost
 x_ref_is_y = 0;             % The terminal reference cannnot be extracted 
                             % from the mpc tracking reference
-mpc_h = init_mpc_ter_ingredients_dlqr(mpc_h,Qx,Ru,ter_constraint,x_ref_is_y);
+ter_constraint = 0;         % Only terminal cost
+
+mpc_h = init_mpc_ter_ingredients_dlqr(mpc_h,Qx,Ru,x_ref_is_y,ter_constraint);
 
 % Vertical Fan mpc terminal ingredients computed using the dLQR method
 Qx = 50;                    % State Penalty
 Ru = 1;                     % Control Penalty
-ter_constraint = 0;         % Only terminal cost
 x_ref_is_y = 0;             % The terminal reference cannnot be extracted 
                             % from the mpc tracking reference
-mpc_v = init_mpc_ter_ingredients_dlqr(mpc_v,Qx,Ru,ter_constraint,x_ref_is_y);
+ter_constraint = 0;         % Only terminal cost
+
+mpc_v = init_mpc_ter_ingredients_dlqr(mpc_v,Qx,Ru,x_ref_is_y,ter_constraint);
 
 %% Costs
 
@@ -128,7 +131,7 @@ Qe = 50;
 mpc_h = init_mpc_Tracking_cost(mpc_h,Qe);
 
 % Horizontal Fan mpc control inputs variation penalty
-Rdu = 1;
+Rdu = 10;
 mpc_h = init_mpc_DiffControl_cost(mpc_h,Rdu);
 
 % Vertical Fan mpc tracking penalty
@@ -136,22 +139,22 @@ Qe = 50;
 mpc_v = init_mpc_Tracking_cost(mpc_v,Qe);
 
 % Vertical Fan mpc control inputs variation penalty
-Rdu = 1;
+Rdu = 10;
 mpc_v = init_mpc_DiffControl_cost(mpc_v,Rdu);
 
 
 %% Init conditions for simulation
 
-% Initialize optimization vector as all 0  
-x0 = zeros(mpc.Nu+mpc.Nx,1);
+% Initialize optimization vector as all 0 and slacks to 2*epsilon  
 u_prev = [0;0];     % init value for control
+[mpc,x0] = build_chronos_mpc(mpc,x([2,3,5,6]),u_prev);
 mpc.t = 500;        % increase t value to give preference to objectives
                     % over constraints
 
 % Initialize optimization vector as all 0  
-x0_h = zeros(mpc_h.Nu+mpc_h.Nx,1);
 uh = 0;             % init value for control
+[mpc_h,x0_h] = build_chronos_mpc(mpc_h,x(1),uh);
 
 % Initialize optimization vector as all 0  
-x0_v = zeros(mpc_v.Nu+mpc_v.Nx,1);
 uv = 0;             % init value for control
+[mpc_v,x0_v] = build_chronos_mpc(mpc_v,x(3),uv);

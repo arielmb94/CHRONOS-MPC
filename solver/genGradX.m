@@ -1,10 +1,10 @@
-function [gradXmin,gradXmax] = genGradX(N,N_h_ctr,Nx,Nu,nx,nu)
+function gradXmax = genGradX(N,N_h_ctr,Nx,Nu,nx,nu,Nv)
 %optimization variables are stored as [u0 x1 u1 x2 ... xn un xn+1]^T
 
 % x_min - xk <= 0 
 % xk - xmax <= 0 
 
-gradXmax = zeros(Nx+Nu,Nx);
+gradXmax = zeros(Nx+Nu+Nv,Nx);
 for k = 1:N
     if k < N_h_ctr
         gradXmax(nu + nx*(k-1)+ nu*(k-1) + 1 : nu + nx*(k)+ nu*(k-1),...
@@ -18,5 +18,4 @@ for k = 1:N
     end
 end
 
-gradXmin = -gradXmax;
 end

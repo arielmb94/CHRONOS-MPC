@@ -1,10 +1,10 @@
-function [gradUmin,gradUmax] = genGradU(N,Nx,Nu,nx,nu)
+function gradUmax = genGradU(N,Nx,Nu,nx,nu,Nv)
 %optimization variables are stored as [u0 x1 u1 x2 ... xn un xn+1]^T
 
 % u_min - uk <= 0 
 % uk - umax <= 0 
 
-gradUmax = zeros(Nx+Nu,Nu);
+gradUmax = zeros(Nx+Nu+Nv,Nu);
 
 for k = 0:N-1
     switch k
@@ -16,5 +16,4 @@ for k = 0:N-1
     
 end
 
-gradUmin = -gradUmax;
 end
