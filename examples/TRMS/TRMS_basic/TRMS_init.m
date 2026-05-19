@@ -41,11 +41,6 @@ x_min = [-2.9;-1;-1.7;-1.6;-0.6;-0.5];
 x_max = [2.9;1;1.2;1.6;0.6;1];
 mpc = init_mpc_state_cnstr(mpc,x_min,x_max);
 
-% State constraints only on terminal states
-x_ter_min = [-2.9;-1;-1.7;-1.6;-0.6;-0.5];
-x_ter_max = [2.9;1;1.2;1.6;0.6;1];
-%mpc = init_mpc_ter_state_cnstr(mpc,x_ter_min,x_ter_max);
-
 % Control input constraints
 u_min = [-2.5;-2];
 u_max = -u_min;
@@ -103,4 +98,4 @@ mpc = init_mpc_DiffControl_cost(mpc,Rdu);
 
 u_prev = [0;0];
 % use warm start function to get optimization vector initial value
-x0 = init_initial_guess(mpc,x,u_prev);
+[mpc,x0] = build_chronos_mpc(mpc,x,u_prev);

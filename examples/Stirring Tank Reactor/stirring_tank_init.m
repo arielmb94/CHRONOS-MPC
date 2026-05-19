@@ -44,12 +44,8 @@ mpc = init_mpc_system(mpc,eye(2)+Ts*A,Ts*B,Ts*Bd,C,[0;0],0);
 % State constraints
 x_min = [0;0];
 x_max = [1;1];
-mpc = init_mpc_state_cnstr(mpc,x_min,x_max);
-
-% State constraints only on terminal states
-x_ter_min = [];
-x_ter_max = [];
-%mpc = init_mpc_ter_state_cnstr(mpc,x_ter_min,x_ter_max);
+slack_cost = 1;
+mpc = init_mpc_state_cnstr(mpc,x_min,x_max,slack_cost,slack_cost);
 
 % Control input constraints
 u_min = 0;
@@ -129,4 +125,4 @@ mpc.t = 500; % Default value is t = 50, increasing t makes the solver give
 % use warm start function to get optimization vector initial value
 u_prev = 0.45;
 d = [1;v0];
-x0 = init_initial_guess(mpc,x_prev,u_prev,[],d);
+[mpc,x0] = build_chronos_mpc(mpc,x_prev,u_prev,[],d);

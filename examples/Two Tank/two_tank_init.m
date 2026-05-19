@@ -119,4 +119,4 @@ qz = [];    % Linear penalty on performance vector: qz'*z
 % use warm start function to get optimization vector initial value
 x_prev = [h1; h2];
 u_prev = 3.7;
-x0 = init_initial_guess(mpc,x_prev,u_prev);
+[mpc,x0] = build_chronos_mpc(mpc,x_prev,u_prev);
