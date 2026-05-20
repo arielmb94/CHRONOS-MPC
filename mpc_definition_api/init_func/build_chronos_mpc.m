@@ -40,6 +40,12 @@ arguments
     dh_in = []
 end
 
+    % init equality constraints
+    mpc = genEqualities(mpc,A,B,mpc.N,mpc.nx,mpc.nu);
+
+    % init constraints
+    mpc = init_constraints(mpc);
+
     % compute primal variables vector
     x0 = rollstates(mpc,s_prev,u_prev,x_ref,d_in);
 
