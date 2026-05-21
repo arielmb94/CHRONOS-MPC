@@ -41,11 +41,6 @@ x_min = [-2.9;-1;-1.7;-1.6;-0.6;-0.5];
 x_max = [2.9;1;1.2;1.6;0.6;1];
 mpc = init_mpc_state_cnstr(mpc,x_min,x_max);
 
-% State constraints only on terminal states
-x_ter_min = [-2.9;-1;-1.7;-1.6;-0.6;-0.5];
-x_ter_max = [2.9;1;1.2;1.6;0.6;1];
-%mpc = init_mpc_ter_state_cnstr(mpc,x_ter_min,x_ter_max);
-
 % Control input constraints
 u_min = [-2.5;-2];
 u_max = -u_min;
@@ -72,19 +67,19 @@ Ddh = [];
 h_min = [];
 h_max = [];
 
-%mpc = init_mpc_lin_custom_cnstr(mpc,h_min,h_max,Ch,Dh,Ddh);
+%mpc = init_mpc_lin_custom_cnstr(mpc,Ch,Dh,Ddh,h_min,h_max);
 
 %% Terminal Ingredients
 
 % Terminal ingredients are computed using the dLQR method
 Qx = diag([1 50 1 1 50 1]);     % State Penalty
 Ru = 1;                         % Control Penalty
-ter_constraint = 0;             % Only terminal cost
 x_ref_is_y = 1;                 % The terminal reference can be extracted 
                                 % mpc tracking reference
+ter_constraint = 0;             % Only terminal cost
 
 % Initialize terminal ingredients using the dLQR method
-mpc = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,ter_constraint,x_ref_is_y);
+mpc = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,x_ref_is_y,ter_constraint);
 %% Costs
 
 % Tracking penalty
@@ -103,4 +98,4 @@ mpc = init_mpc_DiffControl_cost(mpc,Rdu);
 
 u_prev = [0;0];
 % use warm start function to get optimization vector initial value
-x0 = init_mpc_warm_start(mpc,x,u_prev);
+[mpc,x0] = build_chronos_mpc(mpc,x,u_prev);

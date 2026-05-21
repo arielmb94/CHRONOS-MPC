@@ -7,10 +7,10 @@
 %
 % grad = qz
 
-function gradq = genGenPerfLPGrad(q,C,D,N,N_h_ctr,Nx,Nu,nx,nu)
+function gradq = genGenPerfLPGrad(q,C,D,N,N_h_ctr,Nx,Nu,nx,nu,Nv)
 
 % gradQ = Grad(y)*Q
-gradq = zeros(Nx+Nu,1);
+gradq = zeros(Nx+Nu+Nv,1);
 
 % Precompute vector multiplications
 Dq = D'*q;

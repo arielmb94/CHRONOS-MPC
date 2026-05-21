@@ -71,19 +71,19 @@ Ddh = [];
 h_min = [];
 h_max = [];
 
-%mpc = init_mpc_lin_custom_cnstr(mpc,h_min,h_max,Ch,Dh,Ddh);
+%mpc = init_mpc_lin_custom_cnstr(mpc,Ch,Dh,Ddh,h_min,h_max);
 
 %% Terminal Ingredients
 
 % Terminal ingredients are computed using the dLQR method
 Qx = diag([30 30]);         % State Penalty
 Ru = 1;                     % Control Penalty
-ter_constraint = 0;         % Only terminal cost
 x_ref_is_y = 0;             % The terminal reference cannnot be extracted 
                             % from the mpc tracking reference
+ter_constraint = 0;         % Only terminal cost
 
 % Initialize terminal ingredients using the dLQR method                           
-[mpc] = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,ter_constraint,x_ref_is_y);
+[mpc] = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,x_ref_is_y,ter_constraint);
 
 %% Costs
 
@@ -119,4 +119,4 @@ qz = [];    % Linear penalty on performance vector: qz'*z
 % use warm start function to get optimization vector initial value
 x_prev = [h1; h2];
 u_prev = 3.7;
-x0 = init_mpc_warm_start(mpc,x_prev,u_prev);
+[mpc,x0] = build_chronos_mpc(mpc,x_prev,u_prev);

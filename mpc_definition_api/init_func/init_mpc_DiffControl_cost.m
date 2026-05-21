@@ -20,12 +20,12 @@ function mpc = init_mpc_DiffControl_cost(mpc,Rdu)
 mpc.Rdu = Rdu;
 
 if isempty(mpc.hessCost)
-    mpc.hessCost = zeros(mpc.Nu+mpc.Nx);
+    mpc.hessCost = zeros(mpc.Nu+mpc.Nx+mpc.Nv);
 end
 
-mpc.gradDiffCtlrR = zeros(mpc.Nu+mpc.Nx,mpc.Nu);
-mpc.gradDiffCtlr = zeros(mpc.Nu+mpc.Nx,mpc.Nu);
-mpc.hessDiffCtrlTerm = zeros(mpc.Nu+mpc.Nx);
+mpc.gradDiffCtlrR = zeros(mpc.Nu+mpc.Nx+mpc.Nv,mpc.Nu);
+mpc.gradDiffCtlr = zeros(mpc.Nu+mpc.Nx+mpc.Nv,mpc.Nu);
+mpc.hessDiffCtrlTerm = zeros(mpc.Nu+mpc.Nx+mpc.Nv);
 
 mpc = genDiffControlGradHess(mpc,Rdu,mpc.N_ctr_hor,mpc.nx,mpc.nu);
 

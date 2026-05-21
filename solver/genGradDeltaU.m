@@ -1,10 +1,10 @@
-function [gradDeltaUmin,gradDeltaUmax] = genGradDeltaU(N,Nx,Nu,nx,nu)
+function gradDeltaUmax = genGradDeltaU(N,Nx,Nu,nx,nu,Nv)
 %optimization variables are stored as [u0 x1 u1 x2 ... xn un xn+1]^T
 
 % u_min - uk + uk-1 <= 0 
 % uk - uk-1 - umax <= 0 
 
-gradDeltaUmax = zeros(Nx+Nu,Nu);
+gradDeltaUmax = zeros(Nx+Nu+Nv,Nu);
 
 for k = 0:N-1
 
@@ -23,5 +23,4 @@ for k = 0:N-1
     end
 end
 
-gradDeltaUmin = -gradDeltaUmax;
 end
