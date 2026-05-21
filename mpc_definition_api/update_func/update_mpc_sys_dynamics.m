@@ -31,16 +31,36 @@
 %   - mpc: updated CHRONOS mpc structure
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function mpc = update_mpc_sys_dynamics(mpc,A,B,Bd)
+%function mpc = update_mpc_sys_dynamics(mpc,A,B,Bd)
+function mpc = update_mpc_sys_dynamics(mpc,A0,B0,Bd0, Pk, n_rho, varargin)
+
+if (length(Pk) ~= mpc.N*n_rho)
+    warning("WARNING: The dimension of 'Pk' must match with the prediction horizon ('mpc.N') times the number of schedulling variables 'n_rho'.")
+end
+if (length(varargin)/n_rho ~= 3 && length(varargin)/n_rho ~= 2)
+    error("ERROR: You must pass 'n_rho' matrices for A, B and Bd (Bd is optional)");
+end
 
 updateEqualities = 0;
 
-if ~isempty(A)
+if ~isempty(A0)
+    A = A0;
+    
+    for i = 1:n_rho
+        A = A + varargin{i}*Pk(i);
+    end
+
     mpc.A = A;
     updateEqualities = 1;
 end
 
-if ~isempty(B)
+if ~isempty(B0)
+    B = B0;
+
+    for i = 1:n_rho
+        B = B + varargin{i + n_rho}*Pk(i);
+    end
+    
     mpc.B = B;
     updateEqualities = 1;
 end
@@ -48,11 +68,17 @@ end
 if updateEqualities
 
     % A equality contraint 
-    mpc = genEqualities(mpc,mpc.A,mpc.B,mpc.N,mpc.N_ctr_hor,...
-        mpc.nx,mpc.nu);
+    mpc = genEqualities(mpc,A0,B0,mpc.N,mpc.N_ctr_hor,...
+                        mpc.nx,mpc.nu, Pk, n_rho, varargin{:});
 end
 
-if ~isempty(Bd)   
+if ~isempty(Bd0)  
+    Bd = Bd0;
+    
+    for i = 1:n_rho
+        Bd = Bd + varargin{i + 2*n_rho}*Pk(i);
+    end
+
     mpc.Bd = Bd;
 end
 

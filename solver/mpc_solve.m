@@ -50,8 +50,11 @@
 %   starting point finder 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
+%                                            r_in,d_in,x_ref_in,dz_in,dh_in)
 function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
-                                            r_in,d_in,x_ref_in,dz_in,dh_in)
+                                                r_in,d_in,x_ref_in,dz_in,dh_in,...
+                                                A0,Bd0,Pk,n_rho,varargin)
 
     % number of variables
     n = length(x0);
@@ -97,7 +100,11 @@ function [u0,x0,iter,iter_feas,mpc] = mpc_solve(mpc,x0,s_prev,u_prev,...
     end
 
     % update b matrix from equality condition
-    mpc = update_mpc_beq(mpc,s_prev,d);
+    if nargin > 9
+        mpc = update_mpc_beq(mpc,s_prev,d,A0,Bd0,Pk,n_rho,varargin{:});
+    else
+        mpc = update_mpc_beq(mpc,s_prev,d);
+    end
 
     perfCost = 0;
     if ~isempty(mpc.gradPerfQz)
