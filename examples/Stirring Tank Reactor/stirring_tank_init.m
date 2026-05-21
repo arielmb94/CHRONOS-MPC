@@ -1,3 +1,12 @@
+%% Add path
+% restoredefaultpath; 
+% 
+% % This is just to set the path in MATLAB
+% folder = 'C:\Users\vinic\Documents\Doutorado\CHRONOS-MPC\CHRONOS-MPC'; 
+% addpath(folder);
+% 
+% addpath(genpath(folder));
+
 %% Parameters
 
 % Tank reactor parameters
