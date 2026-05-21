@@ -37,6 +37,9 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function Pk_recursive = compute_schedul_recursive(mpc, x0_pred, x_curr, n_rho, sched_fun, jacob_fun, rho_min, rho_max)
+    % previous optimal Pk
+    prev_Pk = compute_schedul_iterative_fast(mpc, x0_pred, x_curr, sched_fun, n_rho);
+    
     % get previous states
     [s_pred, ~, ~] = get_x(x0_pred, x_curr, mpc.nx, mpc.nu, mpc.N, mpc.N_ctr_hor, mpc.Nx);
     
@@ -49,10 +52,7 @@ function Pk_recursive = compute_schedul_recursive(mpc, x0_pred, x_curr, n_rho, s
     rho_curr = sched_fun(x_curr);
     Pk_recursive(1:n_rho) = rho_curr;
     
-    % auxiliar for the recursive process
-    rho_prev_step = rho_curr;
-    
-    % Recursive extrapolation along the horizon(Taylor Expansion)
+    % Recursive extrapolation along the horizon (Taylor Expansion)
     for j = 2:mpc.N
         % delta_x = x(j) - x(j-1)
         if j == 2
@@ -65,10 +65,13 @@ function Pk_recursive = compute_schedul_recursive(mpc, x0_pred, x_curr, n_rho, s
             x_prev_step = s_pred(idx_prev + 1 : idx_prev + mpc.nx);
             delta_x = x_next - x_prev_step;
         end
-        % TO DO: rho_prev_step must come from the Pk*(k-1)
-
-        % Extrapolation: rho(k+1) = rho(k) + sigma_k * delta_x
-        rho_next = rho_prev_step + sigma_k * delta_x;
+        
+        % Extract the base rho from the corresponding step of prev_Pk 
+        % (Eq. 13 from Morato et al.: P_k = P*_{k-1} + sigma*DX)
+        rho_base = prev_Pk((j-1)*n_rho + 1 : j*n_rho);
+        
+        % Extrapolation: rho(k+j) = rho_base(k+j) + sigma_k * delta_x
+        rho_next = rho_base + sigma_k * delta_x;
         
         % Clip each entry of the extrapolation
         rho_next = max(rho_min, min(rho_next, rho_max));
@@ -76,8 +79,5 @@ function Pk_recursive = compute_schedul_recursive(mpc, x0_pred, x_curr, n_rho, s
         % Complete Pk
         idx_rho = (j-1)*n_rho;
         Pk_recursive(idx_rho + 1 : idx_rho + n_rho) = rho_next;
-        
-        % update the memory for next step of recursion
-        rho_prev_step = rho_next;
     end
 end
