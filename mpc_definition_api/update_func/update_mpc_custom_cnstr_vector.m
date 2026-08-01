@@ -54,7 +54,6 @@ if ~isempty(Dh) && ~isempty(mpc.h_cnstr.use_u)
     if ~isempty(mpc.h_cnstr.use_k0)
         mpc.Dh_0(:,:) = Dh(mpc.h_cnstr.rows_k0,:,1);
     end
-
 end
 
 if ~isempty(Dsuh) && ~isempty(mpc.h_cnstr.use_su)

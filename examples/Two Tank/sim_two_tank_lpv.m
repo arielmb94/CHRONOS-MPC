@@ -1,7 +1,7 @@
 %% Call the mpc problem initialization script
 
 two_tank_init
-
+mpc.max_iter = 3;
 %% Define simulation duration and reference parameters
 
 % Duration
@@ -21,6 +21,9 @@ tau = 0.1;      % time constant for reference filter
 xf = h2;        % initial value for reference filter state
 
 n = mpc.N;
+A_lpv = zeros(2,2,n);
+
+%% Run Simulation
 
 % initialize varying A matrix
 A_lpv = zeros(2,2,n);
@@ -47,16 +50,22 @@ for k = 1:Sim_samples
 
     tic;
 
-    % 2. Update the prediction model along the horizon
-    for j = 1:n
-        % Page j maps the state at stage j-1 to the state at stage j
-        if j == 1
-            h1_j = x_prev(1);
-            h2_j = x_prev(2);
-        else
-            h1_j = mpc.s(1,j-1);
-            h2_j = mpc.s(2,j-1);
-        end
+tic;
+
+for j = 1:n
+% Update LPV model
+% System discretized with forward Euler discretization:
+% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
+
+h1_j = mpc.s(1,j);
+h2_j = mpc.s(2,j);
+
+A_lpv(:,:,j) = eye(2)+Ts*[-sqrt(2*g)*sqrt(h1_j)/(Ab*h1_j) 0;
+     sqrt(2*g)*sqrt(h1_j)/(Ab*h1_j) -sqrt(2*g)*sqrt(h2_j)/(Ab*h2_j)];
+% Update mpc problem dynamics
+end
+
+mpc = update_mpc_dynamics(mpc,A_lpv,[],[]);
 
         A_lpv(:,:,j) = eye(2)+Ts*[-sqrt(2*g)*sqrt(h1_j)/(Ab*h1_j) 0;
              sqrt(2*g)*sqrt(h1_j)/(Ab*h1_j) -sqrt(2*g)*sqrt(h2_j)/(Ab*h2_j)];

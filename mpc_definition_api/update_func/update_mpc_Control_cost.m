@@ -28,11 +28,31 @@ function mpc = update_mpc_Control_cost(mpc,Ru,ru)
 
 if ~isempty(Ru) && ~isempty(mpc.quad_control_cost)
     mpc.recompute_cost_hess = 1;
+<<<<<<< HEAD
     mpc.Ru(:,:,:) = fill_mat(mpc.Ru, Ru, 1);
 end
 
 if ~isempty(ru) && ~isempty(mpc.lin_control_cost)
     mpc.ru(:,:) = fill_vec(mpc.ru, ru, 1);
+=======
+
+    len_R = size(Ru,3);
+    if len_R < mpc.N
+        mpc.Ru(:,:,:) = fill_mat(mpc.Ru, Ru, 1);
+    else
+        mpc.Ru(:,:,:) = Ru(:,:,1:mpc.N);
+    end
+end
+
+if ~isempty(ru)
+
+    len_r = size(ru,3);
+    if len_r < mpc.N
+        mpc.ru(:,:) = fill_vec(mpc.ru, ru, 1);
+    else
+        mpc.ru(:,:) = ru(:,:,1:mpc.N);
+    end
+>>>>>>> d5a9fce (adapt update api to 3D time staged matrices)
 end
 
 end

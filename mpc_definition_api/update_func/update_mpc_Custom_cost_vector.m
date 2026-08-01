@@ -44,6 +44,7 @@ if ~isempty(Cz) && ~isempty(mpc.z_use_s)
         mpc.update_customcost_lin = true;
     end
 
+<<<<<<< HEAD
     len_Cz = size(Cz,3);
     mpc.Cz(:,:,:) = fill_mat(mpc.Cz, Cz, 1);
     if ~isempty(mpc.z_use_ter)
@@ -71,6 +72,82 @@ end
 if ~isempty(Dsuz) && ~isempty(mpc.z_use_su)
     if ~isempty(mpc.quad_custom_cost)
         mpc.update_customcost_quad = true;
+=======
+if ~isempty(Cz)
+    update_grad = 1;
+
+    len_Cz = size(Cz,3);
+    if len_Cz < mpc.N
+        mpc.Cz(:,:,:) = fill_mat(mpc.Cz, Cz, 1);
+        if mpc.z_use_ter, mpc.Cz_ter(:,:) = mpc.Cz(mpc.z_rows_ter,:,mpc.N-1); end
+    else
+        mpc.Cz(:,:,:) = Cz(:,:,1:mpc.N-1);
+        if mpc.z_use_ter, mpc.Cz_ter(:,:) = Cz(mpc.z_rows_ter,:,mpc.N); end
+    end
+    if mpc.z_use_k0, mpc.Cz_0(:,:) = mpc.Cz(mpc.z_rows_k0,:,1); end
+
+    if mpc.z_use_ter
+        mpc.grad_z_ter(:,:) = mpc.Cz_ter';
+    end
+end
+
+if ~isempty(Dz)
+    update_grad = 1;
+
+    len_Dz = size(Dz,3);
+    if len_Dz < mpc.N-1
+        mpc.Dz(:,:,:) = fill_mat(mpc.Dz, Dz, 1);
+    else
+        mpc.Dz(:,:,:) = Dz(:,:,1:mpc.N-1);
+    end
+    % if there is Dz it means there is k0
+    mpc.Dz_0(:,:) = mpc.Dz(mpc.z_rows_k0,:,1);
+
+    mpc.grad_z_0(:,:) = mpc.Dz_0';
+end
+
+if ~isempty(Dsuz)
+    update_grad = 1;
+    
+    len_Dsuz = size(Dsuz,3);
+    if len_Dsuz < mpc.N-1
+        mpc.Dsuz(:,:,:) = fill_mat(mpc.Dsuz, Dsuz, 1);
+    else
+        mpc.Dsuz(:,:,:) = Dsuz(:,:,1:mpc.N-1);
+    end
+    if mpc.z_use_k0, mpc.Dsuz_0(:,:) = mpc.Dsuz(mpc.z_rows_k0,:,1); end
+end
+
+if ~isempty(Ddz)   
+
+    len_Ddz = size(Ddz,3);
+    if len_Ddz < mpc.N-1
+        mpc.Ddz(:,:,:) = fill_mat(mpc.Ddz, Ddz, 1);
+    else
+        mpc.Ddz(:,:,:) = Ddz(:,:,1:mpc.N-1);
+    end
+    if mpc.z_use_k0, mpc.Ddz_0(:,:) = mpc.Ddz(mpc.z_rows_k0,:,1); end
+end
+
+if update_grad
+
+    for k = 1:mpc.N-1
+        if mpc.z_use_s && mpc.z_use_su && mpc.z_use_u
+            mpc.grad_z(:,:,k) = [mpc.Cz(:,:,k)'; mpc.Dsuz(:,:,k)'; mpc.Dz(:,:,k)'];
+        elseif mpc.z_use_s && mpc.z_use_su
+            mpc.grad_z(:,:,k) = [mpc.Cz(:,:,k)'; mpc.Dsuz(:,:,k)'];
+        elseif mpc.z_use_s && mpc.z_use_u
+            mpc.grad_z(:,:,k) = [mpc.Cz(:,:,k)'; mpc.Dz(:,:,k)'];
+        elseif mpc.z_use_su && mpc.z_use_u
+            mpc.grad_z(:,:,k) = [mpc.Dsuz(:,:,k)'; mpc.Dz(:,:,k)'];
+        elseif mpc.z_use_s
+            mpc.grad_z(:,:,k) = mpc.Cz(:,:,k)';
+        elseif mpc.z_use_su
+            mpc.grad_z(:,:,k) = mpc.Dsuz(:,:,k)';
+        elseif mpc.z_use_u
+            mpc.grad_z(:,:,k) = mpc.Dz(:,:,k)';
+        end
+>>>>>>> d5a9fce (adapt update api to 3D time staged matrices)
     end
     if ~isempty(mpc.lin_custom_cost)
         mpc.update_customcost_lin = true;
