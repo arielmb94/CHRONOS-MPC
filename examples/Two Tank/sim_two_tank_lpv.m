@@ -21,6 +21,23 @@ tau = 0.1;      % time constant for reference filter
 xf = h2;        % initial value for reference filter state
 
 n = mpc.N;
+n_rho = 2;
+n_iter = 5;
+
+% Setup scheduling functions and bounds
+my_sched_fun = @(x) [1/sqrt(max(x(1), 1e-4)); 
+                     1/sqrt(max(x(2), 1e-4))];
+                     
+my_jacob_fun = @(x) [-0.5/(max(x(1), 1e-4)^1.5), 0; 
+                      0, -0.5/(max(x(2), 1e-4)^1.5)];
+
+k_tank = sqrt(2*g)/Ab;
+compute_A = @(rho) eye(2) + Ts * [-k_tank*rho(1), 0; 
+                                   k_tank*rho(1), -k_tank*rho(2)];
+
+rho_min = my_sched_fun([1.0; 1.0]); 
+rho_max = my_sched_fun([0.01; 0.01]); 
+
 A_lpv = zeros(2,2,n);
 
 %% Run Simulation
@@ -41,60 +58,57 @@ iter_dat = zeros(1,Sim_samples);
 
 % Closed-loop simulation
 for k = 1:Sim_samples
-
-    % 1. Read the current state and update the references
-    h1 = x_prev(1);
-    h2 = x_prev(2);
+    % Assign state vector variables    
+    h1  = x_prev(1);        % Tank 1 water height
+    h2  = x_prev(2);        % Tank 2 water height
+    
+    % Low pass reference filter step
     xf = xf + Ts*(-xf/tau+r(k)/tau);
-    x_ref = [xf;xf];  % terminal target: equal steady-state tank heights
-
+    
+    % Tracking vector for terminal constraint
+    x_ref = [xf;xf];
+    
     tic;
-
-tic;
-
-for j = 1:n
-% Update LPV model
-% System discretized with forward Euler discretization:
-% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
-
-h1_j = mpc.s(1,j);
-h2_j = mpc.s(2,j);
-
-A_lpv(:,:,j) = eye(2)+Ts*[-sqrt(2*g)*sqrt(h1_j)/(Ab*h1_j) 0;
-     sqrt(2*g)*sqrt(h1_j)/(Ab*h1_j) -sqrt(2*g)*sqrt(h2_j)/(Ab*h2_j)];
-% Update mpc problem dynamics
-end
-
-mpc = update_mpc_dynamics(mpc,A_lpv,[],[]);
-
-        A_lpv(:,:,j) = eye(2)+Ts*[-sqrt(2*g)*sqrt(h1_j)/(Ab*h1_j) 0;
-             sqrt(2*g)*sqrt(h1_j)/(Ab*h1_j) -sqrt(2*g)*sqrt(h2_j)/(Ab*h2_j)];
-    end
-
-    % Update only A; B is constant and no disturbance model is used
-    mpc = update_mpc_dynamics(mpc,A_lpv,[],[]);
-
-    % 3. Solve using the current state, previous input, output reference, and
-    % terminal-state reference. Empty arguments mean no d, dz, or dh inputs.
-    [u_k,mpc,iter] = mpc_solve(mpc,x_prev,u_prev,xf,x_ref,[],[],[]);
+    
+    % --- LPV TRAJECTORY ESTIMATION METHODS ---
+    % Choose only one method to use by uncommenting it and commenting the others
+    
+    % Method 1: Frozen trajectory
+    % Pk = compute_schedul_frozen(mpc, x_prev, my_sched_fun);
+    
+    % Method 2: Iterative Fast trajectory
+    % Pk = compute_schedul_iterative_fast(mpc, x_prev, my_sched_fun, n_rho);
+    
+    % Method 3: Iterative (SQP-like) trajectory refinement
+    Pk = compute_schedul_iterative(mpc, x_prev, u_prev, xf, x_ref, [], my_sched_fun, compute_A, [], [], n_rho, n_iter);
+    
+    % Method 4: Recursive extrapolation trajectory
+    % Pk = compute_schedul_recursive(mpc, x_prev, n_rho, my_sched_fun, my_jacob_fun, rho_min, rho_max);
+    
+    % Build 3D affine matrix array using the interface
+    A_lpv = traj_mat(compute_A, Pk, n_rho, n);
+    
+    % Update mpc problem dynamics
+    mpc = update_mpc_dynamics(mpc, A_lpv, [], []);
+    
+    % Solve mpc iteration
+    [u_prev, iter, mpc] = mpc_solve(mpc, x_prev, u_prev, xf, x_ref, [], [], []);
+    
     tk = toc;
-
-    % Keep the returned mpc for the next control sample
-    rf_dat(k) = xf;
-    h1_dat(k) = h1;
-    h2_dat(k) = h2;
-    u_dat(k) = u_k;
-    du_dat(k) = u_k-u_prev;
+    
+    % Store variables values for plotting and analysis  
+    rf_dat(:,k) = xf;
+    h1_dat(:,k) = h1;
+    h2_dat(:,k) = h2;
+    u_dat(k) = u_prev;
     t_dat(k) = tk;
-    iter_dat(k) = iter;
-
-    % 4. Apply the first control action to the nonlinear plant
-    h1_next = h1 + Ts*(u_k-sqrt(2*g*h1))/Ab;
-    h2_next = h2 + Ts*(sqrt(2*g*h1)-sqrt(2*g*h2))/Ab;
-
-    x_prev = [h1_next;h2_next];
-    u_prev = u_k;
-
+    
+    % Forward Euler step of Two Tank nonlinear dynamics
+    h1 = h1 + Ts*(u_prev/Ab-sqrt(2*g)*sqrt(h1)/Ab);
+    h2 = h2 + Ts*(sqrt(2*g)*sqrt(h1)/Ab-sqrt(2*g)*sqrt(h2)/Ab);
+    
+    % update state vector for the following iteration
+    x_prev = [h1;h2];
 end
 
 %% Plots
