@@ -1,103 +1,150 @@
 # Twin Rotor MIMO System (TRMS) Basic MPC Example
 
-### Folder structure
+## Folder contents
 
 In this folder you will find the following files:
 
-* *TRMS_init.m*: script to define the MPC problem using the CHRONOS init functions.
-* *TRMS_sim_lpv.m*.m: script to simulate the TRMS in closed-loop using the CHRONOS MPC solver, at each iteration we use the CHRONOS update functions to adapt its internal Linear Parameter Varying model to the instantaneous TRMS states.
-* *qLPV_TRMS_SS.m*: computes the LPV model of the TRMS based on the current values of the state vector. The LPV model is extracted from the nonlinear model provided in [1].
-* *compute_ref.m*: computes the state references based on the angle set points for the TRMS and from the equilibrium equations as given in [1].
+* *TRMS_init.m*: defines and builds the CHRONOS controller.
+* *TRMS_sim_lpv.m*: runs the closed-loop nonlinear-plant simulation.
+* *qLPV_TRMS_SS.m*: evaluates the TRMS LPV model at the measured state.
+* *compute_ref.m*: computes the remaining state references from the requested angles.
 
-### Example introduction
+## Example overview
 
-The TRMS is a simplified representation of a helicotper, it has no translation, however, it can rotate freely on the horizontal and vertical frames. It counts with a main rotor to control the vertical angle enabling the TRMS to pitch and a tail rotor to control the horizontal angle, which allows changes on the TRMS yaw angle. Each rotor operated by a dedicated DC motor. 
+This is the classical centralized formulation: one six-state MIMO MPC computes
+the voltages applied to the tail- and main-rotor motors. The controller follows
+horizontal and vertical angle commands while accounting for the coupled,
+nonlinear TRMS dynamics described in [1].
 
-Existing multiple representations of the TRMS dynamics available in the literature, we borrowed the nonlinear model and parameters identified in [1]. The nonlinear model presented in [1] captures very well the nonlinear dynamics of the vertical and horzizontal TRMS dynamics, their couplings and the effect of friction forces, which are represented by discontinuous equations taking into account the differences between negative and positive displacement directions. The quality of the identification work carried by the authors in [1] is demonstrated by the perfect matching between simulated model response and real data from the physical TRMS behaviour. 
+The corresponding LPV model has the structure
 
-Without detailing the full nonlinear equations of the model terms, the LPV model extracted from the nonlinear model given in [1] can be represented as:
-
-$$ \dot x=
-\left [\begin{array}{cccccc}  
-a_{11}(\rho) & 0 & 0 & 0 & 0 & 0 \\\ 
-a_{21}(\rho) & a_{22}(\rho) & a_{23}(\rho) & a_{24}(\rho) & a_{25}(\rho) & a_{26}(\rho) \\\
-0 & a_{32} & 0 & 0 & 0 & 0 \\\
-0 & 0 & 0 & a_{44}(\rho) & 0 & 0 \\\
-0 & a_{52}(\rho) & 0 & a_{54}(\rho) & a_{55} & a_{56}(\rho) \\\
+```math
+\dot x=
+\begin{bmatrix}
+a_{11}(\rho) & 0 & 0 & 0 & 0 & 0 \\
+a_{21}(\rho) & a_{22}(\rho) & a_{23}(\rho) & a_{24}(\rho) & a_{25}(\rho) & a_{26}(\rho) \\
+0 & a_{32} & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & a_{44}(\rho) & 0 & 0 \\
+0 & a_{52}(\rho) & 0 & a_{54}(\rho) & a_{55} & a_{56}(\rho) \\
 0 & 0 & 0 & 0 & a_{65} & 0
-\end{array} \right ]
-x + 
-\left [\begin{array}{cc} 
-b_{11} & 0 \\\
-0 & b_{22}(\rho) \\\
-0 & 0 \\\
-0 & b_{42} \\\
-0 & 0 \\\
-0 & 0 
-\end{array} \right ]u$$
+\end{bmatrix}x
++\begin{bmatrix}
+b_{11} & 0 \\
+0 & b_{22}(\rho) \\
+0 & 0 \\
+0 & b_{42} \\
+0 & 0 \\
+0 & 0
+\end{bmatrix}u
+```
 
-The state vector is $x = [\omega_h,\Omega_h,\theta_h,\omega_v,\Omega_v,\theta_v]^T $, where
+The MPC state uses the vertical-angle deviation
+$\widetilde\theta_v=\theta_v-\theta_{v0}$:
 
-* $\omega_h$: angular speed of the tail rotor DC fan
-* $\Omega_h$: TRMS angular speed on the horizontal frame
-* $\theta_h$: TRMS horizontal angle
-* $\omega_v$: angular speed of the main rotor DC fan
-* $\Omega_v$: TRMS angular speed on the vertical frame
-* $\theta_v$: TRMS vertical angle
+```math
+x=\begin{bmatrix}
+\omega_h&\Omega_h&\theta_h&\omega_v&\Omega_v&\widetilde\theta_v
+\end{bmatrix}^T,
+\qquad
+u=\begin{bmatrix}u_h&u_v\end{bmatrix}^T.
+```
 
-The input vector is  $u = [u_h,u_v]^T$, where
+| Symbol | Meaning | Unit |
+| --- | --- | --- |
+| $\omega_h$, $\omega_v$ | Tail- and main-rotor angular speeds | rad/s |
+| $\Omega_h$, $\Omega_v$ | Horizontal and vertical body rates | rad/s |
+| $\theta_h$, $\widetilde\theta_v$ | Horizontal angle and vertical-angle deviation | rad |
+| $u_h$, $u_v$ | Tail- and main-rotor motor voltages | V |
 
-* $u_h$: DC voltage applied to the tail rotor fan
-* $u_v$: DC voltage applied to the main rotor fan
+The scheduling vector is
+$\rho=[\omega_h,\Omega_h,\theta_h,\omega_v,\theta_v]^T$.
+*qLPV_TRMS_SS.m* evaluates $A(\rho)$ and $B(\rho)$ from the measured state.
 
-Finally, note that parameter varying terms have been made explicit by showing on the state-space model their depedency on the varying parameter vector $\rho$. On the LPV model developed for the TRMS, the varying parameter vector $\rho$ is formed by $\rho = [\omega_h,\Omega_h,\theta_h,\omega_v,\theta_v]^T$. The file *qLPV_TRMS_SS.m* allows to compute the LPV model matrices for a given value of the varying parameters $\rho$.
+## MPC definition
 
-### MPC Definition
+At each sample, CHRONOS solves
 
-The control objective is to control the TRMS horizontal and vertical angles. This is achieved by solving at each time step the following MPC problem using the CHRONOS solver:
+```math
+\begin{aligned}
+\min_{x,u}\quad
+J={}&(r_N-x_N)^TP(r_N-x_N)
++\frac{1}{2}\sum_{k=1}^{N}(r_k-x_k)^TQ_e(r_k-x_k)\\
+&+\frac{1}{2}\sum_{k=0}^{N-1}u_k^TR_u u_k
++\frac{1}{2}\sum_{k=0}^{N-1}\Delta u_k^TR_{du}\Delta u_k\\
+\text{subject to}\quad
+&x_{k+1}=A_k(\rho)x_k+B_k(\rho)u_k,
+&&k=0,\ldots,N-1.
+\end{aligned}
+```
 
-$$\min_{u,x}J = (r-x_N)^TP(r-x_N) + \sum_{i=1}^{N-1} (r-x_i)^TQ_{e}(r-x_i) + \sum_{i=0}^{N_{ctr}-1}\Delta u_i^TdR_u\Delta u_i$$
-
-s.t.
-
-$$ x^+=A(\rho)x+B(\rho)u$$
-$$  \left [\begin{array}{c} 
--2.9 \\\
--1.0 \\\
--1.7 \\\
--1.6 \\\
--0.6 \\\
+The configured bounds are
+```math
+\begin{bmatrix}
+-2.9 \\
+-1.0 \\
+-1.7 \\
+-1.6 \\
+-0.6 \\
 -0.5
-\end{array} \right ]
+\end{bmatrix}
 \leq x \leq
-\left [\begin{array}{c} 
-2.9 \\\
-1.0 \\\
-1.2 \\\
-1.6 \\\
-0.6 \\\
-1.0 
-\end{array} \right ]$$
-$$  \left [\begin{array}{c} 
--2.5 \\\
--2.0 
-\end{array} \right ]
+\begin{bmatrix}
+2.9 \\
+1.0 \\
+1.2 \\
+1.6 \\
+0.6 \\
+1.0
+\end{bmatrix}
+```
+
+```math
+\begin{bmatrix}
+-2.5 \\
+-2.0
+\end{bmatrix}
 \leq u \leq
-\left [\begin{array}{c} 
-2.5 \\\
-2.0 
-\end{array} \right ]$$
+\begin{bmatrix}
+2.5 \\
+2.0
+\end{bmatrix}
+```
 
-Due to the highly nonlinear dynamics of the TRMS and the couplings between its vertical and horizontal motions, it is required to provide tracking references for all states to obtain good control performance. The state references are computed as follows:
-* $\theta_h^{ref}$, $\theta_v^{ref}$: set points provided to the MPC
-* $\Omega_h^{ref}$, $\Omega_v^{ref}$: computed from the angle error value and a time constant $\tau$ as:
+The input-rate bounds are
 
-$$ \Omega_i = \frac{\theta_i^{ref}-\theta_i}{\tau} $$ 
+```math
+\begin{bmatrix}-0.5\\-0.4\end{bmatrix}
+\leq\Delta u\leq
+\begin{bmatrix}0.5\\0.4\end{bmatrix}.
+```
 
-* $\omega_h^{ref}$, $\omega_v^{ref}$: computed from the equilibrium equations, e.g. $\dot\omega_i=0$, of the nonlinear differential equations model. The equilibrium equations were obtained from [1].
+## Reference generation
+
+The angle commands alone do not define appropriate references for the remaining
+TRMS states. The six-state reference is assembled as follows:
+
+- $\theta_h^{ref}$ and $\theta_v^{ref}$ are the requested angle trajectories.
+- $\Omega_h^{ref}$ and $\Omega_v^{ref}$ use the angle error with $\tau=0.5$ s:
+
+  $$\Omega_i^{ref}=\frac{\theta_i^{ref}-\theta_i}{\tau}.$$
+
+- $\omega_h^{ref}$ and $\omega_v^{ref}$ are computed by *compute_ref.m* from
+  the nonlinear TRMS equilibrium equations.
+
+The reference passed to `mpc_solve` is
+
+```math
+r=\begin{bmatrix}
+\omega_h^{ref}&\Omega_h^{ref}&\theta_h^{ref}&
+\omega_v^{ref}&\Omega_v^{ref}&\theta_v^{ref}-\theta_{v0}
+\end{bmatrix}^T.
+```
+
+This nonlinear feedforward calculation supplies the rotor-speed references. The
+next TRMS example shows how CHRONOS custom costs can compute them inside the MPC
+instead.
 
 
-### References
+## Reference
 
 [1] Rotondo, D., Nejjari, F., & Puig, V. (2013). Quasi-LPV modeling, identification and control of a Twin Rotor MIMO System. Control Engineering Practice, 21(6), 829-846.
-

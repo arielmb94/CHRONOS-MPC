@@ -8,86 +8,94 @@ tsim = 200; % seconds
 Sim_samples = tsim/Ts;
 time = 0:Ts:tsim-Ts;
 
-% Horizontal Angle sinousidal reference parameters
+% Horizontal-angle sinusoidal reference parameters
 freq_TththRef = 1/31; % Hz
 offset_TththRef = 0;
 ampl_TththRef = 1;
 
-% Vertical Angle sinousidal reference parameters
+% Vertical-angle sinusoidal reference parameters
 freq_TthtvRef = 1/47; % Hz
 offset_TthtvRef = -0.6;
 ampl_TthtvRef = 0.5;
 
-% sinousidal references
+% Sinusoidal angle references
 TththRef_v = offset_TththRef + ampl_TththRef*sin(2*pi*(freq_TththRef)*time);
 TthtvRef_v = offset_TthtvRef + ampl_TthtvRef*sin(2*pi*(freq_TthtvRef)*time);
 
-%% Run Simulation
+%% Run simulation
 
-% clear storage variable
-clear Wh_dat Omh_dat Thth_dat Wv_dat Omv_dat Thtv_dat uh_dat uv_dat ti
+% Preallocate simulation data
+Wh_dat = zeros(1,Sim_samples);
+Omh_dat = zeros(1,Sim_samples);
+Thth_dat = zeros(1,Sim_samples);
+Wv_dat = zeros(1,Sim_samples);
+Omv_dat = zeros(1,Sim_samples);
+Thtv_dat = zeros(1,Sim_samples);
+WhRef_dat = zeros(1,Sim_samples);
+WvRef_dat = zeros(1,Sim_samples);
+uh_dat = zeros(1,Sim_samples);
+uv_dat = zeros(1,Sim_samples);
+duh_dat = zeros(1,Sim_samples);
+duv_dat = zeros(1,Sim_samples);
+t_dat = zeros(1,Sim_samples);
+iter_dat = zeros(1,Sim_samples);
 
-% Simulation Loop
+% Closed-loop simulation
 for i = 1:Sim_samples
 
-% Assign state vector variables    
-Wh   = x(1);    % Horizontal Fan Angular Speed
-Omh  = x(2);    % Horizontal Angular Rate
-Thth = x(3);    % Horizontal Angle
-Wv   = x(4);    % Vertical Fan Angular Speed
-Omv  = x(5);    % Vertical Angular Rate
-Thtv = x(6);    % Vertical Angle
+    % 1. Read the current plant state
+    Wh = x(1);
+    Omh = x(2);
+    Thth = x(3);
+    Wv = x(4);
+    Omv = x(5);
+    Thtv = x(6);
 
-% Store state vector values for plotting and analysis  
-Wh_dat(i)   = x(1);
-Omh_dat(i)  = x(2);
-Thth_dat(i) = x(3);
-Wv_dat(i)   = x(4);
-Omv_dat(i)  = x(5);
-Thtv_dat(i) = x(6);
+    % 2. Build the six-state reference from the requested angles
+    TththRef = TththRef_v(i);
+    TthtvRef = TthtvRef_v(i);
+    
+    [WhRef,OmhRef,WvRef,OmvRef] = compute_ref(TththRef,Thth,TthtvRef,Thtv);
 
-% Assign current reference values
-TthtvRef = TthtvRef_v(i);
-TththRef = TththRef_v(i);
+    ref = [WhRef;OmhRef;TththRef;WvRef;OmvRef;TthtvRef-Thtv0];
 
-% Compute Reference for each state
-[WhRef,OmhRef,WvRef,OmvRef] = compute_ref(TththRef,Thth,TthtvRef,Thtv);
+    tic
 
-% Define reference vector
-ref = [WhRef OmhRef TththRef WvRef OmvRef TthtvRef-Thtv0]';
+    % 3. Update the LPV prediction model at the measured state
+    sys = qLPV_TRMS_SS(Wh,Omh,Thth,Wv,Thtv);
+    mpc = update_mpc_dynamics(mpc,eye(6)+Ts*sys.A,Ts*sys.B,[]);
 
+    % 4. Solve for the two motor voltages
+    x_mpc = [Wh;Omh;Thth;Wv;Omv;Thtv-Thtv0];
+    [u_k,iter,mpc] = mpc_solve(mpc,x_mpc,u_prev,ref,[],[],[],[]);
 
-% Update LPV model to current scheduling values
-sys = qLPV_TRMS_SS(Wh,Omh,Thth,Wv,Thtv);
-% Update mpc problem structure
-% System discretized with forward Euler discretization:
-% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
-tic
-mpc = update_mpc_dynamics(mpc,eye(6)+Ts*sys.A,Ts*sys.B,[]);
+    t_dat(i) = toc;
 
-% Adjust Vertical Angle State
-x_mpc = [Wh;Omh;Thth;Wv;Omv;Thtv-Thtv0];
-% Solve mpc iteration
-[u_prev,iter,mpc] = mpc_solve(mpc,x_mpc,u_prev,ref,[],[],[],[]);
-ti(i) = toc;
+    % Store states, generated references, and control actions
+    Wh_dat(i) = Wh;
+    Omh_dat(i) = Omh;
+    Thth_dat(i) = Thth;
+    Wv_dat(i) = Wv;
+    Omv_dat(i) = Omv;
+    Thtv_dat(i) = Thtv;
+    WhRef_dat(i) = WhRef;
+    WvRef_dat(i) = WvRef;
+    uh_dat(i) = u_k(1);
+    uv_dat(i) = u_k(2);
+    duh_dat(i) = u_k(1)-u_prev(1);
+    duv_dat(i) = u_k(2)-u_prev(2);
+    iter_dat(i) = iter;
 
-% Assign control actions
-uh = u_prev(1);
-uv = u_prev(2);
-% Storoge control action values for plotting and analysis
-uh_dat(i) = u_prev(1);
-uv_dat(i) = u_prev(2);
-
-% Run TRMS simulation
-dt_x = TRMS(Wh,Omh,Thth,Wv,Omv,Thtv,uh,uv);
-% Forward euler step
-x = x + Ts*dt_x;
+    % 5. Apply the first control action to the nonlinear plant
+    dt_x = TRMS(Wh,Omh,Thth,Wv,Omv,Thtv,u_k(1),u_k(2));
+    x = x + Ts*dt_x;
+    u_prev = u_k;
 
 end
 %% Plots
 figure
 
-ax1 = subplot(2,2,1);
+ax1 = subplot(3,2,1);
 plot(time,TththRef_v)
 hold on
 plot(time,Thth_dat)
@@ -98,7 +106,7 @@ ylabel('Angle (rad)')
 legend('Ref. \theta_h','\theta_h')
 grid on
 
-ax2 = subplot(2,2,2);
+ax2 = subplot(3,2,2);
 plot(time,TthtvRef_v-Thtv0)
 hold on
 plot(time,Thtv_dat-Thtv0)
@@ -108,33 +116,55 @@ ylabel('Angle (rad)')
 legend('Ref. \theta_v - \theta_{v0}','\theta_v - \theta_{v0}')
 grid on
 
-ax3 = subplot(2,2,3);
-plot(time,uh_dat)
+ax3 = subplot(3,2,3);
+plot(time,WhRef_dat)
 hold on
-plot(time(1:end-1),diff(uh_dat))
+plot(time,Wh_dat)
 grid on
-title('Horizontal Fan Control Action')
+title('Tail-Rotor Speed')
 xlabel('Time (s)')
-ylabel('Fan Voltage (V)')
+ylabel('Angular Speed (rad/s)')
+legend('Ref. \omega_h','\omega_h')
+grid on
+
+ax4 = subplot(3,2,4);
+plot(time,WvRef_dat)
+hold on
+plot(time,Wv_dat)
+grid on
+title('Main-Rotor Speed')
+xlabel('Time (s)')
+ylabel('Angular Speed (rad/s)')
+legend('Ref. \omega_v','\omega_v')
+grid on
+
+ax5 = subplot(3,2,5);
+plot(time,uh_dat,time,duh_dat)
+grid on
+title('Tail-Rotor Control Action')
+xlabel('Time (s)')
+ylabel('Motor Voltage (V)')
 legend('u_h','\Delta u_h')
-grid on
 
-ax4 = subplot(2,2,4);
-plot(time,uv_dat)
-hold on
-plot(time(1:end-1),diff(uv_dat))
+ax6 = subplot(3,2,6);
+plot(time,uv_dat,time,duv_dat)
 grid on
-title('Vertical Fan Control Action')
+title('Main-Rotor Control Action')
 xlabel('Time (s)')
-ylabel('Fan Voltage (V)')
+ylabel('Motor Voltage (V)')
 legend('u_v','\Delta u_v')
-grid on
 
-linkaxes([ax1,ax3],'x')
-linkaxes([ax2,ax4],'x')
+linkaxes([ax1,ax3,ax5],'x')
+linkaxes([ax2,ax4,ax6],'x')
 
 figure
-plot(time,ti)
-title('Compute Time (s)')
+subplot(2,1,1)
+plot(time,t_dat)
+ylabel('Online Controller Time (s)')
+grid on
+
+subplot(2,1,2)
+stairs(time,iter_dat)
 xlabel('Time (s)')
+ylabel('Iterations')
 grid on

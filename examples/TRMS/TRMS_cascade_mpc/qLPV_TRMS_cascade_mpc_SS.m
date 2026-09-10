@@ -1,4 +1,4 @@
-function [A,B,Bd,Ah,Bh,Av,Bv] = qLPV_TRMS_two_lvl_SS(Wh,Omh,Thth,Wv,Thtv)
+function [A,B,Bd,Ah,Bh,Av,Bv] = qLPV_TRMS_cascade_mpc_SS(Wh,Omh,Thth,Wv,Thtv)
 
     k_g = 0.2;
     l_t= 0.282;

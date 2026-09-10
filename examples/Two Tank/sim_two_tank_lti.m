@@ -10,50 +10,58 @@ Sim_samples = tsim/Ts;
 time = 0:Ts:tsim-Ts;
 
 % Define step reference
-clear r
 r = zeros(1,Sim_samples);
 r(time<=2.5) = 0.7;
 r(time>2.5) = 0.25;
 
-% To avoid feasibility problems due to large step changes it
-% is better to low-pass step references
+% Smooth the commanded trajectory so that the controller does not react to
+% the full reference step at once. This is useful with input-rate limits and
+% a fixed, small Newton-iteration budget; it is not a feasibility mechanism.
 tau = 0.1;      % time constant for reference filter
 xf = h2;        % initial value for reference filter state
 
-%% Run Simulation
+%% Run simulation
 
-% clear storage variables
-clear rf_dat rk h1_dat h2_dat u_dat t_dat
+% Preallocate simulation data
+rf_dat = zeros(1,Sim_samples);
+h1_dat = zeros(1,Sim_samples);
+h2_dat = zeros(1,Sim_samples);
+u_dat = zeros(1,Sim_samples);
+du_dat = zeros(1,Sim_samples);
+t_dat = zeros(1,Sim_samples);
+iter_dat = zeros(1,Sim_samples);
 
-% Simulation Loop
+% Closed-loop simulation
 for k = 1:Sim_samples
 
-% Assign state vector variables    
-h1  = x_prev(1);        % Tank 1 water height
-h2  = x_prev(2);        % Tank 2 water height
+    % 1. Read the current state and update the references
+    h1 = x_prev(1);
+    h2 = x_prev(2);
+    xf = xf + Ts*(-xf/tau+r(k)/tau);
+    x_ref = [xf;xf];  % terminal target: equal steady-state tank heights
 
-% Low pass reference filter step
-xf = xf + Ts*(-xf/tau+r(k)/tau);
-% Tracking vector for terminal constraint
-x_ref = [xf;xf];
+    tic;
 
-tic;
-% Solve mpc iteration
-[u_prev,iter,mpc] = mpc_solve(mpc,x_prev,u_prev,xf,x_ref,[],[],[]);
-tk = toc;
+    % 2. Solve using the current state, previous input, output reference, and
+    % terminal-state reference. Empty arguments mean no d, dz, or dh inputs.
+    [u_k,iter,mpc] = mpc_solve(mpc,x_prev,u_prev,xf,x_ref,[],[],[]);
+    tk = toc;
 
-% Store variables values for plotting and analysis  
-rf_dat(:,k) = xf;
-h1_dat(:,k) = h1;
-h2_dat(:,k) = h2;
-u_dat(k) = u_prev;
-t_dat(k) = tk;
+    % Keep the returned mpc for the next control sample
+    rf_dat(k) = xf;
+    h1_dat(k) = h1;
+    h2_dat(k) = h2;
+    u_dat(k) = u_k;
+    du_dat(k) = u_k-u_prev;
+    t_dat(k) = tk;
+    iter_dat(k) = iter;
 
-% Forward Euler step of Two Tank nonlinear dynamics
-h1 = h1 + Ts*(u_prev/Ab-sqrt(2*g)*sqrt(h1))/Ab;
-h2 = h2 + Ts*(sqrt(2*g)*sqrt(h1)/Ab-sqrt(2*g)*sqrt(h2)/Ab);
-% update state vector for the following iteration
-x_prev = [h1;h2];
+    % 3. Apply the first control action to the nonlinear plant
+    h1_next = h1 + Ts*(u_k-sqrt(2*g*h1))/Ab;
+    h2_next = h2 + Ts*(sqrt(2*g*h1)-sqrt(2*g*h2))/Ab;
+
+    x_prev = [h1_next;h2_next];
+    u_prev = u_k;
 
 end
 
@@ -65,19 +73,25 @@ plot(time,r,'r',time,rf_dat,'--r',time,h1_dat,'g',time,h2_dat,'b')
 grid on
 legend('Reference','Filtered Reference','h1','h2')
 xlabel('Time (s)')
-ylabel('Water Height')
+ylabel('Water Height (m)')
 
 ax2 = subplot(2,1,2);
-plot(time,u_dat,time(1:end-1),diff(u_dat))
+plot(time,u_dat,time,du_dat)
 grid on
 legend('u','\Delta u')
 xlabel('Time (s)')
-ylabel('Input Mass Flow')
+ylabel('Inlet Flow (m^3/s)')
 
 linkaxes([ax1,ax2 ],'x')
 
 figure
+subplot(2,1,1)
 plot(time,t_dat)
-title('Compute Time (s)')
+ylabel('Compute Time (s)')
+grid on
+
+subplot(2,1,2)
+stairs(time,iter_dat)
 xlabel('Time (s)')
+ylabel('Iterations')
 grid on

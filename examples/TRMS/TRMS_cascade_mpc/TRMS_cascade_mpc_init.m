@@ -1,6 +1,6 @@
 %% Parameters
 
-% Equlibrium angle for vertical dynamics
+% Equilibrium angle for vertical dynamics
 Thtv0 = -0.619426178368110;
 
 % Initial state vector
@@ -11,6 +11,7 @@ Wh   = x(1);    % Horizontal Fan Angular Speed
 Omh  = x(2);    % Horizontal Angular Rate
 Thth = x(3);    % Horizontal Angle
 Wv   = x(4);    % Vertical Fan Angular Speed
+Omv  = x(5);    % Vertical Angular Rate
 Thtv = x(6);    % Vertical Angle
 
 % Sampling time
@@ -18,143 +19,119 @@ Ts = 0.1;
 
 %% Create MPC objects
 
-% MIMO mpc
-N = 10;         % Prediction Horizon
-N_h_ctr = 5;    % Control Horizon
-mpc = init_mpc(N,N_h_ctr);
+N = 15;         % Prediction horizon: N*Ts = 1.5 s
 
-% Horizontal Fan mpc
-mpc_h = init_mpc(N_h_ctr);
+% Outer MIMO MPC
+mpc = init_mpc(N);
 
-% Vertical Fan mpc
-mpc_v = init_mpc(N_h_ctr);
+% Tail-rotor SISO MPC
+mpc_h = init_mpc(N);
 
-%% LPV system
+% Main-rotor SISO MPC
+mpc_v = init_mpc(N);
 
-% Get LPV model frozen at current state vector
+% Limit the inner Newton iterations to control their online computation time
+inner_max_iter = 4;
+mpc_h.max_iter = inner_max_iter;
+mpc_v.max_iter = inner_max_iter;
+
+%% Nominal LPV prediction models
+
+% Freeze the three LPV models at the initial operating point
 [A,B,Bd,Ah,Bh,Av,Bv] = qLPV_TRMS_cascade_mpc_SS(Wh,Omh,Thth,Wv,Thtv);
 
-% Initialize MIMO mpc system dynamics
+% Outer body model: rotor references are the inputs and the main-rotor
+% voltage is a measured disturbance
 % System discretized with forward Euler discretization:
 % x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
-mpc = init_mpc_system(mpc,eye(4)+Ts*A,Ts*B,Ts*Bd,eye(4),0,0);
+mpc = init_mpc_dynamics(mpc,eye(4)+Ts*A,Ts*B,Ts*Bd);
 
-% Initialize Horizontal Fan mpc system dynamics
-% System discretized with forward Euler discretization:
-% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
-mpc_h = init_mpc_system(mpc_h,1+Ts*Ah,Ts*Bh,0,1,0,0);
+% Tail-rotor model
+mpc_h = init_mpc_dynamics(mpc_h,1+Ts*Ah,Ts*Bh,[]);
 
-% Initialize Vorizontal Fan mpc system dynamics
-% System discretized with forward Euler discretization:
-% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
-mpc_v = init_mpc_system(mpc_v,1+Ts*Av,Ts*Bv,0,1,0,0);
+% Main-rotor model
+mpc_v = init_mpc_dynamics(mpc_v,1+Ts*Av,Ts*Bv,[]);
 
 %% Constraints
 
-% Basic mpc constraints for reference
-% x_min = [-2.9;-1;-1.7;-1.6;-0.6;-0.5];
-% x_max = [2.9;1;1.2;1.6;0.6;1];
-% u_min = [-2.5;-2];
-% u_max = [2.5;2];
+% Outer MIMO MPC: body-state and rotor-reference bounds
+x_min_outer = [-1;-1.7;-0.6;-0.5];
+x_max_outer = [1;1.2;0.6;1];
+omega_ref_min = [-2.9;-1.6];
+omega_ref_max = [2.9;1.6];
+state_slack_cost = 10;
+mpc = init_mpc_state_cnstr( ...
+    mpc,x_min_outer,x_max_outer,state_slack_cost,state_slack_cost);
+mpc = init_mpc_control_cnstr(mpc,omega_ref_min,omega_ref_max);
 
-% MIMO mpc state constraints
-x_min = [-1; -1.7; -0.6; -0.5];
-x_max = [ 1;  1.2;  0.6;  1];
-mpc = init_mpc_state_cnstr(mpc,x_min,x_max,10,10);
+% Tail-rotor MPC: rotor-speed and motor-voltage bounds
+Wh_min = -2.9;
+Wh_max = 2.9;
+uh_min = -2.5;
+uh_max = 2.5;
+mpc_h = init_mpc_state_cnstr( ...
+    mpc_h,Wh_min,Wh_max,state_slack_cost,state_slack_cost);
+mpc_h = init_mpc_control_cnstr(mpc_h,uh_min,uh_max);
 
-% MIMO mpc input constraints
-u_min = [-2.9; -1.6];
-u_max = [ 2.9;  1.6];
-mpc = init_mpc_u_cnstr(mpc,u_min,u_max);
+% Main-rotor MPC: rotor-speed and motor-voltage bounds
+Wv_min = -1.6;
+Wv_max = 1.6;
+uv_min = -2;
+uv_max = 2;
+mpc_v = init_mpc_state_cnstr( ...
+    mpc_v,Wv_min,Wv_max,state_slack_cost,state_slack_cost);
+mpc_v = init_mpc_control_cnstr(mpc_v,uv_min,uv_max);
 
-% Horizontal Fan state constraints
-x_min = -2.9;
-x_max = 2.9;
-mpc_h = init_mpc_state_cnstr(mpc_h,x_min,x_max,10,10);
+%% Terminal ingredients
 
-% Horizontal Fan input constraints
-u_min = -2.5;
-u_max = 2.5;
-mpc_h = init_mpc_u_cnstr(mpc_h,u_min,u_max);
+% The terminal matrices are computed once from these nominal models
+Qx_outer_dlqr = diag([1 50 1 1000]);
+Ru_outer_dlqr = 0.1;
+outer_x_ref_is_y = 1;
+mpc = init_mpc_ter_ingredients_dlqr( ...
+    mpc,Qx_outer_dlqr,Ru_outer_dlqr,outer_x_ref_is_y);
 
-% Vertical Fan state constraints
-x_min = -1.6;
-x_max = 1.6;
-mpc_v = init_mpc_state_cnstr(mpc_v,x_min,x_max,10,10);
-
-% Vertical Fan input constraints
-u_min = -2;
-u_max = 2;
-mpc_v = init_mpc_u_cnstr(mpc_v,u_min,u_max);
-
-%% Terminal Ingredients
-
-% MIMO mpc terminal ingredients computed using the dLQR method
-Qx = diag([1 50 1 50]);     % State Penalty
-Ru = 0.1;                   % Control Penalty
-x_ref_is_y = 1;             % The terminal reference can be extracted 
-                            % mpc tracking reference
-ter_constraint = 0;         % Only terminal cost
-
-mpc = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,x_ref_is_y,ter_constraint);
-
-% Horizontal Fan mpc terminal ingredients computed using the dLQR method
-Qx = 50;                    % State Penalty
-Ru = 1;                     % Control Penalty
-x_ref_is_y = 0;             % The terminal reference cannnot be extracted 
-                            % from the mpc tracking reference
-ter_constraint = 0;         % Only terminal cost
-
-mpc_h = init_mpc_ter_ingredients_dlqr(mpc_h,Qx,Ru,x_ref_is_y,ter_constraint);
-
-% Vertical Fan mpc terminal ingredients computed using the dLQR method
-Qx = 50;                    % State Penalty
-Ru = 1;                     % Control Penalty
-x_ref_is_y = 0;             % The terminal reference cannnot be extracted 
-                            % from the mpc tracking reference
-ter_constraint = 0;         % Only terminal cost
-
-mpc_v = init_mpc_ter_ingredients_dlqr(mpc_v,Qx,Ru,x_ref_is_y,ter_constraint);
+% The inner MPCs receive their terminal references separately
+Qx_h_dlqr = 50;
+Ru_h_dlqr = 1;
+Qx_v_dlqr = 50;
+Ru_v_dlqr = 1;
+inner_x_ref_is_y = 0;
+mpc_h = init_mpc_ter_ingredients_dlqr( ...
+    mpc_h,Qx_h_dlqr,Ru_h_dlqr,inner_x_ref_is_y);
+mpc_v = init_mpc_ter_ingredients_dlqr( ...
+    mpc_v,Qx_v_dlqr,Ru_v_dlqr,inner_x_ref_is_y);
 
 %% Costs
 
-% MIMO mpc tracking penalty
-Qe = diag([50 1 50 1]);
-mpc = init_mpc_Tracking_cost(mpc,Qe);
+% Outer MIMO MPC costs
+Qe_outer = diag([50 1 500 1]);
+Rdu_outer = diag([5 5]);
+mpc = init_mpc_Tracking_cost(mpc,Qe_outer);
+mpc = init_mpc_ControlRate_cost(mpc,Rdu_outer);
 
-% MIMO mpc control inputs variation penalty
-Rdu = diag([5 5]);
-mpc = init_mpc_DiffControl_cost(mpc,Rdu);
+% Tail-rotor MPC costs
+Qe_h = 50;
+Rdu_h = 50;
+mpc_h = init_mpc_Tracking_cost(mpc_h,Qe_h);
+mpc_h = init_mpc_ControlRate_cost(mpc_h,Rdu_h);
 
-% Horizontal Fan mpc tracking penalty
-Qe = 50;
-mpc_h = init_mpc_Tracking_cost(mpc_h,Qe);
+% Main-rotor MPC costs
+Qe_v = 50;
+Rdu_v = 20;
+mpc_v = init_mpc_Tracking_cost(mpc_v,Qe_v);
+mpc_v = init_mpc_ControlRate_cost(mpc_v,Rdu_v);
 
-% Horizontal Fan mpc control inputs variation penalty
-Rdu = 10;
-mpc_h = init_mpc_DiffControl_cost(mpc_h,Rdu);
+%% Finalize controllers
 
-% Vertical Fan mpc tracking penalty
-Qe = 50;
-mpc_v = init_mpc_Tracking_cost(mpc_v,Qe);
+omega_ref_prev = [0;0];
+uh_prev = 0;
+uv_prev = 0;
 
-% Vertical Fan mpc control inputs variation penalty
-Rdu = 10;
-mpc_v = init_mpc_DiffControl_cost(mpc_v,Rdu);
+x_outer = [Omh;Thth;Omv;Thtv-Thtv0];
+mpc = build_chronos_mpc(mpc,x_outer,omega_ref_prev,uv_prev);
+outer_barrier_parameter = 500;
+mpc.t = outer_barrier_parameter;
 
-
-%% Init conditions for simulation
-
-% Initialize optimization vector as all 0 and slacks to 2*epsilon  
-u_prev = [0;0];     % init value for control
-[mpc,x0] = build_chronos_mpc(mpc,x([2,3,5,6]),u_prev);
-mpc.t = 500;        % increase t value to give preference to objectives
-                    % over constraints
-
-% Initialize optimization vector as all 0  
-uh = 0;             % init value for control
-[mpc_h,x0_h] = build_chronos_mpc(mpc_h,x(1),uh);
-
-% Initialize optimization vector as all 0  
-uv = 0;             % init value for control
-[mpc_v,x0_v] = build_chronos_mpc(mpc_v,x(3),uv);
+mpc_h = build_chronos_mpc(mpc_h,Wh,uh_prev);
+mpc_v = build_chronos_mpc(mpc_v,Wv,uv_prev);

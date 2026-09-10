@@ -8,7 +8,7 @@ xf = 0.3947;
 xc = 0.3816;
 alpha = 0.117;
 
-% Intial state values
+% Initial state values
 c0 = 0.2632;
 v0 = 0.6519;
 % State vector
@@ -19,14 +19,14 @@ Ts = 0.1;
 
 %% Create MPC object
 
-N = 15;         % Prediction Horizon
+N = 15;         % Prediction horizon: N*Ts = 1.5 s
 
 % Create mpc struct
 mpc = init_mpc(N);
 
-%% Define system dynamics
+%% Nominal prediction model
 
-% Get LPV model frozen at current state vector
+% Freeze the hybrid LPV model at the initial operating point
 A = [-1/theta_f-k*exp(-M/v0) -k*c0*M*exp(-M/v0)/(v0^2);
      k*exp(-M/v0) -1/theta_f];
 B = [0; -alpha*(v0-xc)];
@@ -36,6 +36,8 @@ Bd = [1/theta_f k*c0*M*exp(-M/v0)/(v0^2); xf/theta_f 0];
 % System discretized with forward Euler discretization:
 % x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
 mpc = init_mpc_dynamics(mpc,eye(2)+Ts*A,Ts*B,Ts*Bd);
+
+% CHRONOS tracks the full state by default, so no output model is needed
 
 %% Constraints
 
@@ -55,35 +57,34 @@ du_min = -0.1*ones(mpc.nu,1);
 du_max = 0.1*ones(mpc.nu,1);
 mpc = init_mpc_control_rate_cnstr(mpc,du_min,du_max);
 
-% Output constraints
+% Optional output constraints (inactive in this example)
 y_min = [];
 y_max = [];
 %mpc = init_mpc_output_cnstr(mpc,y_min,y_max);
 
-%% General Linear Inequalities
+%% Optional custom constraints (inactive)
 
-% General Linear Inequalities are defined as:
-% yh = Ch*x+Dh*u+Ddh*di
+% Custom constrained signal: h = Ch*x+Dh*u+Dsuh*su+Ddh*dh
 Ch = [];
 Dh = [];
+Dsuh = [];
 Ddh = [];
 
 h_min = [];
 h_max = [];
 
-%mpc = init_mpc_lin_custom_cnstr(mpc,Ch,Dh,Ddh,h_min,h_max);
+%mpc = init_mpc_custom_cnstr(mpc,Ch,Dh,Dsuh,Ddh,h_min,h_max);
 
-%% Terminal Ingredients
+%% Optional terminal ingredients (inactive)
 
-% Terminal ingredients are computed using the dLQR method
-Qx = [];                % State Penalty
-Ru = [];                % Control Penalty
-x_ref_is_y = 1;         % The terminal reference can be extracted 
-                        % mpc tracking reference
-ter_constraint = 0;     % Only terminal cost
+Qx_dlqr = [];
+Ru_dlqr = [];
 
-% Initialize terminal ingredients using the dLQR method
-%[mpc] = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,x_ref_is_y,ter_constraint);
+% With the default y = s, the tracking reference can also be used at the
+% terminal stage when terminal ingredients are enabled
+x_ref_is_y = 1;
+
+%mpc = init_mpc_ter_ingredients_dlqr(mpc,Qx_dlqr,Ru_dlqr,x_ref_is_y);
 
 %% Costs
 
@@ -91,36 +92,34 @@ ter_constraint = 0;     % Only terminal cost
 Qe = diag([5000 250]);
 mpc = init_mpc_Tracking_cost(mpc,Qe);
 
-% Control inputs variation penalty
+% Optional control-rate cost (inactive; rate constraints remain active)
 Rdu = [];
-%mpc = init_mpc_DiffControl_cost(mpc,Rdu);
+%mpc = init_mpc_ControlRate_cost(mpc,Rdu);
 
-% Control penalty
+% Optional control-action cost (inactive)
 Ru = [];
 %mpc = init_mpc_Control_cost(mpc,Ru);
 
-%% Performance Cost Matrix
+%% Optional custom cost (inactive)
 
-% Performance Vector are defined as:
-% z = Cz*x+Dz*u+Ddz*dz
+% Custom performance signal: z = Cz*x+Dz*u+Dsuz*su+Ddz*dz
 Cz = [];
 Dz = [];
+Dsuz = [];
 Ddz = [];
 
 Qz = [];    % Quadratic penalty on performance vector: z'*Qz*z
 qz = [];    % Linear penalty on performance vector: qz'*z 
 
 % Init performance cost
-%mpc = init_mpc_Lin_Custom_cost(mpc,Cz,Dz,Ddz,Qz,qz);
+%mpc = init_mpc_Custom_cost(mpc,Cz,Dz,Dsuz,Ddz,Qz,qz);
 
-%% Set QP solver to be more aggressive
+%% Solver tuning
 
-mpc.t = 500; % Default value is t = 50, increasing t makes the solver give 
-             % priority to cost penalties over constraints
+mpc.t = 500; % Barrier parameter tuned for this example (default: 50)
 
-%% Init conditions for simulation
+%% Finalize controller
 
-% use warm start function to get optimization vector initial value
 u_prev = 0.45;
-d = [1;v0];
+d = [1;v0];  % known input for the nominal model
 mpc = build_chronos_mpc(mpc,x_prev,u_prev,d);

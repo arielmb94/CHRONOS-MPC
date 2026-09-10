@@ -1,186 +1,158 @@
-# Twin Rotor MIMO System (TRMS) Custom Reference MPC Example
+# TRMS Cascade MPC Example
 
-### Folder structure
+## Folder contents
 
-In this folder you will find the following files:
+- *TRMS_cascade_mpc_init.m*: defines and builds the three CHRONOS controllers.
+- *TRMS_cascade_mpc_sim_lpv.m*: runs the cascade in closed loop with the nonlinear plant.
+- *qLPV_TRMS_cascade_mpc_SS.m*: evaluates the outer and rotor LPV models.
 
-* *TRMS_cascade_mpc_init.m*: script to define the MPC problem using the CHRONOS init functions.
-* *TRMS_cascade_mpc_lpv.m*.m: script to simulate the TRMS in closed-loop using the CHRONOS mpc solver, at each iteration we use the CHRONOS update functions to adapt its internal Linear Parameter Varying model to the instantaneous TRMS states.
-* *qLPV_TRMS_cascade_mpc_SS.m*: computes the LPV model of the TRMS based on the current values of the state vector. The LPV model is extracted from the nonlinear model provided in [1].
+## Cascade architecture
 
-### TRMS introduction
+This example separates the TRMS body dynamics from the rotor dynamics. An outer
+MIMO MPC controls the horizontal and vertical motion by computing rotor-speed
+references. Two inner SISO MPCs track those references and compute the motor
+voltages applied to the nonlinear plant.
 
-The TRMS is a simplified representation of a helicotper, it has no translation, however, it can rotate freely on the horizontal and vertical frames. It counts with a main rotor to control the vertical angle enabling the TRMS to pitch and a tail rotor to control the horizontal angle, which allows changes on the TRMS yaw angle. Each rotor operated by a dedicated DC motor. 
+```text
+                                   /--> omega_v^ref(0:N-1) --> Main-rotor MPC --> u_v
+Angle references --> Outer MIMO MPC
+                                   \--> omega_h^ref(0:N-1) --> Tail-rotor MPC --> u_h
+```
 
-Existing multiple representations of the TRMS dynamics available in the literature, we borrowed the nonlinear model and parameters identified in [1]. The nonlinear model presented in [1] captures very well the nonlinear dynamics of the vertical and horzizontal TRMS dynamics, their couplings and the effect of friction forces, which are represented by discontinuous equations taking into account the differences between negative and positive displacement directions. The quality of the identification work carried by the authors in [1] is demonstrated by the perfect matching between simulated model response and real data from the physical TRMS behaviour. 
+The outer MPC provides its complete predicted rotor-speed sequences to the
+inner MPCs. The inner layers can therefore use all the information predicted
+by the outer layer instead of discarding everything after its first action.
+Each controller can also use an LPV model and a horizon suited to its dynamics.
 
-Without detailing the full nonlinear equations of the model terms, the LPV model extracted from the nonlinear model given in [1] can be represented as:
+## Prediction models
 
-$$ \dot x=
-\left [\begin{array}{cccccc}  
-a_{11}(\rho) & 0 & 0 & 0 & 0 & 0 \\\ 
-a_{21}(\rho) & a_{22}(\rho) & a_{23}(\rho) & a_{24}(\rho) & a_{25}(\rho) & a_{26}(\rho) \\\
-0 & a_{32} & 0 & 0 & 0 & 0 \\\
-0 & 0 & 0 & a_{44}(\rho) & 0 & 0 \\\
-0 & a_{52}(\rho) & 0 & a_{54}(\rho) & a_{55} & a_{56}(\rho) \\\
-0 & 0 & 0 & 0 & a_{65} & 0
-\end{array} \right ]
-x + 
-\left [\begin{array}{cc} 
-b_{11} & 0 \\\
-0 & b_{22}(\rho) \\\
-0 & 0 \\\
-0 & b_{42} \\\
-0 & 0 \\\
-0 & 0 
-\end{array} \right ]u$$
+The outer MPC uses the reduced body state
 
-The state vector is $x = [\omega_h,\Omega_h,\theta_h,\omega_v,\Omega_v,\theta_v]^T $, where
+```math
+x_o=\begin{bmatrix}
+\Omega_h&\theta_h&\Omega_v&\widetilde\theta_v
+\end{bmatrix}^T,
+\qquad
+\widetilde\theta_v=\theta_v-\theta_{v0},
+```
 
-* $\omega_h$: angular speed of the tail rotor DC fan
-* $\Omega_h$: TRMS angular speed on the horizontal frame
-* $\theta_h$: TRMS horizontal angle
-* $\omega_v$: angular speed of the main rotor DC fan
-* $\Omega_v$: TRMS angular speed on the vertical frame
-* $\theta_v$: TRMS vertical angle
+and treats the rotor speeds as its control inputs:
 
-The input vector is  $u = [u_h,u_v]^T$, where
+```math
+u_o=\begin{bmatrix}\omega_h^{ref}&\omega_v^{ref}\end{bmatrix}^T.
+```
 
-* $u_h$: DC voltage applied to the tail rotor fan
-* $u_v$: DC voltage applied to the main rotor fan
+Its LPV model is
 
-Finally, note that parameter varying terms have been made explicit by showing on the state-space model their depedency on the varying parameter vector $\rho$. On the LPV model developed for the TRMS, the varying parameter vector $\rho$ is formed by $\rho = [\omega_h,\Omega_h,\theta_h,\omega_v,\theta_v]^T$.
+```math
+\dot x_o=
+\begin{bmatrix}
+a_{22}(\rho)&a_{23}(\rho)&a_{25}(\rho)&a_{26}(\rho)\\
+a_{32}&0&0&0\\
+a_{52}(\rho)&0&a_{55}(\rho)&a_{56}(\rho)\\
+0&0&a_{65}&0
+\end{bmatrix}x_o+
+\begin{bmatrix}
+a_{21}(\rho)&a_{24}(\rho)\\
+0&0\\
+0&a_{54}(\rho)\\
+0&0
+\end{bmatrix}u_o+
+\begin{bmatrix}b_{22}(\rho)\\0\\0\\0\end{bmatrix}d.
+```
 
-### Example introduction
+The main-rotor voltage is used as the measured disturbance $d=u_v$ to retain
+its coupling with the horizontal dynamics.
 
-In this example, we explore the performance benefits of using a full cascade of MPC controllers. Although it might seem counterintuitive to apply MPC in the inner control loops, this architecture offers several key advantages:
+The scheduling vector is
+$\rho=[\omega_h,\Omega_h,\theta_h,\omega_v,\theta_v]^T$.
+The coefficients marked with $(\rho)$ are evaluated from the measured TRMS
+state before each set of outer and inner solves.
 
-* MPC controllers compute a whole sequence of control actions but only the first action is often used. By cascading MPC controllers, the inner layers can profit from the whole sequence of setpoints computed by the outer layer MPC.
-* Inner loops often deal with actuator dynamics, which may be nonlinear and difficult to handle with traditional PID or linear controllers. Implementing nonlinear MPC strategies, such as LPV MPC as used in CHRONOS, can significantly enhance control performance in these scenarios.
-* Decomposing a large MIMO control problem into smaller MPC subproblems can reduce computational complexity. Each subproblem is simpler and can be solved faster than a monolithic MPC formulation. Additionally, the prediction horizons of each layer can be tuned independently, offering further flexibility and potentially faster overall response compared to a single, centralized MPC controller.
+The inner MPCs use the rotor models
 
-For the TRMS MPC cascade architecture, we will create an outer layer MPC controlling the horizontal and vertical dynamics of the TRMS. The output of this MPC will be setpoints for the tail and main rotors fan speeds respectively. Then, the voltage to be applied to each rotor DC motor will be computed by a dedicated SISO MPC.
+```math
+\dot\omega_h=a_{11}(\rho)\omega_h+b_{11}u_h,
+\qquad
+\dot\omega_v=a_{44}(\rho)\omega_v+b_{42}u_v.
+```
 
-The model for the outer MIMO MPC will have the reduced state vector:
+Here, $\omega_h$ and $\omega_v$ are rotor speeds in rad/s, while $u_h$ and
+$u_v$ are motor voltages in V. The gains $b_{11}$ and $b_{42}$ are constant;
+the scheduling-dependent rotor coefficients are evaluated at the measured
+TRMS state before each set of solves.
 
-* $\Omega_h$: TRMS angular speed on the horizontal frame
-* $\theta_h$: TRMS horizontal angle
-* $\Omega_v$: TRMS angular speed on the vertical frame
-* $\theta_v$: TRMS vertical angle
+## MPC definitions
 
-and its control inputs will be:
+### Outer MIMO MPC
 
-* $\omega_h^{ref}$: the tail rotor fan speed setpoint to be computed by the MPC
-* $\omega_v^{ref}$: the main rotor fan speed setpoint to be computed by the MPC
-
-resulting on the following model:
-
-$$ \dot x=
-\left [\begin{array}{cccc}  
-a_{22}(\rho) & a_{23}(\rho) & a_{25}(\rho) & a_{26}(\rho) \\\
-a_{32} & 0 & 0 & 0 \\\
-a_{52}(\rho) & 0 & a_{55} & a_{56}(\rho) \\\
-0 & 0 & a_{65} & 0
-\end{array} \right ]
-x + 
-\left [\begin{array}{cc} 
-a_{21}(\rho) & a_{24}(\rho) \\\
-0 & 0 \\\
-0 & a_{54}(\rho) \\\
-0 & 0
-\end{array} \right ]\omega^{ref}+
-\left [\begin{array}{c}
-b_{22}(\rho) \\\
-0 \\\
-0 \\\
-0
-\end{array} \right ]u_v $$
-
-Note that the voltage to the main rotor $u_v$ appears in the model as a measured disturbance, not as a controllable input of the MIMO MPC. Making use of the fact that CHRONOS accepts models of the form
-
-$$ x^+ = Ax+Bu+B_dd $$
-
-allows us to account for known or measurable perturbations to our system, as the case of the coupling term between main rotor voltage and TRMS horizontal dynamics.
-
-The tail rotor MPC has a single order LPV state-space model with state:
-
-* $\omega_h$: angular speed of the tail rotor DC fan
-
-and control action:
-
-* $u_h$: DC voltage applied to the tail rotor fan
-
-resulting on the LPV model:
-
-$$ \dot x_h =
-a_{11}(\rho) x_h + 
-b_{11} u_h $$
-
-Similarly, the model used for main rotor MPC is a single order model with state:
-
-* $\omega_v$: angular speed of the main rotor DC fan
-
-and control input:
-
-* $u_v$: DC voltage applied to the main rotor fan
-
-resultin on:
-
-$$ \dot x_v =
-a_{44}(\rho) x_v + 
-b_{42}u_v $$
-
-### MPC Definition
-
-For the outer MIMO MPC, its objective is to compute appropiate setpoints for the rotor fans speed $\omega^{ref}$. This is achieved by solving at each time step the following MPC problem using the CHRONOS solver:
-
-$$\min_{u,x}J = (r-x_N)^TP(r-x_N) + \sum_{i=1}^{N-1} (r-x_i)^TQ_{e}(r-x_i) + \sum_{i=0}^{N_{ctr}-1}\Delta {\omega_i^{ref}}^TdR_u\Delta \omega_i^{ref} $$
-
-s.t.
-
-$$ x^+=A(\rho)x+B(\rho)u$$
-$$  \left [\begin{array}{c} 
--1.0 \\\
--1.7 \\\
--0.6 \\\
--0.5
-\end{array} \right ]
-\leq x \leq
-\left [\begin{array}{c} 
-1.0 \\\
-1.2 \\\
-0.6 \\\
-1.0 
-\end{array} \right ]$$
-$$  \left [\begin{array}{c} 
--2.9 \\\
--1.6 
-\end{array} \right ]
-\leq \omega^{ref} \leq
-\left [\begin{array}{c} 
-2.9 \\\
-1.6 
-\end{array} \right ]$$
-
-The tail rotor SISO MPC uses the full sequence of actions computed by the outer MIMO MPC to solve the following MPC at each iteration:
-
-$$\min_{u,x}J = (\omega_{h_N}^{ref}-x_{h_N})^TP(\omega_{h_N}^{ref}-x_{h_N}) + \sum_{i=1}^{N-1} (\omega_{h_i}^{ref}-x_{h_i})^TQ_{e}(\omega_{h_i}^{ref}-x_{h_i}) + \sum_{i=0}^{N_{ctr}-1}\Delta u_{h_i}^TdR_u\Delta u_{h_i} $$
-
-s.t.
-
-$$ x_h \in [-2.9,2.9] $$
-$$ u_h \in [-2.5, 2.5]$$
-
-Similarly, the SISO MPC for the main rotor is defined in CHRONOS as:
-
-$$\min_{u,x}J = (\omega_{v_N}^{ref}-x_{v_N})^TP(\omega_{v_N}^{ref}-x_{v_N}) + \sum_{i=1}^{N-1} (\omega_{v_i}^{ref}-x_{v_i})^TQ_{e}(\omega_{v_i}^{ref}-x_{v_i}) + \sum_{i=0}^{N_{ctr}-1}\Delta u_{v_i}^TdR_u\Delta u_{v_i} $$
+The outer MPC tracks
+$r_o=[\Omega_h^{ref},\theta_h^{ref},\Omega_v^{ref},\theta_v^{ref}-\theta_{v0}]^T$
+and computes the rotor-speed reference input
+$u_o=[\omega_h^{ref},\omega_v^{ref}]^T$. It solves
+```math
+\begin{aligned}
+\min_{x_o,u_o}\quad
+J_o={}&(r_{o,N}-x_{o,N})^TP_o(r_{o,N}-x_{o,N})\\
+&+\frac{1}{2}\sum_{k=1}^{N}(r_{o,k}-x_{o,k})^TQ_{e,o}(r_{o,k}-x_{o,k})\\
+&+\frac{1}{2}\sum_{k=0}^{N-1}\Delta u_{o,k}^TR_{\Delta u,o}\Delta u_{o,k}\\
+\text{subject to}\quad
+&x_{o,k+1}=A_{o,d}(\rho)x_{o,k}+B_{o,d}(\rho)u_{o,k}
++B_{d,o}(\rho)d_k, && k=0,\ldots,N-1,\\
+&x_{o,\min}\leq x_{o,k}\leq x_{o,\max}, && k=1,\ldots,N,\\
+&u_{o,\min}\leq u_{o,k}\leq u_{o,\max}, && k=0,\ldots,N-1.
+\end{aligned}
+```
 
 
-$$ x_v \in [-1.6,1.6] $$
-$$ u_v \in [-2.0, 2.0] $$
+### Tail-rotor MPC
 
+The tail-rotor MPC tracks the complete rotor-speed $u_h$ sequence from the outer MPC by solving:
+```math
+\begin{aligned}
+\min_{\omega_h,u_h}\quad
+J_h={}&(\omega_{h,N}^{ref}-\omega_{h,N})^TP_h(\omega_{h,N}^{ref}-\omega_{h,N})\\
+&+\frac{1}{2}\sum_{k=1}^{N}(\omega_{h,k}^{ref}-\omega_{h,k})^TQ_{e,h}
+(\omega_{h,k}^{ref}-\omega_{h,k})\\
+&+\frac{1}{2}\sum_{k=0}^{N-1}\Delta u_{h,k}^TR_{\Delta u,h}\Delta u_{h,k}\\
+\text{subject to}\quad
+&\omega_{h,k+1}=A_{h,d}(\rho)\omega_{h,k}+B_{h,d}u_{h,k}, && k=0,\ldots,N-1,\\
+&-2.9\leq\omega_{h,k}\leq2.9, && k=1,\ldots,N,\\
+&-2.5\leq u_{h,k}\leq2.5, && k=0,\ldots,N-1.
+\end{aligned}
+```
 
-### References
+### Main-rotor MPC
 
-[1] Rotondo, D., Nejjari, F., & Puig, V. (2013). Quasi-LPV modeling, identification and control of a Twin Rotor MIMO System. Control Engineering Practice, 21(6), 829-846.
+The main-rotor MPC tracks the complete rotor-speed $u_v$ sequence from the outer MPC by solving:
+```math
+\begin{aligned}
+\min_{\omega_v,u_v}\quad
+J_v={}&(\omega_{v,N}^{ref}-\omega_{v,N})^TP_v(\omega_{v,N}^{ref}-\omega_{v,N})\\
+&+\frac{1}{2}\sum_{k=1}^{N}(\omega_{v,k}^{ref}-\omega_{v,k})^TQ_{e,v}
+(\omega_{v,k}^{ref}-\omega_{v,k})\\
+&+\frac{1}{2}\sum_{k=0}^{N-1}\Delta u_{v,k}^TR_{\Delta u,v}\Delta u_{v,k}\\
+\text{subject to}\quad
+&\omega_{v,k+1}=A_{v,d}(\rho)\omega_{v,k}+B_{v,d}u_{v,k}, && k=0,\ldots,N-1,\\
+&-1.6\leq\omega_{v,k}\leq1.6, && k=1,\ldots,N,\\
+&-2\leq u_{v,k}\leq2, && k=0,\ldots,N-1.
+\end{aligned}
+```
 
+## Online use
+
+At each control sample:
+
+1. The angle errors generate references for the TRMS body rates.
+2. The outer and inner LPV models are evaluated at the measured state.
+3. The outer MIMO MPC computes both predicted rotor-speed sequences, using the
+   main-rotor voltage as a disturbance input.
+4. Each inner MPC tracks its complete rotor-speed sequence and computes a motor
+   voltage.
+5. The two voltages are applied to the nonlinear TRMS plant.
+
+## Reference
+
+[1] Rotondo, D., Nejjari, F., & Puig, V. (2013). Quasi-LPV modeling,
+identification and control of a Twin Rotor MIMO System. *Control Engineering
+Practice, 21*(6), 829-846.
