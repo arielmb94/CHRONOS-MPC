@@ -15,7 +15,7 @@
 %   the remaining stages. The input d_k is the same fixed known input used
 %   by the dynamics.
 % 
-% 1Existing tracking costs and output constraints use the
+%   Existing tracking costs and output constraints use the
 %   updated output model.
 %
 %   Inputs:

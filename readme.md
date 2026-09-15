@@ -68,7 +68,7 @@ mpc = build_chronos_mpc(mpc, s_prev, u_prev, [], []);
 mpc = update_mpc_dynamics(mpc, A, B, []);
 
 % Compute the next control action
-[u0, iter, mpc] = mpc_solve(mpc, s_prev, u_prev, r_in, [], [], [], []);
+[u0, mpc, iter] = mpc_solve(mpc, s_prev, u_prev, r_in, [], [], [], []);
 
 % Apply u0 to the plant and retain mpc for the next control sample
 ```

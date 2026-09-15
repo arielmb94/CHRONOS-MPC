@@ -1,41 +1,45 @@
-% BUILD_CHRONOS_MPC Initializes a feasible stage-local iterate for the MPC solver.
+% BUILD_CHRONOS_MPC This function must always be called at the end of
+% the initialization process. Initializes a feasible stage-local iterate for
+% the MPC solver and initializes costs and constraint structures based on
+% initialization data. 
 %
 %   mpc = BUILD_CHRONOS_MPC(mpc, s_prev, u_prev) calculates a strictly feasible
 %   initial iterate using a system rollout.
-%   It mathematically guarantees that the initial guess respects input limits, 
-%   rate limits, and hard state constraints, preventing solver crashes.
 %
-%   mpc = BUILD_CHRONOS_MPC(mpc, s_prev, u_prev, d_in, x_ref) allows the
+%   mpc = BUILD_CHRONOS_MPC(mpc, s_prev, u_prev, d_in, dh_in, x_ref) allows the
 %   inclusion of reference trajectories and measured disturbances.
 %
-%   HOW IT WORKS:
-%   The function simulates the system dynamics across the prediction horizon:
-%     1. Control Strategy: If an LQR gain (mpc.K) and reference (x_ref) exist, 
-%        it uses feedback (u = K*(x_ref - x)). Otherwise, it holds u_prev constant.
-%     2. Input Clipping: Control actions are strictly bounded by absolute (mpc.u_cnstr)
-%        and rate (mpc.du_cnstr) limits.
-%     3. State Clamping: If hard state constraints (mpc.s_cnstr) are defined (without 
-%        slacks), the state is clamped to remain strictly feasible, intentionally 
-%        breaking the equality constraint to prevent an Interior Point method crash.
-%     4. Soft Constraints: States with enabled slacks are allowed to violate bounds. 
-%        The slack variables are then automatically sized to absorb the violation.
+%   Inputs:
+%     mpc    - CHRONOS MPC structure.
+%     s_prev - [nx x 1] Current measured state vector.
+%     u_prev - [nu x 1] Last applied control input.
+%     d_in   - Optional known input for the dynamics and output model. It
+%              can be an nd-by-1 column vector or an nd-by-L matrix, where
+%              L is the number of supplied horizon stages. A single column
+%              is reused across the horizon. If L < N, the last supplied
+%              column is reused for the remaining stages; columns beyond
+%              the horizon are ignored. Pass [] when this input is not used.
+%     dh_in  - Optional known input for the custom-constraint signal. It can
+%              be an ndh-by-1 column vector or an ndh-by-L matrix, where L
+%              is the number of supplied horizon stages. A single column is
+%              reused across the horizon. If L < N, the last supplied
+%              column is reused for the remaining stages; columns beyond
+%              the horizon are ignored. Pass [] when this input is not used.
+%     x_ref  - [nx x 1] (Optional) State reference. Defaults to [].
 %
-%   INPUTS:
-%       mpc    - CHRONOS MPC structure.
-%       s_prev - [nx x 1] Current measured state vector.
-%       u_prev - [nu x 1] Last applied control input.
-%       x_ref  - [nx x 1] (Optional) State reference. Defaults to [].
-%       d_in   - [nd x 1] (Optional) Measured disturbances.
-%       dh_in  - [ndh x 1] (Optional) Measured disturbance vector for custom constraints.
+%   Output:
+%     mpc    - MPC structure with initialized stage-local primal fields.
 %
-%   OUTPUTS:
-%       mpc    - MPC structure with initialized stage-local primal fields.
-function mpc = build_chronos_mpc(mpc,s_prev,u_prev,d_in,x_ref)
+%   Example - build with no optional runtime signals:
+%
+%       mpc = build_chronos_mpc(mpc, s_prev, u_prev, [], [], []);
+function mpc = build_chronos_mpc(mpc,s_prev,u_prev,d_in,dh_in,x_ref)
 arguments
     mpc
     s_prev
     u_prev
     d_in = []
+    dh_in = [] 
     x_ref = []
 end
 
@@ -58,28 +62,69 @@ end
     mpc = preallocate_riccati(mpc);
 
     % initialize stage-local primal variables
-    len_d_in = size(d_in,2);
-    if ~isempty(d_in) && len_d_in< mpc.N
+    if ~isempty(d_in)
         mpc.d(:,:) = fill_vec(mpc.d,d_in,1);
-    else
-        mpc.d(:,:) = d_in;
-    end 
+    end
 
     mpc = rollstates(mpc,s_prev,u_prev,x_ref,mpc.d);
 
-    mpc.g_0(:) = 1/mpc.t;
-    mpc.g_k(:,:) = 1/mpc.t;
-    mpc.g_ter(:) = 1/mpc.t;
-    mpc.v_0(:) = 1/mpc.t;
-    mpc.v_k(:,:) = 1/mpc.t;
-    mpc.v_ter(:) = 1/mpc.t;
+    if ~isempty(dh_in)
+        mpc.dh(:,:) = fill_vec(mpc.dh,dh_in,1);
+    end
+
     mpc = get_mpc_variables(mpc,mpc.has_du,mpc.tracking_cost,mpc.has_y_cnstr,...
                             mpc.has_h_cnstr,mpc.quad_custom_cost,mpc.lin_custom_cost,...
                             s_prev,u_prev);
+    mpc = initialize_inequality_slacks(mpc);
     
 end
 
-function mpc = rollstates(mpc,s_prev,u_prev,x_ref,d_in)
+function mpc = initialize_inequality_slacks(mpc)
+
+if isempty(mpc.g_0) && isempty(mpc.g_k) && isempty(mpc.g_ter)
+    return
+end
+
+% Form raw bound residuals through the production family and row-map path.
+mpc.g_0(:) = 0;
+mpc.g_k(:,:) = 0;
+mpc.g_ter(:) = 0;
+mpc.v_0(:) = 0;
+mpc.v_k(:,:) = 0;
+mpc.v_ter(:) = 0;
+mpc = inequality_residuals(mpc,mpc.g_0,mpc.g_k,mpc.g_ter,...
+    mpc.has_s_cnstr,mpc.has_u_cnstr,mpc.has_du_cnstr,...
+    mpc.has_y_cnstr,mpc.has_h_cnstr);
+
+[mpc.g_0,mpc.v_0] = initialize_inequality_slacks_local(...
+    mpc.g_0,mpc.v_0,mpc.ri_0,mpc.v_rows_0,mpc.slack_epsilon);
+[mpc.g_k,mpc.v_k] = initialize_inequality_slacks_local(...
+    mpc.g_k,mpc.v_k,mpc.ri_k,mpc.v_rows_k,mpc.slack_epsilon);
+
+mpc.g_ter(:) = max(-mpc.ri_ter,mpc.slack_epsilon);
+if ~isempty(mpc.v_ter)
+    mpc.g_ter(:) = mpc.slack_epsilon + max(-mpc.ri_ter,0);
+    mpc.v_ter(:) = mpc.slack_epsilon + max(mpc.ri_ter,0);
+end
+
+mpc = inequality_residuals(mpc,mpc.g_0,mpc.g_k,mpc.g_ter,...
+    mpc.has_s_cnstr,mpc.has_u_cnstr,mpc.has_du_cnstr,...
+    mpc.has_y_cnstr,mpc.has_h_cnstr);
+
+end
+
+function [g,v] = initialize_inequality_slacks_local(g,v,ri,v_rows,epsilon)
+
+g(:,:) = max(-ri,epsilon);
+if ~isempty(v)
+    ri_soft = ri(v_rows,:);
+    g(v_rows,:) = epsilon + max(-ri_soft,0);
+    v(:,:) = epsilon + max(ri_soft,0);
+end
+
+end
+
+function mpc = rollstates(mpc,s_prev,u_prev,x_ref,d)
 
 x_k = s_prev;
 u_k_prev = u_prev;
@@ -127,8 +172,8 @@ end
     % 4. Propagate Dynamics
     % x_{k+1} = A*x_k + B*u_k + D*d_k
     x_next = mpc.A(:,:,k) * x_k + mpc.B(:,:,k) * u_k;
-    if ~isempty(mpc.dyn_use_d) && any(d_in(:))
-        x_next = x_next + mpc.Bd(:,:,k) * d_in(:,k);
+    if ~isempty(mpc.dyn_use_d) && any(d(:))
+        x_next = x_next + mpc.Bd(:,:,k) * d(:,k);
     end
 % clamp x: for safety net in case we are dealing with unstable
 % system
