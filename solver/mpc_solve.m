@@ -1,51 +1,55 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MPC_SOLVE Solve the current MPC problem.
 %
+%   [u0, mpc, iter] = MPC_SOLVE(mpc, s_prev, u_prev, r_in, xN_ref_in, ...
+%       d_in, dz_in, dh_in) solves the current MPC problem.
 %
-% Solve the current iteration of the MPC problem.
+%   Inputs:
+%     mpc       - CHRONOS MPC structure with the persistent stage-local
+%                 iterate.
+%     s_prev    - nx column vector, last measured or estimated system state
+%                 value.
+%     u_prev    - nu column vector, control action applied to the system on
+%                 the previous sampling time.
+%     r_in      - Optional tracking reference. It can be an ny-by-1 column
+%                 vector or an ny-by-L matrix, where L is the number of
+%                 supplied horizon stages. A single column is reused for all
+%                 stages. If L < N, the last supplied column is reused for
+%                 the remaining stages; columns beyond the horizon are
+%                 ignored. Pass [] when tracking is not used.
+%     xN_ref_in - Optional nx column vector, reference for the terminal state
+%                 xN of the prediction horizon. Required whenever the MPC
+%                 problem contains terminal ingredients. If not used, pass
+%                 an empty vector [].
+%     d_in      - Optional known input for the dynamics and output model. It
+%                 can be an nd-by-1 column vector or an nd-by-L matrix. A
+%                 single column is reused for all stages. If L < N, the last
+%                 supplied column is reused for the remaining stages; columns
+%                 beyond the horizon are ignored. Pass [] when this input is
+%                 not used.
+%     dz_in     - Optional known input for the custom-cost signal z. It can
+%                 be an ndz-by-1 column vector or an ndz-by-L matrix. A
+%                 single column is reused for all stages. If L < N, the last
+%                 supplied column is reused for the remaining stages; columns
+%                 beyond the horizon are ignored. Pass [] when this input is
+%                 not used.
+%     dh_in     - Optional known input for the custom-constraint signal h. It
+%                 can be an ndh-by-1 column vector or an ndh-by-L matrix. A
+%                 single column is reused for all stages. If L < N, the last
+%                 supplied column is reused for the remaining stages; columns
+%                 beyond the horizon are ignored. Pass [] when this input is
+%                 not used.
 %
-% In:
-%   - mpc: CHRONOS MPC structure with the persistent stage-local iterate.
-%   - s_prev: nx column vector, last measured or estimated system state
-%   value
-%   - u_prev: nu column vector, control action applied to the system on the
-%   previous sampling time
-%   - r (optional): tracking reference for the MPC. It can be a ny column
-%   vector (the same reference applies for the full prediction horizon) or
-%   can be a Ny column vector (the user passes a unique reference for each
-%   step of the prediction horizon). If not used, the user must pass an
-%   empty vector [].
-%   - d (optional): disturbance input to the system dynamics and to the
-%   output signal y models. It can be a nd column vector (the same
-%   disturbance applies for the full prediction horizon) or can be an Nd
-%   column vector (the user passes a unique disturbance for each step of
-%   the prediction horizon). If not used, the user must pass an empty
-%   vector [].
-%   - x_ref (optional): nx column vector, reference for the terminal state
-%   xN of the prediction horizon. Required whenever the MPC problem
-%   contains terminal ingredients. If not used, the user must pass an empty
-%   vector [].
-%   - dz (optional): disturbance input to the user defined signal model z
-%   for custom cost functions. It can be a ndz column vector (the same
-%   disturbance applies for the full prediction horizon) or can be an Ndz
-%   column vector (the user passes a unique disturbance for each step of
-%   the prediction horizon). If not used, the user must pass an empty
-%   vector [].
-%   - dh (optional): disturbance input to the user defined signal model h
-%   for custom constraints. It can be a ndh column vector (the same
-%   disturbance applies for the full prediction horizon) or can be an Ndh
-%   column vector (the user passes a unique disturbance for each step of
-%   the prediction horizon). If not used, the user must pass an empty
-%   vector [].
+%   Output:
+%     u0   - nu column vector, first step of the control action sequence
+%            computed as the solution to the MPC problem.
+%     mpc  - Updated CHRONOS MPC structure. Retain it and pass it to the
+%            next call to MPC_SOLVE.
+%     iter - Number of iterations required for the MPC optimization problem.
 %
-% Out:
-%   - u0: nu column vector, first step of the control action sequence
-%   computed as solution to the MPC problem
-%   - iter: number of iterations required for the MPC optimization problem
-%   - iter_feas: number of iterations required for the step 0 feasibility
-%   starting point finder
+%   Example - solve with no optional runtime signals:
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [u0,iter,mpc] = mpc_solve(mpc,s_prev,u_prev,r_in,xN_ref_in,...
+%       [u0, mpc, iter] = mpc_solve(mpc, s_prev, u_prev, [], [], [], [], []);
+function [u0,mpc,iter] = mpc_solve(mpc,s_prev,u_prev,r_in,xN_ref_in,...
                                    d_in,dz_in,dh_in)
 
 % handle input vector sizes

@@ -72,13 +72,13 @@ for i = 1:Sim_samples
 
     % 4. The outer MPC computes both rotor-reference sequences. The current
     % main-rotor voltage enters its model through the disturbance input.
-    [omega_ref_k,iter_outer,mpc] = mpc_solve(mpc,x_outer,omega_ref_prev,ref_outer,[],uv_prev,[],[]);
+    [omega_ref_k,mpc,iter_outer] = mpc_solve(mpc,x_outer,omega_ref_prev,ref_outer,[],uv_prev,[],[]);
     WhRef_seq = mpc.u(1,:);
     WvRef_seq = mpc.u(2,:);
 
     % 5. Each inner MPC tracks the complete sequence from the outer MPC
-    [uh_k,iter_h,mpc_h] = mpc_solve(mpc_h,Wh,uh_prev,WhRef_seq,WhRef_seq(end),[],[],[]);
-    [uv_k,iter_v,mpc_v] = mpc_solve(mpc_v,Wv,uv_prev,WvRef_seq,WvRef_seq(end),[],[],[]);
+    [uh_k,mpc_h,iter_h] = mpc_solve(mpc_h,Wh,uh_prev,WhRef_seq,WhRef_seq(end),[],[],[]);
+    [uv_k,mpc_v,iter_v] = mpc_solve(mpc_v,Wv,uv_prev,WvRef_seq,WvRef_seq(end),[],[],[]);
     t_dat(i) = toc;
 
     % Store states, first rotor references, and applied voltages

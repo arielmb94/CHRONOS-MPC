@@ -1,4 +1,4 @@
-% INIT_MPC_CUSTOM_COST Add a quadratic or linearcost on a user-defined signal.
+% INIT_MPC_CUSTOM_COST Add a quadratic or linear cost on a user-defined signal.
 %
 %   mpc = INIT_MPC_CUSTOM_COST(mpc, Cz, Dz, Dsuz, Ddz, Qz, qz) defines
 %

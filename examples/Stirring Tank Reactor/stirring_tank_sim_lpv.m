@@ -47,7 +47,7 @@ for i = 1:Sim_samples
 
     % 3. Solve with the tracking reference and known input. Terminal and
     % custom-signal inputs are not used in this example.
-    [u_k,iter,mpc] = mpc_solve(mpc,x_prev,u_prev,x_ref,[],d,[],[]);
+    [u_k,mpc,iter] = mpc_solve(mpc,x_prev,u_prev,x_ref,[],d,[],[]);
     tk = toc;
 
     % Keep the returned mpc for the next control sample

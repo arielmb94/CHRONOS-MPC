@@ -74,7 +74,7 @@ for i = 1:Sim_samples
 
     % 4. Optimize two physical voltages and two virtual rotor references
     x_mpc = [Wh;Omh;Thth;Wv;Omv;Thtv-Thtv0];
-    [u_mpc,iter,mpc] = mpc_solve(mpc,x_mpc,u_prev,ref,x_ref,[],[],[]);
+    [u_mpc,mpc,iter] = mpc_solve(mpc,x_mpc,u_prev,ref,x_ref,[],[],[]);
     t_dat(i) = toc;
 
     uh = u_mpc(1);

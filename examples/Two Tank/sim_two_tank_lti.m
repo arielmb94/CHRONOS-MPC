@@ -44,7 +44,7 @@ for k = 1:Sim_samples
 
     % 2. Solve using the current state, previous input, output reference, and
     % terminal-state reference. Empty arguments mean no d, dz, or dh inputs.
-    [u_k,iter,mpc] = mpc_solve(mpc,x_prev,u_prev,xf,x_ref,[],[],[]);
+    [u_k,mpc,iter] = mpc_solve(mpc,x_prev,u_prev,xf,x_ref,[],[],[]);
     tk = toc;
 
     % Keep the returned mpc for the next control sample

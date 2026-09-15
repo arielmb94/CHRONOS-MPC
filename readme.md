@@ -4,9 +4,9 @@
 
 [![Open in MATLAB Online](https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg)](https://matlab.mathworks.com/open/github/v1?repo=arielmb94/CHRONOS-MPC)
 
-Changing operating conditions, coupled dynamics, and actuator limits make demanding control problems a natural fit for Model Predictive Control (MPC). CHRONOS helps you build predictive controllers for nonlinear and time-varying systems: define your prediction model, tracking objectives, and operating constraints through a MATLAB API, and CHRONOS assembles and solves the optimization problem.
+Changing operating conditions, coupled dynamics, and actuator limits make demanding control problems a natural fit for Model Predictive Control (MPC). CHRONOS helps you build predictive controllers for nonlinear systems: define your prediction model, tracking objectives, and operating constraints through a simple API, and CHRONOS assembles and solves the optimization problem.
 
-CHRONOS uses Linear Parameter Varying (LPV) models to bring nonlinear control into a structured convex optimization framework. You supply the prediction-model matrices and update them as operating conditions change; CHRONOS uses the supplied matrices for each solve. This gives you a practical nonlinear MPC workflow without writing solver code or deriving gradients and Hessians for the supported costs and constraints.
+CHRONOS uses Linear Parameter Varying (LPV) models to bring nonlinear control into a structured convex optimization framework. You supply the prediction model and update it as operating conditions change; CHRONOS handles the rest for each solve. This gives you a practical nonlinear MPC workflow without writing solver code or deriving gradients and Hessians for the supported costs and constraints.
 
 ---
 
@@ -24,7 +24,7 @@ CHRONOS uses Linear Parameter Varying (LPV) models to bring nonlinear control in
 
 ## Why CHRONOS?
 
-- **Robust numerical methods:** Built for demanding control applications, CHRONOS combines well established robust convex optimization methods with a tailored Riccati solver. For fixed state and input dimensions, the solve time scales linearly with the prediction horizon.
+- **Robust numerical methods:** Built for demanding control applications, CHRONOS combines well established robust convex optimization methods with a tailored Riccati solver for maximum performance. For fixed state and input dimensions, the solve time scales linearly with the prediction horizon.
 - **Focus on control, not optimization:** Put your engineering effort into the controller: choose the model, objectives, and constraints, and let CHRONOS handle optimization assembly, gradients, Hessians, and the numerical solve.
 - **MATLAB → C/C++:** Take your controller from MATLAB development to embedded execution. Tune it in MATLAB, then generate C/C++ with MATLAB Coder to bring your design to fast control loops.
 
@@ -47,11 +47,14 @@ CHRONOS uses Linear Parameter Varying (LPV) models to bring nonlinear control in
 3. Browse the Tutorials for step‑by‑step guides.
 4. Try one of the Examples to see CHRONOS in action.
 
+And for a detailed walkthrough of a complete application, see the
+[Introductory Tutorial](tutorials/01%20-%20First%20Step/).
+
 ## API Workflow Overview
 
 **Define once → build once → update model/data → solve → apply the first control action.**
 
-The snippet below illustrates the API workflow. For a complete application, see the [Two Tank example](examples/Two%20Tank/readme.md).
+The snippet below illustrates the API workflow.
 
 ```matlab
 % Define once: prediction model, constraints, and tracking objective
@@ -68,20 +71,16 @@ mpc = build_chronos_mpc(mpc, s_prev, u_prev, [], []);
 mpc = update_mpc_dynamics(mpc, A, B, []);
 
 % Compute the next control action
-[u0, iter, mpc] = mpc_solve(mpc, s_prev, u_prev, r_in, [], [], [], []);
-
-% Apply u0 to the plant and retain mpc for the next control sample
+[u0, mpc, iter] = mpc_solve(mpc, s_prev, u_prev, r_in, [], [], [], []);
 ```
 
 ---
 
 ## How It Works
 
+### MPC problem formulation
 
-
-### MPC problem formulation and custom extensions
-
-CHRONOS solves a finite-horizon MPC problem with ingredients:
+CHRONOS solves a finite-horizon MPC problem with the following ingredients:
 
 $$
 \begin{aligned}
@@ -99,22 +98,31 @@ $$
 \end{aligned}
 $$
 
-$N$ is the prediction horizon, $y_k=C_kx_k+D_ku_k+D_{d,k}d_k$, and $\Delta u_k=u_k-u_{k-1}$.
-
-Additionally, CHRONOS gives you the flexibility to add custom terms to the cost function. For this, you can define a user vector $z(k)$ as a time-varying linear combination of the state, control action, preceding control action, and known input disturbance.
+with the output signal $y_k$ defined as:
 
 $$
-z_k = C_{z,k}x_k+D_{z,k}u_k+D_{su,z,k}u_{k-1}+D_{dz,k}dz_k.
+y_k=C_kx_k+D_ku_k+D_{d,k}d_k
 $$
+
+### Cost function extensions
+
+In order to add custom behaviour to the MPC formulation, such as indicating economic targets, CHRONOS gives you the flexibility to add custom terms to the cost function. For this, you can define custom time-varying vectors $z_k$ defined as
+
+$$
+z_k = C_{z,k}x_k+D_{z,k}u_k+D_{su,z,k}u_{k-1}+D_{dz,k}dz_k,
+$$
+
 CHRONOS then allows you to add quadratic and linear costs to this vector:
+
 $$
 \begin{aligned}
 J_{\mathrm{custom}} &= \sum_{k=0}^{N}\left(\frac{1}{2}z_k^TQ_{z,k}z_k+q_{z,k}^Tz_k\right), \\
 \end{aligned}
 $$
 
+### Constraint extensions
 
-Similarly you can define custom constraints by defining a user vector $h(k)$ in the same way:
+Similarly, you can define custom constraints by defining a vector $h_k$ in the same way:
 
 $$
 \begin{aligned}
@@ -129,6 +137,8 @@ $$
 h_{\min}(k)&\leq h(k)\leq h_{\max}(k),\quad k=0,\dots,N
 \end{aligned}
 $$
+
+
 
 ---
 

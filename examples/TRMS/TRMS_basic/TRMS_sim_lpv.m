@@ -67,7 +67,7 @@ for i = 1:Sim_samples
 
     % 4. Solve for the two motor voltages
     x_mpc = [Wh;Omh;Thth;Wv;Omv;Thtv-Thtv0];
-    [u_k,iter,mpc] = mpc_solve(mpc,x_mpc,u_prev,ref,[],[],[],[]);
+    [u_k,mpc,iter] = mpc_solve(mpc,x_mpc,u_prev,ref,[],[],[],[]);
 
     t_dat(i) = toc;
 

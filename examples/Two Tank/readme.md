@@ -5,7 +5,7 @@
 In this folder you will find 3 files with the following objectives:
 
 * *two_tank_init.m*: script to define the MPC problem using the CHRONOS init functions.
-* *sim_two_tank_lpv.m*: script to simulate the Two Tank system in closed-loop using the CHRONOS mpc solver, at each iteration we use the CHRONOS update functions to adapt its internal Linear Parameter Varying model to the instantaneous water height level.
+* *sim_two_tank_lpv.m*: script to simulate the Two Tank system in closed-loop using the CHRONOS mpc solver; at each iteration, we use the CHRONOS update functions to adapt its internal Linear Parameter Varying model to the instantaneous water height level.
 * *sim_two_tank_lti.m*: this script uses the same controller definition, nonlinear plant, reference, and solver iteration budget as *sim_two_tank_lpv.m*, but skips the online prediction-model update. The supplied simulation therefore isolates the effect of keeping the prediction model frozen at its initial operating point. In this scenario, that model mismatch produces a noticeable tracking offset.
 
 ### Example introduction
@@ -15,13 +15,13 @@ The two tanks system is a classical example used in control lectures. It consist
 $$ \dot h_1 = u/A_b-\sqrt{2gh_1}/A_b $$
 $$ \dot h_2 = \sqrt{2gh_1}/A_b-\sqrt{2gh_2}/A_b $$
 
-where $h_1$ and $h_2$ are the water heights of each tank, $u$ is the controlled water massflow into tank 1 and $A_b$ is the tank area, equal for both tanks. The regulation objective is to control the water level on the second tank, e.g. our tracking target is:
+where $h_1$ and $h_2$ are the water heights of each tank, $u$ is the controlled water mass flow into tank 1, and $A_b$ is the tank area, equal for both tanks. The regulation objective is to control the water level on the second tank, e.g. our tracking target is:
 
 $$ y = h_2$$
 
 ### From non-linear to linear time varying system description
 
-The CHRONOS solver is designed to solve Nonlinear MPC by making use of Linear Parameter Varying (LPV) models. In order to transform the non-linear system into a LPV one, we do a linear embeddeding by dividing and multiplying the square root terms by the respective tank height:
+The CHRONOS solver is designed to solve Nonlinear MPC by making use of Linear Parameter Varying (LPV) models. In order to transform the non-linear system into a LPV one, we do a linear embedding by dividing and multiplying the square root terms by the respective tank height:
 
 $$ \sqrt{2gh_i} := \frac{\sqrt{2gh_i}}{h_i}h_i  $$
 
@@ -69,4 +69,3 @@ J={}&(s_{ref,N}-s_N)^T P(s_{ref,N}-s_N) \\
 &-0.1\le\Delta u_k\le0.1, && k=0,\ldots,N-1.
 \end{aligned}
 ```
-
