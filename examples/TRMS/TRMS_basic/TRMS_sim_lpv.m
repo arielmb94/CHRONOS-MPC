@@ -22,6 +22,30 @@ ampl_TthtvRef = 0.5;
 TththRef_v = offset_TththRef + ampl_TththRef*sin(2*pi*(freq_TththRef)*time);
 TthtvRef_v = offset_TthtvRef + ampl_TthtvRef*sin(2*pi*(freq_TthtvRef)*time);
 
+%% LPV Setup for new methods
+n = mpc.N;
+n_rho = 5; % Wh, Omh, Thth, Wv, Thtv
+n_iter = 3; % For SQP method
+
+% Define how to extract rho from the MPC state vector 
+% x_mpc = [Wh; Omh; Thth; Wv; Omv; Thtv - Thtv0]
+% Note: We add Thtv0 back to state 6 to get the physical Thtv for the LPV function
+my_sched_fun = @(x_st) [x_st(1); x_st(2); x_st(3); x_st(4); x_st(6) + Thtv0];
+
+% Interface functions for traj_mat (Defined at the end of the script)
+compute_A = @(rho) get_discrete_A(rho, Ts);
+compute_B = @(rho) get_discrete_B(rho, Ts);
+
+% Jacobian and bounds for Recursive method
+my_jacob_fun = @(x) [1 0 0 0 0 0; 
+                     0 1 0 0 0 0; 
+                     0 0 1 0 0 0; 
+                     0 0 0 1 0 0; 
+                     0 0 0 0 0 1];
+% Physical bounds based on x_min and x_max from TRMS_init
+rho_min = [-2.9; -1.0; -1.7; -1.6; -0.5 + Thtv0];
+rho_max = [ 2.9;  1.0;  1.2;  1.6;  1.0 + Thtv0];
+
 %% Run Simulation
 
 % clear storage variable
@@ -29,61 +53,57 @@ clear Wh_dat Omh_dat Thth_dat Wv_dat Omv_dat Thtv_dat uh_dat uv_dat ti
 
 % Simulation Loop
 for i = 1:Sim_samples
-
-% Assign state vector variables    
-Wh   = x(1);    % Horizontal Fan Angular Speed
-Omh  = x(2);    % Horizontal Angular Rate
-Thth = x(3);    % Horizontal Angle
-Wv   = x(4);    % Vertical Fan Angular Speed
-Omv  = x(5);    % Vertical Angular Rate
-Thtv = x(6);    % Vertical Angle
-
-% Store state vector values for plotting and analysis  
-Wh_dat(i)   = x(1);
-Omh_dat(i)  = x(2);
-Thth_dat(i) = x(3);
-Wv_dat(i)   = x(4);
-Omv_dat(i)  = x(5);
-Thtv_dat(i) = x(6);
-
-% Assign current reference values
-TthtvRef = TthtvRef_v(i);
-TththRef = TththRef_v(i);
-
-% Compute Reference for each state
-[WhRef,OmhRef,WvRef,OmvRef] = compute_ref(TththRef,Thth,TthtvRef,Thtv);
-
-% Define reference vector
-ref = [WhRef OmhRef TththRef WvRef OmvRef TthtvRef-Thtv0]';
-
-
-% Update LPV model to current scheduling values
-sys = qLPV_TRMS_SS(Wh,Omh,Thth,Wv,Thtv);
-% Update mpc problem structure
-% System discretized with forward Euler discretization:
-% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
-tic
-mpc = update_mpc_dynamics(mpc,eye(6)+Ts*sys.A,Ts*sys.B,[]);
-
-% Adjust Vertical Angle State
-x_mpc = [Wh;Omh;Thth;Wv;Omv;Thtv-Thtv0];
-% Solve mpc iteration
-[u_prev,iter,mpc] = mpc_solve(mpc,x_mpc,u_prev,ref,[],[],[],[]);
-ti(i) = toc;
-
-% Assign control actions
-uh = u_prev(1);
-uv = u_prev(2);
-% Storoge control action values for plotting and analysis
-uh_dat(i) = u_prev(1);
-uv_dat(i) = u_prev(2);
-
-% Run TRMS simulation
-dt_x = TRMS(Wh,Omh,Thth,Wv,Omv,Thtv,uh,uv);
-% Forward euler step
-x = x + Ts*dt_x;
-
+    % Store state vector values  
+    Wh_dat(i) = x(1); Omh_dat(i) = x(2); Thth_dat(i) = x(3);
+    Wv_dat(i) = x(4); Omv_dat(i) = x(5); Thtv_dat(i) = x(6);
+    
+    % Compute Reference
+    TthtvRef = TthtvRef_v(i);
+    TththRef = TththRef_v(i);
+    [WhRef,OmhRef,WvRef,OmvRef] = compute_ref(TththRef,x(3),TthtvRef,x(6));
+    ref = [WhRef OmhRef TththRef WvRef OmvRef TthtvRef-Thtv0]';
+    
+    % Adjust Vertical Angle State for MPC
+    x_mpc = [x(1); x(2); x(3); x(4); x(5); x(6)-Thtv0];
+    
+    tic
+    
+    % --- LPV TRAJECTORY ESTIMATION METHODS ---
+    % Choose only one method by uncommenting
+    
+    % Method 1: Frozen trajectory
+    % Pk = compute_schedul_frozen(mpc, x_mpc, my_sched_fun);
+    
+    % Method 2: Iterative Fast trajectory (Warm-Start)
+    Pk = compute_schedul_iterative_fast(mpc, x_mpc, my_sched_fun, n_rho);
+    
+    % Method 3: Iterative (SQP-like) trajectory refinement
+    % Pk = compute_schedul_iterative(mpc, x_mpc, u_prev, ref, [], [], my_sched_fun, compute_A, compute_B, [], n_rho, n_iter);
+    
+    % Method 4: Recursive extrapolation trajectory
+    % Pk = compute_schedul_recursive(mpc, x_mpc, n_rho, my_sched_fun, my_jacob_fun, rho_min, rho_max);
+    
+    % Build 3D affine matrix arrays using the interface
+    A_lpv = traj_mat(compute_A, Pk, n_rho, n);
+    B_lpv = traj_mat(compute_B, Pk, n_rho, n);
+    
+    % Update mpc problem structure with 3D arrays
+    mpc = update_mpc_dynamics(mpc, A_lpv, B_lpv, []);
+    
+    % Solve mpc iteration
+    [u_prev,iter,mpc] = mpc_solve(mpc, x_mpc, u_prev, ref, [], [], [], []);
+    
+    ti(i) = toc;
+    
+    % Store control actions
+    uh_dat(i) = u_prev(1);
+    uv_dat(i) = u_prev(2);
+    
+    % Run TRMS simulation & Forward Euler step
+    dt_x = TRMS(x(1), x(2), x(3), x(4), x(5), x(6), u_prev(1), u_prev(2));
+    x = x + Ts*dt_x;
 end
+
 %% Plots
 figure
 
@@ -138,3 +158,16 @@ plot(time,ti)
 title('Compute Time (s)')
 xlabel('Time (s)')
 grid on
+
+%% Local functions for discrete matrices
+function Ad = get_discrete_A(rho, Ts)
+    % Extracts continuous matrix and discretizes it
+    sys = qLPV_TRMS_SS(rho(1), rho(2), rho(3), rho(4), rho(5));
+    [Ad, ~, ~] = init_discretize_system(sys.A, sys.B, [], Ts, 'forward');
+end
+
+function Bd = get_discrete_B(rho, Ts)
+    % Extracts continuous matrix and discretizes it
+    sys = qLPV_TRMS_SS(rho(1), rho(2), rho(3), rho(4), rho(5));
+    [~, Bd, ~] = init_discretize_system(sys.A, sys.B, [], Ts, 'forward');
+end

@@ -22,23 +22,25 @@ N = 5;          % Prediction Horizon
 % Create mpc struct
 mpc = init_mpc(N);
 %% LTI system
-
-% Get LPV model frozen at current state vector
+% Get LPV model frozen at current state vector (Continuous)
 sys = qLPV_TRMS_SS(Wh,Omh,Thth,Wv,Thtv);
+
+% Discretize the system using the new function
+[Ad, Bd, ~] = init_discretize_system(sys.A, sys.B, [], Ts, 'forward');
+
+% Initialize system dynamics with 0 to indicate NO disturbances
+mpc = init_mpc_dynamics(mpc, Ad, Bd, 0);
+
 % Tracking for all 6 states
 C = eye(6);
-
-% Initialize system dynamics
-% System discretized with forward Euler discretization:
-% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
-mpc = init_mpc_dynamics(mpc,eye(6)+Ts*sys.A,Ts*sys.B,0);
+mpc = init_mpc_output(mpc,C,[],[]);
 
 %% Constraints
 
 % State constraints
 x_min = [-2.9;-1;-1.7;-1.6;-0.6;-0.5];
 x_max = [2.9;1;1.2;1.6;0.6;1];
-%mpc = init_mpc_state_cnstr(mpc,x_min,x_max);
+mpc = init_mpc_state_cnstr(mpc,x_min,x_max);
 
 % Control input constraints
 u_min = [-2.5;-2];
@@ -96,5 +98,7 @@ Ru = diag([0.5 1]);
 %% Init conditions for simulation
 
 u_prev = [0;0];
-% use warm start function to get optimization vector initial value
-mpc = build_chronos_mpc(mpc,x,u_prev);
+
+% Adjust Vertical Angle State for proper MPC warm-start
+x_mpc_init = [x(1); x(2); x(3); x(4); x(5); x(6)-Thtv0];
+mpc = build_chronos_mpc(mpc, x_mpc_init, u_prev);
