@@ -22,17 +22,19 @@ N = 15;          % Prediction horizon: N*Ts = 1.5 s
 
 % Create mpc struct
 mpc = init_mpc(N);
-%% Nominal LPV prediction model
-
-% Freeze the LPV model at the initial operating point
+%% LTI system
+% Get LPV model frozen at current state vector (Continuous)
 sys = qLPV_TRMS_SS(Wh,Omh,Thth,Wv,Thtv);
 
-% Initialize system dynamics
-% System discretized with forward Euler discretization:
-% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
-mpc = init_mpc_dynamics(mpc,eye(6)+Ts*sys.A,Ts*sys.B,[]);
+% Discretize the system using the new function
+[Ad, Bd, ~] = init_discretize_system(sys.A, sys.B, [], Ts, 'forward');
 
-% All six states are tracked, so no separate output model is needed
+% Initialize system dynamics with 0 to indicate NO disturbances
+mpc = init_mpc_dynamics(mpc, Ad, Bd, 0);
+
+% Tracking for all 6 states
+C = eye(6);
+mpc = init_mpc_output(mpc,C,[],[]);
 
 %% Constraints
 
@@ -77,5 +79,7 @@ mpc = init_mpc_Control_cost(mpc,Ru);
 %% Finalize controller
 
 u_prev = [0;0];
-x_mpc = [Wh;Omh;Thth;Wv;Omv;Thtv-Thtv0];
-mpc = build_chronos_mpc(mpc,x_mpc,u_prev);
+
+% Adjust Vertical Angle State for proper MPC warm-start
+x_mpc_init = [x(1); x(2); x(3); x(4); x(5); x(6)-Thtv0];
+mpc = build_chronos_mpc(mpc, x_mpc_init, u_prev);
