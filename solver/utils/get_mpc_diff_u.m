@@ -1,9 +1,7 @@
-function mpc = get_mpc_diff_u(mpc,x,u_prev)
+function du = get_mpc_diff_u(du,u,su,u_prev,N)
 
-    mpc.su(:,:) = x(mpc.su_index_k);
+    du(:,1) = u(:,1)-u_prev;
+    % delta u needs to be computed with su to match gradient definition
+    du(:,2:N) = u(:,2:N)-su(:,1:N-1);
 
-    mpc.du(:,1) = mpc.u(:,1)-u_prev;
-    % delta u needs to bo computed with su to match gradient definition
-    mpc.du(:,2:mpc.N) = mpc.u(:,2:mpc.N)-mpc.su(:,1:mpc.N-1);
-        
 end

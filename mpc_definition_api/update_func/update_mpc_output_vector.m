@@ -1,117 +1,69 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% UPDATE_MPC_OUTPUT_VECTOR Update the tracking-output model.
 %
-%   mpc = update_mpc_sys_output(mpc,C,D,Dd,Qe,y_min,y_max)
+%   mpc = UPDATE_MPC_OUTPUT_VECTOR(mpc, C, D, Dd) updates selected
+%   coefficients in
 %
-% Allows to update all parameters related to the tracking output signal y 
-% in a single function:
+%       y_k = C_k*s_k + D_k*u_k + Dd_k*d_k.
 %
-%   - Upadate output signal model: y = C * x + D * u + Dd * d
-%   - Upadate weight Qe on the tracking error penalty term: 
-%   (r - y)' * Qe * (r - y)
-%   - Upadate contraint Limits on feedback signal: y_min <= y <= y_max
+%   Use [] to leave a coefficient unchanged. The output must first be
+%   defined with INIT_MPC_DYNAMICS or INIT_MPC_OUTPUT. This updater cannot
+%   change the number of outputs or add a coefficient term that was not
+%   enabled during initialization.
 %
-% Example uses:
+%   C, D, and Dd may be constant matrices or contain L horizon stages in
+%   their third dimension. If L < N, the last supplied stage is reused for
+%   the remaining stages. The input d_k is the same fixed known input used
+%   by the dynamics.
+% 
+%   Existing tracking costs and output constraints use the
+%   updated output model.
 %
-%   - update only the output feedback signal model: 
-%           mpc = update_mpc_sys_output(mpc,C,D,Dd)
-%   - update only the input feedtrhough matrix of the output signal model: 
-%           mpc = update_mpc_sys_output(mpc,[],D,[])
-%   - update the feedback output signal model and constraint limits: 
-%           mpc = update_mpc_sys_output(mpc,C,D,Dd,[],y_min,y_max)
-%   - update only the weight on the tracking error penalty term: 
-%           mpc = update_mpc_sys_output(mpc,[],[],[],Qe)
+%   Inputs:
+%     mpc     - Built CHRONOS MPC structure.
+%     C       - Optional state coefficient, size ny-by-nx or ny-by-nx-by-L.
+%     D       - Optional control coefficient, size ny-by-nu or
+%               ny-by-nu-by-L.
+%     Dd      - Optional fixed-known-input coefficient, size ny-by-nd or
+%               ny-by-nd-by-L.
 %
-% In:
-%   - mpc: CHRONOS mpc structure
-%   - C (optional): ny x nx matrix, system output matrix
-%   - D (optional): ny x nu matrix, input feedtrhough matrix.
-%   - Dd (optional): ny x nd matrix, disturbance feedtrhough matrix.
-%   - Qe (optional): ny x ny square matrix, weights for the quadratic
-%   penalty on the tracking error
-%   - y_min (optional): ny column vector, lower bound constraint values on 
-%   the tracking signal
-%   - y_max (optional): ny column vector, upper bound constraint values on 
-%   the tracking signal
+%   Output:
+%     mpc     - Updated CHRONOS MPC structure.
 %
-%   All arguments items which do not require to be updated can be passed as
-%   an empty vector [].
+%   Example - update only the state and control coefficients:
 %
-% Out:
-%   - mpc: updated CHRONOS mpc structure
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%       mpc = update_mpc_output_vector(mpc, C, D, []);
 function mpc = update_mpc_output_vector(mpc,C,D,Dd)
 
-mpc.update_tracking = 1;
-update_grad = 0;
-
-if ~isempty(C)
-    update_grad = 1;
-    mpc.C(:,:) = C;
-    if mpc.y_use_k0, mpc.C_0(:,:) = C(mpc.y_rows_k0,:); end
-    if mpc.y_use_ter
-        mpc.C_ter(:,:) = C(mpc.y_rows_ter,:); 
-        mpc.grad_err_ter(:,:) = -mpc.C_ter';
+if ~isempty(C) && ~isempty(mpc.y_use_s)
+    if ~isempty(mpc.tracking_cost)
+        mpc.update_tracking = true;
     end
 
-    if mpc.has_y_cnstr
-        if mpc.y_cnstr.min_limit
-            for k = 1:mpc.N-1
-                mpc.Ai_k(mpc.y_cnstr.min_ineqRow_k,mpc.s_col,k) = -mpc.C;
-            end
-            if mpc.y_cnstr.use_ter
-                mpc.Ai_ter(mpc.y_cnstr.min_ineqRow_ter,mpc.s_col) = -mpc.C_ter;
-            end
-        end
-        if mpc.y_cnstr.max_limit
-            for k = 1:mpc.N-1
-                mpc.Ai_k(mpc.y_cnstr.max_ineqRow_k,mpc.s_col,k) = mpc.C;
-            end
-            if mpc.y_cnstr.use_ter
-                mpc.Ai_ter(mpc.y_cnstr.max_ineqRow_ter,mpc.s_col) = mpc.C_ter;
-            end
-        end
+    len_C = size(C,3);
+    mpc.C(:,:,:) = fill_mat(mpc.C, C, 1);
+    if ~isempty(mpc.y_use_ter)
+        ter_stage = len_C;
+        if ter_stage > mpc.N, ter_stage = mpc.N; end
+        mpc.C_ter(:,:) = C(mpc.y_rows_ter,:,ter_stage);
     end
+    if ~isempty(mpc.y_use_k0), mpc.C_0(:,:) = C(mpc.y_rows_k0,:,1); end
 
 end
 
-if ~isempty(D)
-    update_grad = 1;
-    mpc.D(:,:) = D;
-    % if there is D it means there is k0
-    mpc.D_0(:,:) = D(mpc.y_rows_k0,:); 
-    mpc.grad_err_0(:,:) = -mpc.D_0';
-
-    if mpc.has_y_cnstr
-        if mpc.y_cnstr.min_limit
-            mpc.Ai_0(mpc.y_cnstr.min_ineqRow_0,:) = -mpc.D_0;
-            for k = 1:mpc.N-1
-                mpc.Ai_k(mpc.y_cnstr.min_ineqRow_k,mpc.u_col,k) = -mpc.D;
-            end
-        end
-        if mpc.y_cnstr.max_limit
-            mpc.Ai_0(mpc.y_cnstr.max_ineqRow_0,:) = mpc.D_0;
-            for k = 1:mpc.N-1
-                mpc.Ai_k(mpc.y_cnstr.max_ineqRow_k,mpc.u_col,k) = mpc.D;
-            end
-        end
+if ~isempty(D) && ~isempty(mpc.y_use_u)
+    if ~isempty(mpc.tracking_cost)
+        mpc.update_tracking = true;
     end
-
+    mpc.D(:,:,:) = fill_mat(mpc.D, D, 1);
+    if ~isempty(mpc.y_use_k0)
+        mpc.D_0(:,:) = D(mpc.y_rows_k0,:,1);
+    end
 end
 
-if ~isempty(Dd)   
-    mpc.Dd(:,:) = Dd;
-    if mpc.y_use_k0, mpc.Dd_0(:,:) = Dd(mpc.y_rows_k0,:); end
-end
+if ~isempty(Dd) && ~isempty(mpc.y_use_d)
+    mpc.Dd(:,:,:) = fill_mat(mpc.Dd, Dd, 1);
 
-if update_grad
-    if mpc.y_use_s && mpc.y_use_u
-        mpc.grad_err(:,:) = [-mpc.C'; -mpc.D'];
-    elseif mpc.y_use_s
-        mpc.grad_err(:,:) = -mpc.C';
-    elseif mpc.y_use_u
-        mpc.grad_err(:,:) = -mpc.D';
-    end
+    if ~isempty(mpc.y_use_k0), mpc.Dd_0(:,:) = Dd(mpc.y_rows_k0,:,1); end
 end
 
 end

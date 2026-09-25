@@ -1,96 +1,87 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% UPDATE_MPC_CUSTOM_COST_VECTOR Update the custom-cost signal model.
 %
-%   mpc = update_mpc_sys_output(mpc,C,D,Dd,Qe,y_min,y_max)
+%   mpc = UPDATE_MPC_CUSTOM_COST_VECTOR(mpc, Cz, Dz, Dsuz, Ddz) updates
+%   selected coefficients in
 %
-% Allows to update all parameters related to the tracking output signal y 
-% in a single function:
+%       z_k = Cz_k*s_k + Dz_k*u_k + Dsuz_k*su_k + Ddz_k*dz_k.
 %
-%   - Upadate output signal model: y = C * x + D * u + Dd * d
-%   - Upadate weight Qe on the tracking error penalty term: 
-%   (r - y)' * Qe * (r - y)
-%   - Upadate contraint Limits on feedback signal: y_min <= y <= y_max
+%   Use [] to leave a coefficient unchanged. The signal must first be
+%   defined with INIT_MPC_CUSTOM_COST. This updater cannot change the number
+%   of custom costs or add a coefficient term that was not enabled during
+%   initialization.
 %
-% Example uses:
+%   Coefficients may be constant matrices or contain L horizon stages in
+%   their third dimension. If L < N, the last supplied stage is reused for
+%   the remaining stages. Here, su_k is the control action preceding u_k,
+%   and dz_k is the dedicated fixed known input supplied to MPC_SOLVE.
+% 
+%   The existing Qz and qz weights are applied to the updated
+%   signal model.
 %
-%   - update only the output feedback signal model: 
-%           mpc = update_mpc_sys_output(mpc,C,D,Dd)
-%   - update only the input feedtrhough matrix of the output signal model: 
-%           mpc = update_mpc_sys_output(mpc,[],D,[])
-%   - update the feedback output signal model and constraint limits: 
-%           mpc = update_mpc_sys_output(mpc,C,D,Dd,[],y_min,y_max)
-%   - update only the weight on the tracking error penalty term: 
-%           mpc = update_mpc_sys_output(mpc,[],[],[],Qe)
+%   Inputs:
+%     mpc     - Built CHRONOS MPC structure.
+%     Cz      - Optional state coefficient, size nz-by-nx or nz-by-nx-by-L.
+%     Dz      - Optional control coefficient, size nz-by-nu or
+%               nz-by-nu-by-L.
+%     Dsuz    - Optional previous-control coefficient, size nz-by-nu or
+%               nz-by-nu-by-L.
+%     Ddz     - Optional fixed-known-input coefficient, size nz-by-ndz or
+%               nz-by-ndz-by-L.
 %
-% In:
-%   - mpc: CHRONOS mpc structure
-%   - C (optional): ny x nx matrix, system output matrix
-%   - D (optional): ny x nu matrix, input feedtrhough matrix.
-%   - Dd (optional): ny x nd matrix, disturbance feedtrhough matrix.
-%   - Qe (optional): ny x ny square matrix, weights for the quadratic
-%   penalty on the tracking error
-%   - y_min (optional): ny column vector, lower bound constraint values on 
-%   the tracking signal
-%   - y_max (optional): ny column vector, upper bound constraint values on 
-%   the tracking signal
+%   Output:
+%     mpc     - Updated CHRONOS MPC structure.
 %
-%   All arguments items which do not require to be updated can be passed as
-%   an empty vector [].
+%   Example - update only Cz and Dz:
 %
-% Out:
-%   - mpc: updated CHRONOS mpc structure
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%       mpc = update_mpc_Custom_cost_vector(mpc, Cz, Dz, [], []);
 function mpc = update_mpc_Custom_cost_vector(mpc,Cz,Dz,Dsuz,Ddz)
 
-mpc.update_customcost_quad = mpc.quad_custom_cost;
-mpc.update_customcost_lin = mpc.lin_custom_cost;
-update_grad = 0;
+if ~isempty(Cz) && ~isempty(mpc.z_use_s)
+    if ~isempty(mpc.quad_custom_cost)
+        mpc.update_customcost_quad = true;
+    end
+    if ~isempty(mpc.lin_custom_cost)
+        mpc.update_customcost_lin = true;
+    end
 
-if ~isempty(Cz)
-    update_grad = 1;
-    mpc.Cz(:,:) = Cz;
-    if mpc.z_use_k0, mpc.Cz_0(:,:) = Cz(mpc.z_rows_k0,:); end
-    if mpc.z_use_ter
-        mpc.Cz_ter(:,:) = Cz(mpc.z_rows_ter,:); 
-        mpc.grad_z_ter(:,:) = mpc.Cz_ter';
+    len_Cz = size(Cz,3);
+    mpc.Cz(:,:,:) = fill_mat(mpc.Cz, Cz, 1);
+    if ~isempty(mpc.z_use_ter)
+        ter_stage = len_Cz;
+        if ter_stage > mpc.N, ter_stage = mpc.N; end
+        mpc.Cz_ter(:,:) = Cz(mpc.z_rows_ter,:,ter_stage);
+    end
+    if ~isempty(mpc.z_use_k0), mpc.Cz_0(:,:) = Cz(mpc.z_rows_k0,:,1); end
+
+end
+
+if ~isempty(Dz) && ~isempty(mpc.z_use_u)
+    if ~isempty(mpc.quad_custom_cost)
+        mpc.update_customcost_quad = 1;
+    end
+    if ~isempty(mpc.lin_custom_cost)
+        mpc.update_customcost_lin = 1;
+    end
+    mpc.Dz(:,:,:) = fill_mat(mpc.Dz, Dz, 1);
+    if ~isempty(mpc.z_use_k0)
+        mpc.Dz_0(:,:) = Dz(mpc.z_rows_k0,:,1);
     end
 end
 
-if ~isempty(Dz)
-    update_grad = 1;
-    mpc.Dz(:,:) = Dz;
-    % if there is D it means there is k0
-    mpc.Dz_0(:,:) = Dz(mpc.z_rows_k0,:); 
-    mpc.grad_z_0(:,:) = mpc.Dz_0';
-end
-
-if ~isempty(Dsuz)
-    update_grad = 1;
-    mpc.Dsuz(:,:) = Dsuz;
-    if mpc.z_use_k0, mpc.Dsuz_0(:,:) = Dsuz(mpc.z_rows_k0,:); end
-end
-
-if ~isempty(Ddz)   
-    mpc.Ddz(:,:) = Ddz;
-    if mpc.z_use_k0, mpc.Ddz_0(:,:) = Ddz(mpc.z_rows_k0,:); end
-end
-
-if update_grad
-    if mpc.z_use_s && mpc.z_use_su && mpc.z_use_u
-        mpc.grad_z(:,:) = [mpc.Cz'; mpc.Dsuz'; mpc.Dz'];
-    elseif mpc.z_use_s && mpc.z_use_su
-        mpc.grad_z(:,:) = [mpc.Cz'; mpc.Dsuz'];
-    elseif mpc.z_use_s && mpc.z_use_u
-        mpc.grad_z(:,:) = [mpc.Cz'; mpc.Dz'];
-    elseif mpc.z_use_su && mpc.z_use_u
-        mpc.grad_z(:,:) = [mpc.Dsuz'; mpc.Dz'];
-    elseif mpc.z_use_s
-        mpc.grad_z(:,:) = mpc.Cz';
-    elseif mpc.z_use_su
-        mpc.grad_z(:,:) = mpc.Dsuz';
-    elseif mpc.z_use_u
-        mpc.grad_z(:,:) = mpc.Dz';
+if ~isempty(Dsuz) && ~isempty(mpc.z_use_su)
+    if ~isempty(mpc.quad_custom_cost)
+        mpc.update_customcost_quad = true;
     end
+    if ~isempty(mpc.lin_custom_cost)
+        mpc.update_customcost_lin = true;
+    end
+    mpc.Dsuz(:,:,:) = fill_mat(mpc.Dsuz, Dsuz, 1);
+    if ~isempty(mpc.z_use_k0), mpc.Dsuz_0(:,:) = Dsuz(mpc.z_rows_k0,:,1); end
+end
+
+if ~isempty(Ddz) && ~isempty(mpc.z_use_d)
+    mpc.Ddz(:,:,:) = fill_mat(mpc.Ddz, Ddz, 1);
+    if ~isempty(mpc.z_use_k0), mpc.Ddz_0(:,:) = Ddz(mpc.z_rows_k0,:,1); end
 end
 
 end

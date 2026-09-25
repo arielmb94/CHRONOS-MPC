@@ -1,50 +1,42 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% UPDATE_MPC_DYNAMICS Update the prediction-model matrices.
 %
-%   mpc = update_mpc_sys_dynamics(mpc,A,B,Bd)
+%   mpc = UPDATE_MPC_DYNAMICS(mpc, A, B, Bd) updates selected matrices in
 %
-% Updates the matrices A, B and Bd of the internal MPC Discrete-Time system
-% model:
-% 
-% x+ = A * x + B * u + Bd * d
-% 
-% and then recomputes the MPC equality constraints accordingly.
+%       s_(k+1) = A_k*s_k + B_k*u_k + Bd_k*d_k.
 %
-% Example uses:
+%   Use [] to leave a matrix unchanged. The dynamics must first be defined
+%   with INIT_MPC_DYNAMICS. Online updates cannot change the matrix dimensions
+%   nor add new terms not enabled during initialization.
 %
-%   - update only system matrix cost limits: 
-%           mpc = update_mpc_sys_dynamics(mpc,A,[],[])
-%   - update both system matrix and input matrox: 
-%           mpc = update_mpc_sys_dynamics(mpc,[],B,[])
-%   - update only input disturbance: 
-%           mpc = update_mpc_sys_dynamics(mpc,[],[],Bd)
+%   A, B, and Bd may be constant matrices or contain L horizon stages in
+%   their third dimension. If L < N, the last supplied stage is reused for
+%   the remaining stages.
 %
-% In:
-%   - mpc: CHRONOS mpc structure
-%   - A (optional): nx x nx matrix, system matrix
-%   - B (optional): nx x nu matrix, input matrix
-%   - Bd (optional): nx x nd matrix, disturbance input matrix.
+%   Inputs:
+%     mpc     - Built CHRONOS MPC structure.
+%     A       - Optional state matrix, size nx-by-nx or nx-by-nx-by-L.
+%     B       - Optional control matrix, size nx-by-nu or nx-by-nu-by-L.
+%     Bd      - Optional fixed-known-input matrix, size nx-by-nd or
+%               nx-by-nd-by-L.
 %
-%   All arguments items which do not require to be updated can be passed as
-%   an empty vector [].
+%   Output:
+%     mpc     - Updated CHRONOS MPC structure.
 %
-% Out:
-%   - mpc: updated CHRONOS mpc structure
+%   Example - update only A and B:
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%       mpc = update_mpc_dynamics(mpc, A, B, []);
 function mpc = update_mpc_dynamics(mpc,A,B,Bd)
 
 if ~isempty(A)
-    mpc.A = A;
-    mpc.A_kkt(mpc.s_col,mpc.s_col) = mpc.A;
+    mpc.A(:,:,:) = fill_mat(mpc.A, A, 1);
 end
 
 if ~isempty(B)
-    mpc.B = B;
-    mpc.B_kkt(mpc.s_col,:) = mpc.B;
+    mpc.B(:,:,:) = fill_mat(mpc.B, B, 1);
 end
 
-if ~isempty(Bd)   
-    mpc.Bd = Bd;
+if ~isempty(Bd) && ~isempty(mpc.dyn_use_d)
+    mpc.Bd(:,:,:) = fill_mat(mpc.Bd, Bd, 1);
 end
 
 end

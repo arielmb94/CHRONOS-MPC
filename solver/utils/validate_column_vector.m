@@ -1,6 +1,9 @@
-function validate_column_vector(val, expected_length, var_name)
-% VALIDATE_COLUMN_VECTOR Throws a clear error if the input is not a scalar,
-% empty, or a column vector of the exact expected length.
+function validate_column_vector(val, expected_length, var_name, allow_stage_scalar)
+% VALIDATE_COLUMN_VECTOR Validate the per-stage shape of a staged vector.
+
+    if nargin < 4
+        allow_stage_scalar = false;
+    end
 
     % Empty is allowed (means constraint is disabled)
     if isempty(val)
@@ -11,11 +14,19 @@ function validate_column_vector(val, expected_length, var_name)
     if isscalar(val)
         return;
     end
-    
-    % If it's not a column vector, or the length is wrong, throw a custom error
-    if ~iscolumn(val) || length(val) ~= expected_length
+
+    % Validate only the first supplied stage. The remaining stages are handled
+    % by the existing horizon fill logic.
+    stage_val = val(:,1);
+
+    if allow_stage_scalar && isscalar(stage_val)
+        return;
+    end
+
+    % If the per-stage shape is wrong, throw a custom error.
+    if size(stage_val,1) ~= expected_length || size(stage_val,2) ~= 1
         error('CHRONOS:DimensionMismatch', ...
-            'Error in constraint setup: "%s" must be a scalar or a column vector of size %d x 1. You provided a size of %d x %d.', ...
-            var_name, expected_length, size(val,1), size(val,2));
+            'Input "%s" must have per-stage dimensions %d x 1; supplied per-stage dimensions are %d x %d.', ...
+            var_name, expected_length, size(stage_val,1), size(stage_val,2));
     end
 end

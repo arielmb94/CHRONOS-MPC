@@ -1,179 +1,216 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MPC_SOLVE Solve the current MPC problem.
 %
+%   [u0, mpc, iter] = MPC_SOLVE(mpc, s_prev, u_prev, r_in, xN_ref_in, ...
+%       d_in, dz_in, dh_in) solves the current MPC problem.
 %
-% Solve the current iteration of the MPC problem.
+%   Inputs:
+%     mpc       - CHRONOS MPC structure with the persistent stage-local
+%                 iterate.
+%     s_prev    - nx column vector, last measured or estimated system state
+%                 value.
+%     u_prev    - nu column vector, control action applied to the system on
+%                 the previous sampling time.
+%     r_in      - Optional tracking reference. It can be an ny-by-1 column
+%                 vector or an ny-by-L matrix, where L is the number of
+%                 supplied horizon stages. A single column is reused for all
+%                 stages. If L < N, the last supplied column is reused for
+%                 the remaining stages; columns beyond the horizon are
+%                 ignored. Pass [] when tracking is not used.
+%     xN_ref_in - Optional nx column vector, reference for the terminal state
+%                 xN of the prediction horizon. Required whenever the MPC
+%                 problem contains terminal ingredients. If not used, pass
+%                 an empty vector [].
+%     d_in      - Optional known input for the dynamics and output model. It
+%                 can be an nd-by-1 column vector or an nd-by-L matrix. A
+%                 single column is reused for all stages. If L < N, the last
+%                 supplied column is reused for the remaining stages; columns
+%                 beyond the horizon are ignored. Pass [] when this input is
+%                 not used.
+%     dz_in     - Optional known input for the custom-cost signal z. It can
+%                 be an ndz-by-1 column vector or an ndz-by-L matrix. A
+%                 single column is reused for all stages. If L < N, the last
+%                 supplied column is reused for the remaining stages; columns
+%                 beyond the horizon are ignored. Pass [] when this input is
+%                 not used.
+%     dh_in     - Optional known input for the custom-constraint signal h. It
+%                 can be an ndh-by-1 column vector or an ndh-by-L matrix. A
+%                 single column is reused for all stages. If L < N, the last
+%                 supplied column is reused for the remaining stages; columns
+%                 beyond the horizon are ignored. Pass [] when this input is
+%                 not used.
 %
-% In:
-%   - mpc: CHRONOS mpc structure.
-%   - x0: Nx+Nu column vector, initial guess solution for CHRONOS interior
-%   point iterative solver
-%   - s_prev: nx column vector, last measured or estimated system state
-%   value
-%   - u_prev: nu column vector, control action applied to the system on the
-%   previous sampling time
-%   - r (optional): tracking reference for the MPC. It can be a ny column
-%   vector (the same reference applies for the full prediction horizon) or
-%   can be a Ny column vector (the user passes a unique reference for each
-%   step of the prediction horizon). If not used, the user must pass an
-%   empty vector [].
-%   - d (optional): disturbance input to the system dynamics and to the
-%   output signal y models. It can be a nd column vector (the same
-%   disturbance applies for the full prediction horizon) or can be an Nd
-%   column vector (the user passes a unique disturbance for each step of
-%   the prediction horizon). If not used, the user must pass an empty
-%   vector [].
-%   - x_ref (optional): nx column vector, reference for the terminal state
-%   xN of the prediction horizon. Required whenever the MPC problem
-%   contains terminal ingredients. If not used, the user must pass an empty
-%   vector [].
-%   - dz (optional): disturbance input to the user defined signal model z
-%   for custom cost functions. It can be a ndz column vector (the same
-%   disturbance applies for the full prediction horizon) or can be an Ndz
-%   column vector (the user passes a unique disturbance for each step of
-%   the prediction horizon). If not used, the user must pass an empty
-%   vector [].
-%   - dh (optional): disturbance input to the user defined signal model h
-%   for custom constraints. It can be a ndh column vector (the same
-%   disturbance applies for the full prediction horizon) or can be an Ndh
-%   column vector (the user passes a unique disturbance for each step of
-%   the prediction horizon). If not used, the user must pass an empty
-%   vector [].
+%   Output:
+%     u0   - nu column vector, first step of the control action sequence
+%            computed as the solution to the MPC problem.
+%     mpc  - Updated CHRONOS MPC structure. Retain it and pass it to the
+%            next call to MPC_SOLVE.
+%     iter - Number of iterations required for the MPC optimization problem.
 %
-% Out:
-%   - u0: nu column vector, first step of the control action sequence
-%   computed as solution to the MPC problem
-%   - x0: Nx+Nu column vector, optimization variables solution vector to
-%   the MPC problem
-%   - iter: number of iterations required for the MPC optimization problem
-%   - iter_feas: number of iterations required for the step 0 feasibility
-%   starting point finder
+%   Example - solve with no optional runtime signals:
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [u0,iter,mpc] = mpc_solve(mpc,s_prev,u_prev, ...
-                                   r_in,xN_ref_in,...
+%       [u0, mpc, iter] = mpc_solve(mpc, s_prev, u_prev, [], [], [], [], []);
+function [u0,mpc,iter] = mpc_solve(mpc,s_prev,u_prev,r_in,xN_ref_in,...
                                    d_in,dz_in,dh_in)
-
-x0 = mpc.x0;
 
 % handle input vector sizes
 len_r_in = size(r_in,2);
-if len_r_in 
-    if len_r_in < mpc.N
-        mpc.r(:,:) = fill_vec(mpc.r,r_in,1);
-        if mpc.y_use_k0, mpc.r_0(:) = mpc.r(:,1); end
-        if mpc.y_use_ter, mpc.r_ter(:) = mpc.r(:,mpc.N-1); end
-    else 
-        mpc.r(:,:) = r_in(:,1:mpc.N-1);
-        if mpc.y_use_k0, mpc.r_0(:) = mpc.r(:,1); end
-        if mpc.y_use_ter, mpc.r_ter(:) = r_in(:,mpc.N); end
+if ~isempty(r_in)
+    mpc.r(:,:) = fill_vec(mpc.r,r_in,1);
+    if ~isempty(mpc.y_use_k0), mpc.r_0(:) = r_in(mpc.y_rows_k0,1); end
+    if ~isempty(mpc.y_use_ter)
+        ter_col = len_r_in;
+        if ter_col > mpc.N, ter_col = mpc.N; end
+        mpc.r_ter(:) = r_in(mpc.y_rows_ter,ter_col);
     end
 end
 
-len_d_in = size(d_in,2);
-if ~isempty(d_in) && len_d_in < mpc.N
+if ~isempty(d_in)
     mpc.d(:,:) = fill_vec(mpc.d,d_in,1);
-else
-    mpc.d(:,:) = d_in;
 end
 
-len_dz_in = size(dz_in,2);
-if ~isempty(dz_in) && len_dz_in < mpc.N
+if ~isempty(dz_in)
     mpc.dz(:,:) = fill_vec(mpc.dz,dz_in,1);
-else
-    mpc.dz(:,:) = dz_in;
 end
 
-len_dh_in = size(dh_in,2);
-if ~isempty(dh_in) && len_dh_in < mpc.N
+if ~isempty(dh_in)
     mpc.dh(:,:) = fill_vec(mpc.dh,dh_in,1);
-else
-    mpc.dh(:,:) = dh_in;
 end
 
-if mpc.ter_ingredients
-    if mpc.xN_ref_is_y && isempty(xN_ref_in)
-        mpc.xN_ref(:) = mpc.r(:,mpc.N-1);
+if ~isempty(mpc.ter_ingredients)
+    if ~isempty(mpc.xN_ref_is_y) && isempty(xN_ref_in)
+        mpc.xN_ref(:) = mpc.r_ter;
     else
         mpc.xN_ref(:) = xN_ref_in;
     end
 end
 
 % Recompute gradient/hessian if cost terms have been updated
-if mpc.update_tracking
-    mpc = update_tracking_cost(mpc);
+if ~isempty(mpc.tracking_cost)
+    if mpc.update_tracking
+        mpc = update_tracking_cost(mpc,mpc.update_tracking);
+    end
 end
-if mpc.update_customcost_quad
-    mpc = update_custom_cost_quad(mpc);
+if ~isempty(mpc.quad_custom_cost)
+    if mpc.update_customcost_quad
+        mpc = update_custom_cost_quad(mpc,mpc.update_customcost_quad);
+    end
 end
-if mpc.update_customcost_lin
-    mpc = update_custom_cost_lin(mpc);
+if ~isempty(mpc.lin_custom_cost)
+    if mpc.update_customcost_lin
+        mpc = update_custom_cost_lin(mpc,mpc.update_customcost_lin);
+    end
 end
 if mpc.recompute_cost_hess
-    mpc = update_mpc_f0_hess(mpc);
+    mpc = update_mpc_f0_hess(mpc,mpc.tracking_cost,...
+        mpc.quad_control_cost,mpc.controlrate_cost,mpc.quad_custom_cost,...
+        mpc.ter_ingredients);
 end
 
-% update b matrix from equality condition
-mpc = update_mpc_beq(mpc,s_prev,u_prev);
+% update dynamics equality RHS
+mpc = update_mpc_beq(mpc,s_prev,mpc.A(:,:,1),mpc.dyn_use_d);
 
 % Set Newton solver condition at start
 continue_Newton = true;
 iter = 0;
 
-mpc = get_mpc_variables(mpc,x0,s_prev,u_prev);
+mpc = get_mpc_variables(mpc,mpc.has_du,mpc.tracking_cost,mpc.has_y_cnstr,...
+                         mpc.has_h_cnstr,mpc.quad_custom_cost,mpc.lin_custom_cost,...
+                         s_prev,u_prev);
 
 lambda2 = 1;
 
 while mpc.eps <= lambda2*0.5 && continue_Newton && iter < mpc.max_iter
 
-    mpc = grad_f0_MPC(mpc);
+    mpc = grad_f0_MPC(mpc,mpc.quad_control_cost,mpc.lin_control_cost,...
+        mpc.controlrate_cost,mpc.tracking_cost,mpc.quad_custom_cost,...
+        mpc.lin_custom_cost,mpc.ter_ingredients);
 
-    mpc = equality_residuals(mpc);
+    mpc = equality_residuals(mpc,mpc.has_du);
 
-    mpc = reduced_KKT_elements(mpc);
+    if ~isempty(mpc.g_0) || ~isempty(mpc.g_k) || ~isempty(mpc.g_ter)
+        mpc = inequality_residuals(mpc,mpc.g_0,mpc.g_k,mpc.g_ter,...
+            mpc.has_s_cnstr,mpc.has_u_cnstr,mpc.has_du_cnstr,...
+            mpc.has_y_cnstr,mpc.has_h_cnstr);
+    end
 
-    mpc = riccati_KKT(mpc,mpc.Q_k,mpc.Q_ter,...
-                      mpc.R_0,mpc.R_k,mpc.Y_k,...
-                      mpc.ru_hat_0,mpc.ru_hat_k,...
-                      mpc.rse_hat_k,mpc.rse_hat_ter,...
-                      mpc.rp_0,mpc.rp_k);  
+    mpc = reduced_KKT_elements(mpc,mpc.has_u_cnstr,mpc.has_du_cnstr,...
+        mpc.has_s_cnstr,mpc.has_y_cnstr,mpc.has_h_cnstr,...
+        mpc.g_0,mpc.g_k,mpc.g_ter);
 
-    mpc = recover_slacks(mpc,mpc.delta_u,mpc.delta_se);
+    if ~isempty(mpc.has_du)
+        mpc = riccati_KKT_du(mpc);
+    else
+        mpc = riccati_KKT(mpc);
+    end
 
-    [delta_x_prim,grad_J_x0] = stage2vec(mpc,mpc.delta_u,mpc.delta_se,...
-                                        mpc.delta_g_0,mpc.delta_g_k,mpc.delta_g_ter,...
-                                        mpc.delta_v_0,mpc.delta_v_k,mpc.delta_v_ter);
+    if ~isempty(mpc.g_0) || ~isempty(mpc.g_k) || ~isempty(mpc.g_ter)
+        mpc = recover_slacks(mpc,mpc.has_s_cnstr,mpc.has_u_cnstr,...
+            mpc.has_du_cnstr,mpc.has_y_cnstr,mpc.has_h_cnstr);
+    end
 
-    % compute lambda^2
-    lambda2 = -grad_J_x0*delta_x_prim;
+    lambda2 = get_lambda2(mpc);
 
     % Feasibility line search
-    l = 1;
-    xhat = x0+l*delta_x_prim;
-
-    feas = all(xhat(mpc.g_index)>mpc.slack_epsilon) &&...
-           all(xhat(mpc.v_index)>mpc.slack_epsilon);
-
-    if feas
-        x0 = xhat;
-    else
-        while ~feas
-            l = l*mpc.Beta;
-
-            xhat = x0+l*delta_x_prim;
-
-            feas = all(xhat(mpc.g_index)>mpc.slack_epsilon) &&...
-                   all(xhat(mpc.v_index)>mpc.slack_epsilon);
-        end
-        x0 = xhat;
-        if l<mpc.min_l
-            continue_Newton = false;
-        end
-    end
-    mpc = get_mpc_variables(mpc,x0,s_prev,u_prev);
+    [mpc.g_0,mpc.g_k,mpc.g_ter,mpc.v_0,mpc.v_k,mpc.v_ter,mpc.u,mpc.s,...
+        mpc.su,continue_Newton] = line_search_local(mpc.g_0,mpc.g_k,...
+        mpc.g_ter,mpc.v_0,mpc.v_k,mpc.v_ter,mpc.u,mpc.s,mpc.su,...
+        mpc.delta_g_0,mpc.delta_g_k,mpc.delta_g_ter,...
+        mpc.delta_v_0,mpc.delta_v_k,mpc.delta_v_ter,mpc.delta_u,...
+        mpc.delta_se,mpc.s_col,mpc.su_col,mpc.has_du,mpc.Beta,mpc.min_l,...
+        continue_Newton);
+    mpc = get_mpc_variables(mpc,mpc.has_du,mpc.tracking_cost,mpc.has_y_cnstr,...
+                             mpc.has_h_cnstr,mpc.quad_custom_cost,mpc.lin_custom_cost,...
+                             s_prev,u_prev);
     iter = iter+1;
 end
 
 u0 = mpc.u(:,1);
-mpc.x0(:) = x0;
 
+end
+
+function [g_0,g_k,g_ter,v_0,v_k,v_ter,u,s,su,continue_Newton] = ...
+    line_search_local(g_0,g_k,g_ter,v_0,v_k,v_ter,u,s,su,...
+    delta_g_0,delta_g_k,delta_g_ter,delta_v_0,delta_v_k,delta_v_ter,...
+    delta_u,delta_se,s_col,su_col,has_du,Beta,min_l,continue_Newton)
+l = 1;
+g_0_hat = g_0+l*delta_g_0;
+g_k_hat = g_k+l*delta_g_k;
+g_ter_hat = g_ter+l*delta_g_ter;
+v_0_hat = v_0+l*delta_v_0;
+v_k_hat = v_k+l*delta_v_k;
+v_ter_hat = v_ter+l*delta_v_ter;
+
+feas = all(g_0_hat(:)>0) && all(g_k_hat(:)>0) && all(g_ter_hat(:)>0) && ...
+       all(v_0_hat(:)>0) && all(v_k_hat(:)>0) && all(v_ter_hat(:)>0);
+
+if ~feas
+    while ~feas
+        l = l*Beta;
+
+        g_0_hat = g_0+l*delta_g_0;
+        g_k_hat = g_k+l*delta_g_k;
+        g_ter_hat = g_ter+l*delta_g_ter;
+        v_0_hat = v_0+l*delta_v_0;
+        v_k_hat = v_k+l*delta_v_k;
+        v_ter_hat = v_ter+l*delta_v_ter;
+
+        feas = all(g_0_hat(:)>0) && all(g_k_hat(:)>0) && all(g_ter_hat(:)>0) && ...
+               all(v_0_hat(:)>0) && all(v_k_hat(:)>0) && all(v_ter_hat(:)>0);
+    end
+    if l<min_l
+        continue_Newton = false;
+    end
+end
+
+g_0(:) = g_0_hat;
+g_k(:,:) = g_k_hat;
+g_ter(:) = g_ter_hat;
+v_0(:) = v_0_hat;
+v_k(:,:) = v_k_hat;
+v_ter(:) = v_ter_hat;
+u(:,:) = u+l*delta_u;
+s(:,:) = s+l*delta_se(s_col,:);
+if ~isempty(has_du)
+    su(:,:) = su+l*delta_se(su_col,:);
+end
 end

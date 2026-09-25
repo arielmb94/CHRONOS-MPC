@@ -1,104 +1,106 @@
-function mpc = reduced_KKT_elements(mpc)
-%% rg, rv
+function mpc = reduced_KKT_elements(mpc,has_u_cnstr,has_du_cnstr,has_s_cnstr,has_y_cnstr,has_h_cnstr,g_0,g_k,g_ter)
 
-mpc.rg_0(:) = -1./(mpc.g_0-mpc.slack_epsilon);
-mpc.rg_k(:,:) = -1./(mpc.g_k-mpc.slack_epsilon);
-mpc.rg_ter(:) = -1./(mpc.g_ter-mpc.slack_epsilon);
+[mpc.ru_0,mpc.rse_k,mpc.ru_k,mpc.rse_ter,mpc.R_0,mpc.Q_k,mpc.R_k,mpc.Y_k,mpc.Q_ter] = ...
+    reduced_kkt_objective_local(mpc.t,mpc.R_0,mpc.Q_k,mpc.R_k,mpc.Y_k,mpc.Q_ter,...
+    mpc.R_f0_0,mpc.Q_f0_k,mpc.R_f0_k,mpc.Y_f0_k,mpc.Q_f0_ter,mpc.ru_0,...
+    mpc.rse_k,mpc.ru_k,mpc.rse_ter,mpc.grad_u_f0_0,mpc.grad_se_f0_k,...
+    mpc.grad_u_f0_k,mpc.grad_se_f0_ter);
 
-mpc.g2_0 = (mpc.g_0-mpc.slack_epsilon).^2;
-mpc.g2_k(:,:) = (mpc.g_k-mpc.slack_epsilon).^2;
-mpc.g2_ter(:) = (mpc.g_ter-mpc.slack_epsilon).^2;
-
-if mpc.nv_k(1)
-    mpc.rv_0(:) = mpc.t*(mpc.grad_qv_0/mpc.Qv_fctr).*(mpc.v_0-mpc.slack_epsilon) + ...
-                  mpc.t*mpc.grad_qv_0 - ...
-                  1./(mpc.v_0-mpc.slack_epsilon);
-    mpc.v2_0(:) = 1./(mpc.t*mpc.grad_qv_0/mpc.Qv_fctr + 1./((mpc.v_0-mpc.slack_epsilon).^2));
+if ~isempty(g_0)
+    [mpc.g2_0,mpc.v2_0,mpc.rv_v2_0,mpc.ri_0,mpc.iS_0,mpc.iS_ri_hat_0] = ...
+        reduced_kkt_0_local(mpc.t,mpc.g_0,mpc.v_0,mpc.g2_0,mpc.v2_0,...
+        mpc.rv_v2_0,mpc.ri_0,mpc.grad_qv_0,mpc.v_rows_0,mpc.iS_0,...
+        mpc.iS_ri_hat_0);
+end
+if ~isempty(g_k)
+    [mpc.g2_k,mpc.v2_k,mpc.rv_v2_k,mpc.ri_k,mpc.iS_k,mpc.iS_ri_hat_k] = ...
+        reduced_kkt_k_local(mpc.t,mpc.g_k,mpc.v_k,mpc.g2_k,mpc.v2_k,...
+        mpc.rv_v2_k,mpc.ri_k,mpc.grad_qv_k,mpc.v_rows_k,mpc.iS_k,...
+        mpc.iS_ri_hat_k);
+end
+if ~isempty(g_ter)
+    [mpc.g2_ter,mpc.v2_ter,mpc.rv_v2_ter,mpc.ri_ter,mpc.iS_ter,...
+        mpc.iS_ri_hat_ter] = reduced_kkt_terminal_local(mpc.t,mpc.g_ter,...
+        mpc.v_ter,mpc.g2_ter,mpc.v2_ter,mpc.rv_v2_ter,mpc.ri_ter,...
+        mpc.grad_qv_ter,mpc.iS_ter,mpc.iS_ri_hat_ter);
+end
+if ~isempty(has_u_cnstr), mpc = reduced_kkt_control_wrapper(mpc,mpc.u_cnstr); end
+if ~isempty(has_du_cnstr), mpc = reduced_kkt_control_rate_wrapper(mpc,mpc.du_cnstr); end
+if ~isempty(has_s_cnstr), mpc = reduced_kkt_state_wrapper(mpc,mpc.s_cnstr); end
+if ~isempty(has_y_cnstr), mpc = reduced_kkt_output_wrapper(mpc,mpc.y_cnstr); end
+if ~isempty(has_h_cnstr), mpc = reduced_kkt_custom_wrapper(mpc,mpc.h_cnstr); end
 end
 
-if mpc.nv_k(2)
-    mpc.rv_k(:,:) = mpc.t*(mpc.grad_qv_k/mpc.Qv_fctr).*(mpc.v_k-mpc.slack_epsilon) + ...
-                    mpc.t*mpc.grad_qv_k - ...
-                    1./(mpc.v_k-mpc.slack_epsilon);
-    mpc.v2_k(:,:) = 1./(mpc.t*mpc.grad_qv_k/mpc.Qv_fctr+1./((mpc.v_k-mpc.slack_epsilon).^2));
+function [ru_0,rse_k,ru_k,rse_ter,R_0,Q_k,R_k,Y_k,Q_ter] = ...
+    reduced_kkt_objective_local(t,R_0,Q_k,R_k,Y_k,Q_ter,R_f0_0,Q_f0_k,...
+    R_f0_k,Y_f0_k,Q_f0_ter,ru_0,rse_k,ru_k,rse_ter,grad_u_f0_0,...
+    grad_se_f0_k,grad_u_f0_k,grad_se_f0_ter)
+ru_0 = grad_u_f0_0;
+rse_k = grad_se_f0_k;
+ru_k = grad_u_f0_k;
+rse_ter = grad_se_f0_ter;
+
+R_0 = t * R_f0_0;
+Q_k = t * Q_f0_k;
+R_k = t * R_f0_k;
+Y_k = t * Y_f0_k;
+Q_ter = t * Q_f0_ter;
 end
 
-if mpc.nv_k(3)
-    mpc.rv_ter(:) = mpc.t*(mpc.grad_qv_ter/mpc.Qv_fctr).*(mpc.v_ter-mpc.slack_epsilon) + ...
-                    mpc.t*mpc.grad_qv_ter - ...
-                    1./(mpc.v_ter-mpc.slack_epsilon);
-    mpc.v2_ter(:) = 1./(mpc.t*mpc.grad_qv_ter/mpc.Qv_fctr + 1./((mpc.v_ter-mpc.slack_epsilon).^2));
+function [g2_0,v2_0,rv_v2_0,ri_0,iS_0,iS_ri_hat_0] = ...
+    reduced_kkt_0_local(t,g_0,v_0,g2_0,v2_0,rv_v2_0,ri_0,grad_qv_0,...
+    v_rows_0,iS_0,iS_ri_hat_0)
+%% ri_hat = ri - g^2*(-1/g) + v^2*(t*qv-1/v)
+%  ri_hat = ri + g + t*qv*v^2 - v
+
+ri_0 = ri_0+g_0;
+g2_0 = g_0.^2;
+if ~isempty(v_0)
+    v2_0 = v_0.^2;
+    % v^2*rv = t*qv*v^2 - v
+    rv_v2_0 = t*grad_qv_0.*v2_0-v_0;
+    ri_0(v_rows_0) = ri_0(v_rows_0) + rv_v2_0;
 end
 
-%% ri hat = ri - g^2*rg + v^2*rv
-
-% k = 0
-mpc.ri_hat_0 = mpc.ri_0 - mpc.g2_0.*mpc.rg_0;
-if mpc.nv_k(1)
-    mpc.ri_hat_0(mpc.v_rows_0) = mpc.ri_hat_0(mpc.v_rows_0) + mpc.v2_0.*mpc.rv_0;
-end
-
-% k = 1,...,N-1
-mpc.ri_hat_k(:,:) = mpc.ri_k - mpc.g2_k.*mpc.rg_k;
-if mpc.nv_k(2)
-    mpc.ri_hat_k(mpc.v_rows_k,:) = mpc.ri_hat_k(mpc.v_rows_k,:) +  mpc.v2_k.*mpc.rv_k;
-end
-
-% k = N
-if mpc.nv_k(3)
-    mpc.ri_hat_ter = mpc.ri_ter - mpc.g2_ter.*mpc.rg_ter + mpc.v2_ter.*mpc.rv_ter;
-end
 %% S = g^2 + v^2
-
-mpc.S_0(:) = mpc.g2_0;
-if mpc.nv_k(1)
-    mpc.S_0(mpc.v_rows_0) = mpc.S_0(mpc.v_rows_0) + mpc.v2_0;
-end
-mpc.iS_0(:) = 1./mpc.S_0;
-
-mpc.S_k(:,:) = mpc.g2_k;
-if mpc.nv_k(2)
-    mpc.S_k(mpc.v_rows_k,:) = mpc.S_k(mpc.v_rows_k,:) + mpc.v2_k;
-end
-mpc.iS_k(:,:) = 1./mpc.S_k;
-
-if mpc.ng_k(3)
-    mpc.S_ter(:) = mpc.g2_ter + mpc.v2_ter;
-    mpc.iS_ter(:) = 1./mpc.S_ter;
+iS_0 = g2_0;
+if ~isempty(v_0), iS_0(v_rows_0) = iS_0(v_rows_0) + v2_0; end
+iS_0  = 1./iS_0;
+iS_ri_hat_0 = iS_0.*ri_0;
 end
 
-%% rx hat = rx + Ai'*(S^-1)*ri_hat
-
-mpc.rx_ineq_0(:) = mpc.Ai_0'*(mpc.iS_0.*mpc.ri_hat_0);
-for k = 1:mpc.N-1
-    mpc.rx_ineq_k(:,k) = mpc.Ai_k(:,:,k)'*(mpc.iS_k(:,k).*mpc.ri_hat_k(:,k));
-end
-if mpc.ng_k(3)
-    mpc.rx_ineq_ter(:) = mpc.Ai_ter'*(mpc.iS_ter.*mpc.ri_hat_ter);
-end
-
-mpc.ru_hat_0(:) = mpc.ru_0 +  mpc.rx_ineq_0;
-
-mpc.rse_hat_k(:,:) = mpc.rse_k + mpc.rx_ineq_k(mpc.se_col,:);
-mpc.ru_hat_k(:,:) = mpc.ru_k +  mpc.rx_ineq_k(mpc.u_col,:);
-
-mpc.rse_hat_ter(:) = mpc.rse_ter + mpc.rx_ineq_ter;
-
-%% H = Hess(f0) + Ai'*(S^-1)*Ai
-
-mpc.R_0(:,:) = mpc.t*mpc.H_f0_0 + mpc.Ai_0'*(mpc.iS_0.*mpc.Ai_0);
-for k = 1:mpc.N-1
-    mpc.H_k(:,:,k) = mpc.t*mpc.H_f0_k(:,:,k) + ...
-                        mpc.Ai_k(:,:,k)'*(mpc.iS_k(:,k).*mpc.Ai_k(:,:,k));
-
-    mpc.Q_k(:,:,k) = mpc.H_k(mpc.se_col,mpc.se_col,k);
-    mpc.R_k(:,:,k) = mpc.H_k(mpc.u_col,mpc.u_col,k);
-    mpc.Y_k(:,:,k) = mpc.H_k(mpc.u_col,mpc.se_col,k);
+function [g2_k,v2_k,rv_v2_k,ri_k,iS_k,iS_ri_hat_k] = ...
+    reduced_kkt_k_local(t,g_k,v_k,g2_k,v2_k,rv_v2_k,ri_k,grad_qv_k,...
+    v_rows_k,iS_k,iS_ri_hat_k)
+ri_k = ri_k+g_k;
+g2_k = g_k.^2;
+if ~isempty(v_k)
+    v2_k = v_k.^2;
+    % v^2*rv = t*qv*v^2 - v
+    rv_v2_k = t*grad_qv_k.*v2_k-v_k;
+    ri_k(v_rows_k,:) = ri_k(v_rows_k,:) + rv_v2_k;
 end
 
-mpc.Q_ter(:,:) = mpc.t*mpc.H_f0_ter;
-if mpc.ng_k(3)
-    mpc.Q_ter(:,:) = mpc.Q_ter(:,:) + mpc.Ai_ter'*(mpc.iS_ter.*mpc.Ai_ter);
+iS_k = g2_k;
+if ~isempty(v_k), iS_k(v_rows_k,:) = iS_k(v_rows_k,:) + v2_k; end
+iS_k  = 1./iS_k;
+iS_ri_hat_k = iS_k.*ri_k;
 end
 
+function [g2_ter,v2_ter,rv_v2_ter,ri_ter,iS_ter,iS_ri_hat_ter] = ...
+    reduced_kkt_terminal_local(t,g_ter,v_ter,g2_ter,v2_ter,rv_v2_ter,...
+    ri_ter,grad_qv_ter,iS_ter,iS_ri_hat_ter)
+g2_ter = g_ter.^2;
+ri_ter = ri_ter+g_ter;
+if ~isempty(v_ter)
+    v2_ter = v_ter.^2;
+    % v^2*rv = t*qv*v^2 - v
+    rv_v2_ter = t*grad_qv_ter.*v2_ter-v_ter;
+    ri_ter = ri_ter + rv_v2_ter;
+end
+
+iS_ter = g2_ter;
+if ~isempty(v_ter), iS_ter = iS_ter + v2_ter; end
+iS_ter  = 1./iS_ter;
+iS_ri_hat_ter = iS_ter.*ri_ter;
 end

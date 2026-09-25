@@ -1,32 +1,38 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% UPDATE_MPC_CONTROL_COST Update control-action cost weights.
 %
-%   mpc = update_mpc_Control_cost(mpc,Ru,ru)
+%   mpc = UPDATE_MPC_CONTROL_COST(mpc, Ru, ru) replaces the quadratic
+%   and/or linear weights in
 %
-% Modifies the weights Ru and ru for the quadratic and linear control 
-% penalty terms on the control action. The function then updates the MPC 
-% gradients and Hessians accordingly.
+%       J_control += 0.5*u_k'*Ru_k*u_k + ru_k'*u_k.
 %
-% In:
-%   - mpc: CHRONOS mpc structure
-%   - Ru (optional): nu x nu square matrix, weights for the quadratic
-%   penalty term on the control action.
-%   - ru (optional): nu column vector, weights for the linear penalty term
-%   on the control action. IMPORTANT: Use linear penalties only in the case
-%   that the control action takes positive values only.
+%   Use [] to leave either weight unchanged. The corresponding quadratic
+%   or linear term must first be enabled with INIT_MPC_CONTROL_COST.
 %
-% Out:
-%   - mpc: updated CHRONOS mpc structure
+%   Ru may be nu-by-nu or nu-by-nu-by-L, and ru may be nu-by-1 or nu-by-L.
+%   L is the number of supplied horizon stages. If L < N, the last supplied
+%   stage is reused for the remaining stages.
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   Inputs:
+%     mpc     - Built CHRONOS MPC structure.
+%     Ru      - Optional updated quadratic weight, size nu-by-nu or
+%               nu-by-nu-by-L.
+%     ru      - Optional updated linear weight, size nu-by-1 or nu-by-L.
+%
+%   Output:
+%     mpc     - Updated CHRONOS MPC structure.
+%
+%   Example - update only the linear weight:
+%
+%       mpc = update_mpc_Control_cost(mpc, [], ru);
 function mpc = update_mpc_Control_cost(mpc,Ru,ru)
 
-if ~isempty(Ru)
+if ~isempty(Ru) && ~isempty(mpc.quad_control_cost)
     mpc.recompute_cost_hess = 1;
-    mpc.Ru(:,:) = Ru;
+    mpc.Ru(:,:,:) = fill_mat(mpc.Ru, Ru, 1);
 end
 
-if ~isempty(ru)
-    mpc.ru(:) = ru;
+if ~isempty(ru) && ~isempty(mpc.lin_control_cost)
+    mpc.ru(:,:) = fill_vec(mpc.ru, ru, 1);
 end
 
 end

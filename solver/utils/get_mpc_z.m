@@ -1,39 +1,41 @@
-% Computes vectors: h = C*s + D*u Dsu*su + Dd*d
-function mpc = get_mpc_z(mpc,s_prev,u_prev)
+% Computes vectors: z = Cz*s + Dz*u + Dsuz*su + Ddz*dz
+function [z_0,z,z_ter] = get_mpc_z( ...
+    z_0,z,z_ter,s,u,su,dz,s_prev,u_prev,N, ...
+    z_use_k0,z_use_s,z_use_u,z_use_su,z_use_d,z_use_ter, ...
+    Cz_0,Dz_0,Dsuz_0,Ddz_0,Cz,Dz,Dsuz,Ddz,Cz_ter)
 
-
-%k=0 (only if z depends on u)
-if mpc.z_use_k0
-    mpc.z_0(:) = mpc.Dz_0*mpc.u(:,1);
-    if mpc.z_use_s
-        mpc.z_0(:) = mpc.z_0 + mpc.Cz_0*s_prev;
+% k=0 (only if z depends on u)
+if z_use_k0
+    z_0(:) = Dz_0*u(:,1);
+    if z_use_s
+        z_0(:) = z_0 + Cz_0*s_prev;
     end
-    if mpc.z_use_su
-        mpc.z_0(:) = mpc.z_0 + mpc.Dsuz_0*u_prev;
+    if z_use_su
+        z_0(:) = z_0 + Dsuz_0*u_prev;
     end
-    if mpc.z_use_d
-        mpc.z_0(:) = mpc.z_0 + mpc.Ddz_0*mpc.dz(:,1);
+    if z_use_d
+        z_0(:) = z_0 + Ddz_0*dz(:,1);
     end
 end
 
-mpc.z(:,:)=0;
-for k = 1:mpc.N-1
-    if mpc.z_use_s
-        mpc.z(:,k) = mpc.z(:,k) + mpc.Cz*mpc.s(:,k);
+z(:,:) = 0;
+for k = 1:N-1
+    if z_use_s
+        z(:,k) = z(:,k) + Cz(:,:,k)*s(:,k);
     end
-    if mpc.z_use_u
-        mpc.z(:,k) = mpc.z(:,k) + mpc.Dz*mpc.u(:,k+1);
+    if z_use_u
+        z(:,k) = z(:,k) + Dz(:,:,k)*u(:,k+1);
     end
-    if mpc.z_use_su
-        mpc.z(:,k) = mpc.z(:,k) + mpc.Dsuz*mpc.su(:,k);
+    if z_use_su
+        z(:,k) = z(:,k) + Dsuz(:,:,k)*su(:,k);
     end
-    if mpc.z_use_d
-        mpc.z(:,k) = mpc.z(:,k) + mpc.Ddz*mpc.dz(:,k+1);
+    if z_use_d
+        z(:,k) = z(:,k) + Ddz(:,:,k)*dz(:,k+1);
     end
 end
 
-if mpc.z_use_ter
-    mpc.z_ter(:) = mpc.Cz_ter*mpc.s(:,mpc.N);
+if z_use_ter
+    z_ter(:) = Cz_ter*s(:,N);
 end
 
 end

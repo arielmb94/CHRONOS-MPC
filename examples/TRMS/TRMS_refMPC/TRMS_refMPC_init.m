@@ -1,6 +1,6 @@
 %% Parameters
 
-% Equlibrium angle for vertical dynamics
+% Equilibrium angle for vertical dynamics
 Thtv0 = -0.619426178368110;
 
 % Initial state vector
@@ -11,6 +11,7 @@ Wh   = x(1);    % Horizontal Fan Angular Speed
 Omh  = x(2);    % Horizontal Angular Rate
 Thth = x(3);    % Horizontal Angle
 Wv   = x(4);    % Vertical Fan Angular Speed
+Omv  = x(5);    % Vertical Angular Rate
 Thtv = x(6);    % Vertical Angle
 
 % Sampling time
@@ -18,68 +19,52 @@ Ts = 0.1;
 
 %% Create MPC object
 
-N = 5;          % Prediction Horizon
-N_h_ctr = 3;    % Control Horizon
+N = 15;          % Prediction horizon: N*Ts = 1.5 s
 
 % Create mpc struct
 mpc = init_mpc(N);
-%% LTI system
+%% Nominal LPV prediction model
 
-% Get LPV model frozen at current state vector
+% Freeze the modified LPV model at the initial operating point
 sys = qLPV_TRMS_refMPC_SS(Wh,Omh,Thth,Wv,Thtv);
 
 % Initialize system dynamics
 % System discretized with forward Euler discretization:
 % x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
-mpc = init_mpc_dynamics(mpc,eye(6)+Ts*sys.A,Ts*sys.B,0);
+mpc = init_mpc_dynamics(mpc,eye(6)+Ts*sys.A,Ts*sys.B,[]);
 
-mpc = init_mpc_output(mpc,sys.C,0,0);
+% Track the horizontal and vertical body rates and angles
+mpc = init_mpc_output(mpc,sys.C,[],[]);
 
 %% Constraints
 
 % State constraints
 x_min = [-2.9;-1;-1.7;-1.6;-0.6;-0.5];
 x_max = [2.9;1;1.2;1.6;0.6;1];
-mpc = init_mpc_state_cnstr(mpc,x_min,x_max,100,100);
 
-% Control input constraints
+slack_cost = 100;
+
+mpc = init_mpc_state_cnstr(mpc,x_min,x_max,slack_cost,slack_cost);
+
+% Physical-voltage and virtual-reference constraints
 u_min = [-2.5;-2;-2.9;-1.6];
 u_max = -u_min;
-mpc = init_mpc_u_cnstr(mpc,u_min,u_max);
+mpc = init_mpc_control_cnstr(mpc,u_min,u_max);
 
-% Control inputs variation constraints
-du_min = -0.5*ones(mpc.nu,1);
-du_max = 0.5*ones(mpc.nu,1);
-%mpc = init_mpc_delta_u_cnstr(mpc,du_min,du_max);
+% Rate constraints for all four MPC inputs
+du_min = 0.2*u_min;
+du_max = 0.2*u_max;
+mpc = init_mpc_control_rate_cnstr(mpc,du_min,du_max);
 
-% Output constraints
-y_min = [];
-y_max = [];
-%mpc = init_mpc_output_cnstr(mpc,y_min,y_max);
+%% Terminal ingredients
 
-%% General Linear Inequalities
+% DLQR weights used to compute the terminal cost matrix
+Qx_dlqr = diag([1 1 50 1 1 1000]);
+Ru_dlqr = 0.01;
 
-% General Linear Inequalities are defined as:
-% yh = Ch*x+Dh*u+Ddh*di
-Ch = [];
-Dh = [];
-Ddh = [];
-
-h_min = [];
-h_max = [];
-
-%mpc = init_mpc_lin_custom_cnstr(mpc,Ch,Dh,Ddh,h_min,h_max);
-
-%% Terminal Ingredients
-
-% Terminal ingredients are computed using the dLQR method
-Qx = diag([1 1 50 1 1 1000]);   % State Penalty
-Ru = 0.01;                      % Control Penalty
-x_ref_is_y = 0;                 % The terminal reference cannnot be extracted 
-                                % from the mpc tracking reference
-
-% Initialize terminal ingredients using the dLQR method
-[mpc] = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,x_ref_is_y);
+% The tracking output has four states, while the terminal reference has six
+x_ref_is_y = 0;
+mpc = init_mpc_ter_ingredients_dlqr(mpc,Qx_dlqr,Ru_dlqr,x_ref_is_y);
 
 %% Costs
 
@@ -88,19 +73,12 @@ Qe = diag([50 1 500 1]);
 mpc = init_mpc_Tracking_cost(mpc,Qe);
 
 % Control inputs variation penalty
-Rdu = diag([1 1 1 1]);
+Rdu = diag([5 5 1 1]);
 mpc = init_mpc_ControlRate_cost(mpc,Rdu);
 
+%% Virtual rotor-reference cost
 
-%Ru = diag([0.5 1]);
-%mpc = init_mpc_Control_cost(mpc,Ru);
-
-%% Performance Cost Matrix
-
-% Performance Vector are defined as:
-% z = Cz*x+Dz*u+Ddz*dz
- 
-% z is:
+% Custom performance signal z = Cz*x+Dz*u:
 % z1 = w_h_ref-w_h
 % z2 = w_v_ref-w_v
 Cz = [-1 0 0 0 0 0;  
@@ -114,10 +92,10 @@ Ddz = [];
 Qz = diag([100 100]);
 
 % Init performance cost
-mpc = init_mpc_Lin_Custom_cost(mpc,Cz,Dz,Dsuz,Ddz,Qz);
+mpc = init_mpc_Custom_cost(mpc,Cz,Dz,Dsuz,Ddz,Qz);
 
-%% Init conditions for simulation
+%% Finalize controller
 
-% use warm start function initialize the optimization vector
 u_prev = [0;0;0;0];
-mpc = build_chronos_mpc(mpc,x,u_prev);
+x_mpc = [Wh;Omh;Thth;Wv;Omv;Thtv-Thtv0];
+mpc = build_chronos_mpc(mpc,x_mpc,u_prev);

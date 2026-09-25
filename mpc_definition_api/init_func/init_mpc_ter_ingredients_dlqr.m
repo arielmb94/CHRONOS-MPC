@@ -1,58 +1,47 @@
-% INIT_MPC_TER_INGREDIENTS_DLQR Initializes terminal cost and constraints for MPC
+% INIT_MPC_TER_INGREDIENTS_DLQR Add a DLQR terminal-state cost.
 %
-% This function computes the terminal ingredients required to guarantee closed-loop 
-% stability in the MPC formulation. It uses the Discrete Linear Quadratic Regulator 
-% (DLQR) to calculate the infinite-horizon cost-to-go matrix (P) and the optimal 
-% terminal feedback gain (K). The terminal cost adds the following penalty on the
-% final state of the MPC Prediction Horizon:
+%   mpc = INIT_MPC_TER_INGREDIENTS_DLQR(mpc, Qx, Ru) computes
 %
-%   J += (ref_xN - xN)' * P * (ref_xN - xN)
-% 
-% (Optional, but not recommended) It can also configure a terminal set constraint:
+%       [K, P] = dlqr(A_N, B_N, Qx, Ru)
 %
-%   (ref_xN - xN)' * P * (ref_xN - xN) < 1
+%   from the final horizon dynamics and adds the terminal penalty
 %
-% Usage:
-%   mpc = init_mpc_ter_ingredients_dlqr(mpc, Qx, Ru, x_ref_is_y, terminal_constraint, qv_ter)
+%       J_terminal = (xN_ref - s_N)' * P * (xN_ref - s_N)
 %
-% IMPORTANT: before calling this function you must ensure that the dynamics
-% of the mpc have been initialized with representative values. Proper
-% initialization can be done during the call to init_mpc_system() or by 
-% modifying the MPC struct fields mpc.A and mpc.B manually.
+%   Store representative dynamics with INIT_MPC_DYNAMICS before calling
+%   this function. The calculation uses terminal mpc.A(:,:,mpc.N) and
+%   mpc.B(:,:,mpc.N).
 %
-% Inputs:
-%   mpc                 - CHRONOS mpc structure.
-%   Qx                  - [nx x nx] State weighting matrix for the DLQR calculation.
-%   Ru                  - [nu x nu] Control weighting matrix for the DLQR calculation.
-%   x_ref_is_y          - (Optional) Boolean flag. In cases where the tracking signal 
-%                         is set to thefull state vector, e.g. y = I * x, setting 
-%                         x_ref_is_y to 1 allows you to avoid defining ref_xN as a 
-%                         seperate argument on mpc_solve() during runtime MPC calls.
-%                         Default is 0.
-%   terminal_constraint - (Optional) Boolean flag to enable the terminal set constraint.
-%                         Default is 0 (Disabled).
-%   qv_ter              - (Optional) Penalty weight for the terminal constraint slack 
-%                         variable. If left empty, it defaults to the global mpc.qv.
+%   mpc = INIT_MPC_TER_INGREDIENTS_DLQR(mpc, Qx, Ru, true) enables the
+%   tracking-reference shortcut. When xN_ref_in is empty, CHRONOS reuses
+%   the tracking reference as the terminal-state reference. Use this option
+%   only when the tracking output is the full state, y = s, with the same
+%   component order. An explicitly supplied xN_ref_in always takes
+%   precedence.
 %
-% Outputs:
-%   mpc                 - Updated MPC structure. All necessary background math 
-%                         (constraint gradients, Hessians, and slack variables) 
-%                         are automatically assembled and added to the object.
+%   By default, xN_ref_is_y is false and the user must pass the full-state
+%   terminal reference separately as xN_ref_in to MPC_SOLVE.
 %
-% ==============================================================================
-% ⚠️PRACTICAL USAGE NOTE: Terminal Constraints
-% ==============================================================================
-% The 'terminal_constraint' option is included primarily for theoretical 
-% completeness (e.g., rigid proofs of recursive feasibility and stability). 
-% 
-% In practice, ENABLING THIS CONSTRAINT IS NOT RECOMMENDED. If the terminal 
-% region of attraction is too small, it forces the solver against a steep 
-% log-barrier, causing severe numerical stiffness, Hessian blowups, and erratic 
-% control behavior. 
+%   Call this function after INIT_MPC_DYNAMICS and before
+%   BUILD_CHRONOS_MPC.
 %
-% For the vast majority of real-world applications, the terminal cost alone 
-% provides more than enough "pull" to stabilize the system and guide it 
-% without sacrificing solver speed or numerical stability.
+%   Inputs:
+%     mpc          - CHRONOS MPC structure.
+%     Qx           - State weight passed to DLQR, size nx-by-nx.
+%     Ru           - Control weight passed to DLQR, size nu-by-nu.
+%     xN_ref_is_y  - Optional flag. Set true to reuse the tracking
+%                    reference when xN_ref_in is empty. Default: false.
+%
+%   Output:
+%     mpc          - Updated CHRONOS MPC structure containing mpc.K and
+%                    mpc.P.
+%
+%   Example - require an explicit terminal-state reference at runtime:
+%
+%       Qx = eye(nx);
+%       Ru = 0.1 * eye(nu);
+%       mpc = init_mpc_ter_ingredients_dlqr(mpc, Qx, Ru);
+%       % Pass xN_ref as xN_ref_in when calling MPC_SOLVE.
 function mpc = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,...
                                              xN_ref_is_y)
 arguments
@@ -62,10 +51,35 @@ arguments
     xN_ref_is_y = 0
 end
 
-mpc.ter_ingredients = 1;
-mpc.xN_ref_is_y = xN_ref_is_y;
+if isempty(Qx) || ~any(Qx(:)) || isempty(Ru) || ~any(Ru(:))
+    return;
+end
 
-[K,P] = dlqr(mpc.A,mpc.B,Qx,Ru);
+validate_matrix(Qx, mpc.nx, mpc.nx, 'Qx', true);
+validate_matrix(Ru, mpc.nu, mpc.nu, 'Ru', true);
+
+if size(Qx,3) > 1
+    error('CHRONOS:DimensionMismatch', ...
+        'Input "Qx" for DLQR must contain one matrix page; supplied %d pages.', ...
+        size(Qx,3));
+end
+if size(Ru,3) > 1
+    error('CHRONOS:DimensionMismatch', ...
+        'Input "Ru" for DLQR must contain one matrix page; supplied %d pages.', ...
+        size(Ru,3));
+end
+
+if isscalar(Qx), Qx = Qx * eye(mpc.nx); end
+if isscalar(Ru), Ru = Ru * eye(mpc.nu); end
+
+mpc.ter_ingredients = 1;
+if xN_ref_is_y
+    mpc.xN_ref_is_y = 1;
+else
+    mpc.xN_ref_is_y = [];
+end
+
+[K,P] = dlqr(mpc.A(:,:,mpc.N),mpc.B(:,:,mpc.N),Qx,Ru);
 
 mpc.xN_ref = zeros(mpc.nx,1);
 

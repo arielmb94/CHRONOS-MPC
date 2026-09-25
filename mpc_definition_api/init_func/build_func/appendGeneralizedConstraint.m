@@ -1,6 +1,6 @@
-function [Ai, bi] = appendGeneralizedConstraint(Ai, bi, row, s_col, su_col, u_col, C_mat, Dsu_mat, D_mat, b_val)
+function Ai = appendGeneralizedConstraint(Ai, row, s_col, su_col, u_col, C_mat, Dsu_mat, D_mat)
 % APPENDGENERALIZEDCONSTRAINT Inserts a unified linear constraint block.
-% Form: C*s + D*u + Ddu*su + I*g - I*v = b_val
+% Inserts the Jacobian blocks for C*s + Dsu*su + D*u.
 
     % 1. State term (C * s_k)
     if ~isempty(s_col) && ~isempty(C_mat)
@@ -17,6 +17,4 @@ function [Ai, bi] = appendGeneralizedConstraint(Ai, bi, row, s_col, su_col, u_co
         Ai(row, u_col) = D_mat;
     end
     
-    % 4. Assign Right-Hand Side Vector
-    bi(row) = b_val;
 end

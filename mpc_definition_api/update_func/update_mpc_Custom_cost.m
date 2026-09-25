@@ -1,62 +1,58 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% UPDATE_MPC_CUSTOM_COST Update custom-cost weights.
 %
-%   mpc = update_mpc_Lin_Custom_cost(mpc,Cz,Dz,Ddz,Qz,qz)
+%   mpc = UPDATE_MPC_CUSTOM_COST(mpc, Qz, qz) replaces the quadratic
+%   and/or linear weights applied to the custom signal z_k:
 %
-% Updates the parameters for the user-defined cost term and re-computes the
-% MPC gradients and Hessians accordingly.
+%       J_custom += 0.5*z_k'*Qz_k*z_k + qz_k'*z_k.
 %
-% The function can be used to update the model of the user-defined signal 
-% z:
+%   Use [] to leave either weight unchanged. The corresponding quadratic
+%   or linear term must first be enabled with INIT_MPC_CUSTOM_COST. To
+%   update the definition of z_k, use UPDATE_MPC_CUSTOM_COST_VECTOR.
 %
-%   z = Cz * x + Dz * u + Ddz * dz
+%   Qz may be nz-by-nz or nz-by-nz-by-L, and qz may be nz-by-1 or nz-by-L.
+%   L is the number of supplied horizon stages. If L < N, the last supplied
+%   stage is reused for the remaining stages.
 %
-% by updating the matrices Cz, Dz and Ddz.
+%   Inputs:
+%     mpc     - Built CHRONOS MPC structure.
+%     Qz      - Optional updated quadratic weight, size nz-by-nz or
+%               nz-by-nz-by-L.
+%     qz      - Optional updated linear weight, size nz-by-1 or nz-by-L.
 %
-% The function can also be called to update the weight values for the
-% quadratic Ru and linear ru penalty terms of the MPC cost functions:
+%   Output:
+%     mpc     - Updated CHRONOS MPC structure.
 %
-%   J += z'*Qz*z + qz*z
+%   Example - update only the quadratic weight:
 %
-% Example uses:
-%
-%   - update only quadratic cost penalty: 
-%           mpc = update_mpc_Lin_Custom_cost(mpc,[],[],[],Qz)
-%   - update only user-defined signal z model: 
-%           mpc = update_mpc_Lin_Custom_cost(mpc,Cz,Dz,Ddz)
-%   - update only input feedthrough Dz matrix and linear cost: 
-%           mpc = update_mpc_Lin_Custom_cost(mpc,[],Di,[],[],qz)
-%
-% In:
-%   - mpc: CHRONOS mpc structure
-%   - Cz (optional): nz x nx matrix, state output matrix
-%   - Dz (optional): nz x nu matrix, input feedtrhough output matrix
-%   - Ddz (optional): nz x ndz matrix, disturbance feedtrhough output 
-%   matrix
-%   - Qz (optional): nz x nz square matrix, weights for the quadratic
-%   penalty term on the user defined signal z
-%   - qz (optional): nz column vector, weights for the linear penalty term
-%   on the user defined signal z.
-%
-%   All arguments items which do not require to be updated can be passed as
-%   an empty vector [].
-%
-% Out:
-%   - mpc: updated CHRONOS mpc structure
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%       mpc = update_mpc_Custom_cost(mpc, Qz, []);
 function mpc = update_mpc_Custom_cost(mpc,Qz,qz)
 
-if ~isempty(Qz)
-    mpc.update_customcost_quad = 1;
-    mpc.Qz(:,:) = Qz;
-    if mpc.z_use_k0, mpc.Qz_0(:,:) = Qz(mpc.z_rows_k0,mpc.z_rows_k0); end
-    if mpc.z_use_ter, mpc.Qz_ter(:,:) = Qz(mpc.z_rows_ter,mpc.z_rows_ter); end
+if ~isempty(Qz) && ~isempty(mpc.quad_custom_cost)
+    mpc.update_customcost_quad = true;
+
+    len_Q = size(Qz,3);
+    mpc.Qz(:,:,:) = fill_mat(mpc.Qz, Qz, 1);
+    if ~isempty(mpc.z_use_ter)
+        ter_stage = len_Q;
+        if ter_stage > mpc.N, ter_stage = mpc.N; end
+        mpc.Qz_ter(:,:) = Qz(mpc.z_rows_ter,mpc.z_rows_ter,ter_stage);
+    end
+
+    if ~isempty(mpc.z_use_k0), mpc.Qz_0(:,:) = Qz(mpc.z_rows_k0,mpc.z_rows_k0,1); end
 end
-if ~isempty(qz)
-    mpc.update_customcost_lin = 1;
-    mpc.qz(:) = qz;
-    if mpc.z_use_k0, mpc.qz_0(:) = qz(mpc.z_rows_k0); end
-    if mpc.z_use_ter, mpc.qz_ter(:) = qz(mpc.z_rows_ter); end
+
+if ~isempty(qz) && ~isempty(mpc.lin_custom_cost)
+    mpc.update_customcost_lin = true;
+
+    len_q = size(qz,2);
+    mpc.qz(:,:) = fill_vec(mpc.qz, qz, 1);
+    if ~isempty(mpc.z_use_ter)
+        ter_stage = len_q;
+        if ter_stage > mpc.N, ter_stage = mpc.N; end
+        mpc.qz_ter(:) = qz(mpc.z_rows_ter,ter_stage);
+    end
+
+    if ~isempty(mpc.z_use_k0), mpc.qz_0(:) = qz(mpc.z_rows_k0,1); end
 end
     
 end

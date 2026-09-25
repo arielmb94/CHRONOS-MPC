@@ -1,151 +1,214 @@
-# Twin Rotor MIMO System (TRMS) Custom Reference MPC Example
+# TRMS Virtual-Reference MPC Example
 
-### Folder structure
+## What this example demonstrates
 
-In this folder you will find the following files:
+This example shows how a CHRONOS custom cost can connect quantities that have
+different roles in the prediction model. The controller simultaneously chooses
 
-* *TRMS_refMPC_init.m*: script to define the MPC problem using the CHRONOS init functions.
-* *TRMS_refMPC_sim_lpv.m*.m: script to simulate the TRMS in closed-loop using the CHRONOS mpc solver, at each iteration we use the CHRONOS update functions to adapt its internal Linear Parameter Varying model to the instantaneous TRMS states.
-* *qLPV_TRMS_refMPC_SS.m*: computes the LPV model of the TRMS based on the current values of the state vector. The LPV model is extracted from the nonlinear model provided in [1].
+- the physical motor voltages that change the real rotor speeds, and
+- virtual rotor-speed references that drive the predicted body motion.
 
-### TRMS introduction
+The custom cost softly ties each virtual reference to its corresponding
+physical rotor speed. This lets the MPC find useful rotor-speed references as
+part of the optimization instead of computing them beforehand from nonlinear
+equilibrium equations.
 
-The TRMS is a simplified representation of a helicotper, it has no translation, however, it can rotate freely on the horizontal and vertical frames. It counts with a main rotor to control the vertical angle enabling the TRMS to pitch and a tail rotor to control the horizontal angle, which allows changes on the TRMS yaw direction. Each rotor operated by a dedicated DC motor. 
+The key idea is not specific to the TRMS. CHRONOS can penalize a user-defined
+linear performance signal containing states, current or previous control
+actions, and known online signals. Application-specific objectives can therefore
+be added without changing the solver.
 
-Existing multiple representations of the TRMS dynamics available in the literature, we borrowed the nonlinear model and parameters identified in [1]. The nonlinear model presented in [1] captures very well the nonlinear dynamics of the vertical and horzizontal TRMS dynamics, their couplings and the effect of friction forces, which are represented by discontinuous equations taking into account the differences between negative and positive displacement directions. The quality of the identification work carried by the authors in [1] is demonstrated by the perfect matching between simulated model response and real data from the physical TRMS behaviour. 
+## Folder contents
 
-Without detailing the full nonlinear equations of the model terms, the LPV model extracted from the nonlinear model given in [1] can be represented as:
+- *TRMS_refMPC_init.m*: defines and builds the CHRONOS controller.
+- *TRMS_refMPC_sim_lpv.m*: runs the closed-loop nonlinear-plant simulation.
+- *qLPV_TRMS_refMPC_SS.m*: evaluates the modified LPV model at the measured
+  state.
 
-$$ \dot x=
-\left [\begin{array}{cccccc}  
-a_{11}(\rho) & 0 & 0 & 0 & 0 & 0 \\\ 
-a_{21}(\rho) & a_{22}(\rho) & a_{23}(\rho) & a_{24}(\rho) & a_{25}(\rho) & a_{26}(\rho) \\\
-0 & a_{32} & 0 & 0 & 0 & 0 \\\
-0 & 0 & 0 & a_{44}(\rho) & 0 & 0 \\\
-0 & a_{52}(\rho) & 0 & a_{54}(\rho) & a_{55} & a_{56}(\rho) \\\
-0 & 0 & 0 & 0 & a_{65} & 0
-\end{array} \right ]
-x + 
-\left [\begin{array}{cc} 
-b_{11} & 0 \\\
-0 & b_{22}(\rho) \\\
-0 & 0 \\\
-0 & b_{42} \\\
-0 & 0 \\\
-0 & 0 
-\end{array} \right ]u$$
+## From external reference generation to joint optimization
 
-The state vector is $x = [\omega_h,\Omega_h,\theta_h,\omega_v,\Omega_v,\theta_v]^T $, with
+The Basic TRMS example and this example control the same six-state plant, but
+they generate the rotor-speed references differently.
 
-* $\omega_h$: angular speed of the tail rotor DC fan
-* $\Omega_h$: TRMS angular speed on the horizontal frame
-* $\theta_h$: TRMS horizontal angle
-* $\omega_v$: angular speed of the main rotor DC fan
-* $\Omega_v$: TRMS angular speed on the vertical frame
-* $\theta_v$: TRMS vertical angle
+| | Basic TRMS | Virtual-reference TRMS |
+| --- | --- | --- |
+| MPC inputs | Two motor voltages | Two motor voltages and two virtual rotor-speed references |
+| Tracked outputs | All six states | Body rates and angles only |
+| Rotor-speed references | Computed before the solve by *compute_ref.m* | Chosen inside the MPC optimization |
+| Rotor-to-body coupling | Physical rotor states appear directly in the body model | Virtual rotor-speed inputs appear in the body model |
+| Link to physical rotor speeds | Directly through the original state equations | Softly enforced by the custom cost |
 
-The input vector is  $u = [u_h,u_v]^T$, with
+In the Basic example, `compute_ref.m` evaluates nonlinear equilibrium
+relationships to obtain $\omega_h^{ref}$ and $\omega_v^{ref}$ from the angle
+commands. Those values become entries of the six-state tracking reference.
 
-* $u_h$: DC voltage applied to the tail rotor fan
-* $u_v$: DC voltage applied to the main rotor fan
+Here, the standard tracking reference contains only body rates and angles. The
+two rotor-speed references become additional MPC decision variables, so the
+prediction can choose the profiles that best serve angle tracking while
+respecting the rotor, voltage, and rate limits.
 
-Finally, note that parameter varying terms have been made explicit by showing on the state-space model their depedency on the varying parameter vector $\rho$. On the LPV model developed for the TRMS, the varying parameter vector $\rho$ is formed by $\rho = [\omega_h,\Omega_h,\theta_h,\omega_v,\theta_v]^T$.
+## Prediction model and decision variables
 
-### Example introduction
+The physical plant state is
 
-Different to the basic MPC example, on this example we want to stop computing the references for the rotor fan speeds based on equilibrium equations. Instead, we will make use of CHRONOS cost function custom performance vectors $z$ in order to make the MPC solver compute appropiate references for the rotor fan speed states internally.
-
-Let's consider the extended control action vector $u = [u_h,u_v,\omega_h^{ref},\omega_v^{ref}]^T$ with:
-
-* $\omega_h^{ref}$: the tail rotor fan speed setpoint to be computed by the MPC
-* $\omega_v^{ref}$: the main rotor fan speed setpoint to be computed by the MPC
-
-To accomodate the new MPC actions we will decouple the rotor fan speeds states from the TRMS horizontal and vertical dynamics. In their place, terms associated to the rotor fan speed will now be moved to be terms multupliying the newly introduced setpoint actions. Following this, let's redifine the LPV model as:
-
-$$ \dot x=
-\left [\begin{array}{cccccc}  
-a_{11}(\rho) & 0 & 0 & 0 & 0 & 0 \\\ 
-0 & a_{22}(\rho) & a_{23}(\rho) & 0 & a_{25}(\rho) & a_{26}(\rho) \\\
-0 & a_{32} & 0 & 0 & 0 & 0 \\\
-0 & 0 & 0 & a_{44}(\rho) & 0 & 0 \\\
-0 & a_{52}(\rho) & 0 & 0 & a_{55} & a_{56}(\rho) \\\
-0 & 0 & 0 & 0 & a_{65} & 0
-\end{array} \right ]
-x + 
-\left [\begin{array}{cccc} 
-b_{11} & 0 & 0 & 0 \\\
-0 & b_{22}(\rho) & a_{21}(\rho) & a_{24}(\rho) \\\
-0 & 0 & 0 & 0 \\\
-0 & b_{42} & 0 & 0 \\\
-0 & 0 & 0 & a_{54}(\rho) \\\
-0 & 0  & 0 & 0
-\end{array} \right ]u$$
-
-Finally, we must specify to CHRONOS that it must minimize the difference between the setpoint actions $\omega_i^{ref}$ and the rotor fan speeds states $\omega_i$, e.g. minimize $\omega_i^{ref}-\omega_i$. For this, we will use CHRONOS custom performance vectors
-
-$$ z = C_zx + D_zu+D_{zd}d $$
-
-in order to create a new term on the MPC cost function. The performance vectors indicating the fan speed errors to be minimized by CHRONOS can be defined as:
-
-$$z = \omega_i^{ref}-\omega_i=
-\left [\begin{array}{cccccc} 
--1 & 0 & 0 & 0 & 0 & 0 \\\
-0 & 0 & 0 & -1 & 0 & 0
-\end{array} \right ]x+
-\left [\begin{array}{cccc} 
-0 & 0 & 1 & 0  \\\
-0 & 0 & 0 & 1
-\end{array} \right ]u
+$$
+x=\begin{bmatrix}
+\omega_h&\Omega_h&\theta_h&\omega_v&\Omega_v&\widetilde\theta_v
+\end{bmatrix}^T,
+\qquad
+\widetilde\theta_v=\theta_v-\theta_{v0}.
 $$
 
-Once the performance vector $z$ has been defined, CHRONOS will autimatically compute the gradient and Hessian values associated to the customly defined cost function and take them into account during the MPC optimization problem.
+The MPC input is extended to
 
-### MPC Definition
+$$
+u_{MPC}=\begin{bmatrix}
+u_h&u_v&\omega_h^{ref}&\omega_v^{ref}
+\end{bmatrix}^T.
+$$
 
-The control objective is to control the TRMS horizontal and vertical angles while computing setpoints for the rotors fan speeds states. This is achieved by solving at each time step the following MPC problem using the CHRONOS solver:
+| Variable | Role | Unit |
+| --- | --- | --- |
+| $u_h$, $u_v$ | Physical tail- and main-rotor motor voltages | V |
+| $\omega_h$, $\omega_v$ | Predicted physical rotor states | rad/s |
+| $\omega_h^{ref}$, $\omega_v^{ref}$ | Virtual inputs used by the predicted body dynamics | rad/s |
 
-$$\min_{u,x}J = (r-x_N)^TP(r-x_N) + \sum_{i=1}^{N-1} (r-x_i)^TQ_{e}(r-x_i) + \sum_{i=0}^{N_{ctr}-1}\Delta u_i^TdR_u\Delta u_i + \sum_{i=1}^{N-1} z_i^TQ_{z}z_i$$
+Only $u_h$ and $u_v$ are applied to the nonlinear plant. The virtual inputs
+exist only inside the controller.
 
-s.t.
+The modified model separates the rotor dynamics from their effect on the body:
 
-$$ x^+=A(\rho)x+B(\rho)u$$
-$$  \left [\begin{array}{c} 
--2.9 \\\
--1.0 \\\
--1.7 \\\
--1.6 \\\
--0.6 \\\
--0.5
-\end{array} \right ]
-\leq x \leq
-\left [\begin{array}{c} 
-2.9 \\\
-1.0 \\\
-1.2 \\\
-1.6 \\\
-0.6 \\\
-1.0 
-\end{array} \right ]$$
-$$  \left [\begin{array}{c} 
--2.5 \\\
--2.0 
-\end{array} \right ]
-\leq u \leq
-\left [\begin{array}{c} 
-2.5 \\\
-2.0 
-\end{array} \right ]$$
+$$
+\dot x=
+\begin{bmatrix}
+a_{11}(\rho) & 0 & 0 & 0 & 0 & 0\\
+0 & a_{22}(\rho) & a_{23}(\rho) & 0 & a_{25}(\rho) & a_{26}(\rho)\\
+0 & a_{32} & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & a_{44}(\rho) & 0 & 0\\
+0 & a_{52}(\rho) & 0 & 0 & a_{55} & a_{56}(\rho)\\
+0 & 0 & 0 & 0 & a_{65} & 0
+\end{bmatrix}x+
+\begin{bmatrix}
+b_{11} & 0 & 0 & 0\\
+0 & b_{22}(\rho) & a_{21}(\rho) & a_{24}(\rho)\\
+0 & 0 & 0 & 0\\
+0 & b_{42} & 0 & 0\\
+0 & 0 & 0 & a_{54}(\rho)\\
+0 & 0 & 0 & 0
+\end{bmatrix}u_{MPC}.
+$$
 
-Due to the highly nonlinear dynamics of the TRMS and the couplings between its vertical and horizontal motions, it is required to provide tracking references for all states to obtain good control performance. The state references are computed as follows:
-* $\theta_h^{ref}$, $\theta_v^{ref}$: set points provided to the MPC
-* $\Omega_h^{ref}$, $\Omega_v^{ref}$: computed from the angle error value and a time constant $\tau$ as:
+The scheduling vector is
+$\rho=[\omega_h,\Omega_h,\theta_h,\omega_v,\theta_v]^T$.
+*qLPV_TRMS_refMPC_SS.m* evaluates the scheduling-dependent coefficients at
+the measured state.
 
-$$ \Omega_i = \frac{\theta_i^{ref}-\theta_i}{\tau} $$ 
+This separation creates a useful optimization structure:
 
-* $\omega_h^{ref}$, $\omega_v^{ref}$: computed internally by the CHRONOS MPC solver.
+1. Body tracking determines which virtual rotor-speed profiles would produce
+   the requested motion.
+2. The motor voltages determine which physical rotor-speed profiles the rotor
+   dynamics can produce.
+3. The custom cost penalizes disagreement between the two.
+
+## Why the custom cost is necessary
+
+If the virtual references were free, the optimizer could predict body motion
+using rotor speeds that the voltage-driven physical rotors do not achieve. The
+body prediction would then benefit from fictitious actuation.
+
+The example defines the two-component performance signal
+
+$$
+z_k=
+\begin{bmatrix}
+\omega_{h,k}^{ref}-\omega_{h,k}\\
+\omega_{v,k}^{ref}-\omega_{v,k}
+\end{bmatrix}
+=C_zx_k+D_zu_k
+$$
+
+and adds the following term to the cost function:
+
+$$
+J_z=\frac{1}{2}\sum_{k=0}^{N-1}z_k^TQ_z z_k
+$$
+
+This is a soft consistency condition. A larger $Q_z$ forces the virtual and
+physical speeds to agree more closely; a smaller $Q_z$ gives the virtual
+references more freedom to improve body tracking. The mismatch need not be
+zero because the optimizer trades this cost against the tracking, input-rate,
+terminal, and constraint terms.
+
+The initializer constructs the signal directly:
+
+```matlab
+% z1 = omega_h_ref - omega_h
+% z2 = omega_v_ref - omega_v
+Cz = [-1 0 0  0 0 0;
+       0 0 0 -1 0 0];
+
+Dz = [0 0 1 0;
+      0 0 0 1];
+
+Dsuz = [];
+Ddz  = [];
+Qz   = diag([100 100]);
+
+mpc = init_mpc_Custom_cost(mpc,Cz,Dz,Dsuz,Ddz,Qz);
+```
+
+The first row of `Cz` selects $-\omega_h$ and the first row of `Dz` selects
+$\omega_h^{ref}$. The second rows do the same for the main rotor. Therefore,
+`Cz*x + Dz*u` is exactly the virtual-to-physical speed error.
+
+## Complete MPC objective
+
+The standard tracking output is
+
+$$
+y=\begin{bmatrix}
+\Omega_h&\theta_h&\Omega_v&\widetilde\theta_v
+\end{bmatrix}^T.
+$$
+
+With the configuration in *TRMS_refMPC_init.m*, CHRONOS solves
+
+$$
+\begin{aligned}
+\min_{x,u}\quad
+J={}&(x_N^{ref}-x_N)^TP(x_N^{ref}-x_N)
++\frac{1}{2}\sum_{k=1}^{N}(r_k-y_k)^TQ_e(r_k-y_k)\\
+&+\frac{1}{2}\sum_{k=0}^{N-1}\Delta u_k^TR_{du}\Delta u_k
++\frac{1}{2}\sum_{k=0}^{N-1}z_k^TQ_z z_k\\
+\text{subject to}\quad
+&x_{k+1}=A_k(\rho)x_k+B_k(\rho)u_k,
+&&k=0,\ldots,N-1,\\
+&x_{\min}\leq x_k\leq x_{\max}, &&k=1,\ldots,N,\\
+&u_{\min}\leq u_k\leq u_{\max}, &&k=0,\ldots,N-1,\\
+&\Delta u_{\min}\leq\Delta u_k\leq\Delta u_{\max},
+&&k=0,\ldots,N-1.
+\end{aligned}
+$$
+
+The bounds on the four MPC inputs have two meanings: the first two limit motor
+voltages, while the last two keep the virtual references within the physical
+rotor-speed range. The rate cost and rate bounds also act on all four entries,
+so both voltage commands and virtual-reference profiles are kept smooth.
+
+## Online sequence and expected result
+
+At each control sample:
+
+1. The angle errors generate references for $\Omega_h$ and $\Omega_v$.
+2. The modified LPV matrices are evaluated at the measured TRMS state.
+3. `mpc_solve` jointly optimizes the two motor voltages and two virtual
+   rotor-speed references.
+4. Only the two voltages are applied to the nonlinear plant.
 
 
-### References
+## Reference
 
-[1] Rotondo, D., Nejjari, F., & Puig, V. (2013). Quasi-LPV modeling, identification and control of a Twin Rotor MIMO System. Control Engineering Practice, 21(6), 829-846.
-
+[1] Rotondo, D., Nejjari, F., & Puig, V. (2013). Quasi-LPV modeling,
+identification and control of a Twin Rotor MIMO System. *Control Engineering
+Practice, 21*(6), 829-846.

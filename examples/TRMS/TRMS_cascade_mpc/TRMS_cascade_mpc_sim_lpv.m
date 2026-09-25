@@ -1,189 +1,180 @@
-%% Call the mpc problem initialization script
+%% Call the MPC problem initialization script
 
 TRMS_cascade_mpc_init
 
 %% Define simulation duration and reference parameters
 
-% Duration
 tsim = 200; % seconds
 Sim_samples = tsim/Ts;
 time = 0:Ts:tsim-Ts;
 
-% Horizontal Angle sinousidal reference parameters
+% Horizontal-angle sinusoidal reference parameters
 freq_TththRef = 1/31; % Hz
 offset_TththRef = 0;
 ampl_TththRef = 1;
 
-% Vertical Angle sinousidal reference parameters
+% Vertical-angle sinusoidal reference parameters
 freq_TthtvRef = 1/47; % Hz
 offset_TthtvRef = -0.6;
 ampl_TthtvRef = 0.5;
 
-% sinousidal references
-TththRef_v = offset_TththRef + ampl_TththRef*sin(2*pi*(freq_TththRef)*time);
-TthtvRef_v = offset_TthtvRef + ampl_TthtvRef*sin(2*pi*(freq_TthtvRef)*time);
+% Sinusoidal angle references
+TththRef_v = offset_TththRef + ampl_TththRef*sin(2*pi*freq_TththRef*time);
+TthtvRef_v = offset_TthtvRef + ampl_TthtvRef*sin(2*pi*freq_TthtvRef*time);
 
-% Define masks to extract the individual controls actions sequences from
-% the MIMO mpc
-mask_Wh = 1:mpc.nu:mpc.Nu;
-mask_Wv = 2:mpc.nu:mpc.Nu;
+%% Run simulation
 
-%% Run Simulation
+% Preallocate simulation data
+Wh_dat = zeros(1,Sim_samples);
+Omh_dat = zeros(1,Sim_samples);
+Thth_dat = zeros(1,Sim_samples);
+Wv_dat = zeros(1,Sim_samples);
+Omv_dat = zeros(1,Sim_samples);
+Thtv_dat = zeros(1,Sim_samples);
+WhRef_dat = zeros(1,Sim_samples);
+WvRef_dat = zeros(1,Sim_samples);
+uh_dat = zeros(1,Sim_samples);
+uv_dat = zeros(1,Sim_samples);
+duh_dat = zeros(1,Sim_samples);
+duv_dat = zeros(1,Sim_samples);
+t_dat = zeros(1,Sim_samples);
+iter_outer_dat = zeros(1,Sim_samples);
+iter_h_dat = zeros(1,Sim_samples);
+iter_v_dat = zeros(1,Sim_samples);
 
-clear Wh_dat Omh_dat Thth_dat Wv_dat Omv_dat Thtv_dat uh_dat uv_dat ti ...
-    WhRef_dat WvRef_dat OmhRef_dat OmvRef_dat
-
-% Simulation Loop
+% Closed-loop simulation
 for i = 1:Sim_samples
 
-% Assign state vector variables    
-Wh   = x(1);    % Horizontal Fan Angular Speed
-Omh  = x(2);    % Horizontal Angular Rate
-Thth = x(3);    % Horizontal Angle
-Wv   = x(4);    % Vertical Fan Angular Speed
-Omv  = x(5);    % Vertical Angular Rate
-Thtv = x(6);    % Vertical Angle
+    % 1. Read the current plant state
+    Wh = x(1);
+    Omh = x(2);
+    Thth = x(3);
+    Wv = x(4);
+    Omv = x(5);
+    Thtv = x(6);
 
-% Store state vector values for plotting and analysis  
-Wh_dat(i)   = x(1);
-Omh_dat(i)  = x(2);
-Thth_dat(i) = x(3);
-Wv_dat(i)   = x(4);
-Omv_dat(i)  = x(5);
-Thtv_dat(i) = x(6);
+    % 2. Build the outer-MPC reference from the requested angles
+    TththRef = TththRef_v(i);
+    TthtvRef = TthtvRef_v(i);
+    OmhRef = (TththRef-Thth)/0.5;
+    OmvRef = (TthtvRef-Thtv)/0.5;
 
-% Assign current reference values
-TthtvRef = TthtvRef_v(i);
-TththRef = TththRef_v(i);
+    x_outer = [Omh;Thth;Omv;Thtv-Thtv0];
+    ref_outer = [OmhRef;TththRef;OmvRef;TthtvRef-Thtv0];
 
-% Compute Reference for rotors angular speed
-OmhRef = (TththRef-Thth)/0.5;
-OmvRef = (TthtvRef-Thtv)/0.5;
+    tic
 
-tic;
-% Update LPV model to current scheduling values
-[A,B,Bd,Ah,Bh,Av,Bv] = qLPV_TRMS_cascade_mpc_SS(Wh,Omh,Thth,Wv,Thtv);
-% Update MIMO mpc problem structure
-% System discretized with forward Euler discretization:
-% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
-mpc = update_mpc_sys_dynamics(mpc,eye(4)+Ts*A,Ts*B,Ts*Bd);
-% Update Horizontal Fan mpc problem structure
-% System discretized with forward Euler discretization:
-% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
-mpc_h = update_mpc_sys_dynamics(mpc_h,1+Ts*Ah,Ts*Bh,[]);
-% Update Vertical Fan mpc problem structure
-% System discretized with forward Euler discretization:
-% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
-mpc_v = update_mpc_sys_dynamics(mpc_v,1+Ts*Av,Ts*Bv,[]);
+    % 3. Update the outer and inner LPV models at the measured state
+    [A,B,Bd,Ah,Bh,Av,Bv] = qLPV_TRMS_cascade_mpc_SS(Wh,Omh,Thth,Wv,Thtv);
+    mpc = update_mpc_dynamics(mpc,eye(4)+Ts*A,Ts*B,Ts*Bd);
+    mpc_h = update_mpc_dynamics(mpc_h,1+Ts*Ah,Ts*Bh,[]);
+    mpc_v = update_mpc_dynamics(mpc_v,1+Ts*Av,Ts*Bv,[]);
 
-% Adjust Vertical Angle State
-x_mpc = [Omh;Thth;Omv;Thtv-Thtv0];
-% Define reference vector for MIMO mpc
-ref = [OmhRef TththRef OmvRef TthtvRef-Thtv0]';
+    % 4. The outer MPC computes both rotor-reference sequences. The current
+    % main-rotor voltage enters its model through the disturbance input.
+    [omega_ref_k,mpc,iter_outer] = mpc_solve(mpc,x_outer,omega_ref_prev,ref_outer,[],uv_prev,[],[]);
+    WhRef_seq = mpc.u(1,:);
+    WvRef_seq = mpc.u(2,:);
 
-% solve MIMO mpc
-[u_prev,x0] = mpc_solve(mpc,x0,x_mpc,u_prev,ref,uv,[],[],[]);
+    % 5. Each inner MPC tracks the complete sequence from the outer MPC
+    [uh_k,mpc_h,iter_h] = mpc_solve(mpc_h,Wh,uh_prev,WhRef_seq,WhRef_seq(end),[],[],[]);
+    [uv_k,mpc_v,iter_v] = mpc_solve(mpc_v,Wv,uv_prev,WvRef_seq,WvRef_seq(end),[],[],[]);
+    t_dat(i) = toc;
 
-% Extract control action sequence from the optimization vector
-W_ref = get_u(x0,mpc.nx,mpc.nu,mpc.N_ctr_hor,mpc.Nu);
-% Use masks to isolate the Horizontal and Vertical fan speed references
-% computed by the MIMO mpc
-WhRef = W_ref(mask_Wh);
-WvRef = W_ref(mask_Wv);
+    % Store states, first rotor references, and applied voltages
+    Wh_dat(i) = Wh;
+    Omh_dat(i) = Omh;
+    Thth_dat(i) = Thth;
+    Wv_dat(i) = Wv;
+    Omv_dat(i) = Omv;
+    Thtv_dat(i) = Thtv;
+    WhRef_dat(i) = WhRef_seq(1);
+    WvRef_dat(i) = WvRef_seq(1);
+    uh_dat(i) = uh_k;
+    uv_dat(i) = uv_k;
+    duh_dat(i) = uh_k-uh_prev;
+    duv_dat(i) = uv_k-uv_prev;
+    iter_outer_dat(i) = iter_outer;
+    iter_h_dat(i) = iter_h;
+    iter_v_dat(i) = iter_v;
 
-% solve Horizontal Fan mpc
-[uh,x0_h] = mpc_solve(mpc_h,x0_h,Wh,uh,WhRef(1:mpc_h.Nu-1),[],WhRef(end),[],[]);
-% solve Vertical Fan mpc
-[uv,x0_v] = mpc_solve(mpc_v,x0_v,Wv,uv,WvRef(1:mpc_v.Nu-1),[],WvRef(end),[],[]);
-ti(i) = toc;
+    % 6. Apply the inner MPC voltages to the nonlinear plant
+    dt_x = TRMS(Wh,Omh,Thth,Wv,Omv,Thtv,uh_k,uv_k);
+    x = x + Ts*dt_x;
 
-% Storoge control action values for plotting and analysis
-WhRef_dat(i) = WhRef(1);
-WvRef_dat(i) = WvRef(1);
-uh_dat(i) = uh;
-uv_dat(i) = uv;
-
-% Run TRMS simulation
-dt_x = TRMS(Wh,Omh,Thth,Wv,Omv,Thtv,uh,uv);
-% Forward euler step
-x = x + Ts*dt_x;
+    omega_ref_prev = omega_ref_k;
+    uh_prev = uh_k;
+    uv_prev = uv_k;
 
 end
 
 %% Plots
+
 figure
 
 ax1 = subplot(3,2,1);
-plot(time,TththRef_v)
-hold on
-plot(time,Thth_dat)
+plot(time,TththRef_v,time,Thth_dat)
 grid on
 title('Horizontal Angle')
 xlabel('Time (s)')
 ylabel('Angle (rad)')
 legend('Ref. \theta_h','\theta_h')
-grid on
 
 ax2 = subplot(3,2,2);
-plot(time,TthtvRef_v-Thtv0)
-hold on
-plot(time,Thtv_dat-Thtv0)
+plot(time,TthtvRef_v-Thtv0,time,Thtv_dat-Thtv0)
+grid on
 title('Vertical Angle')
 xlabel('Time (s)')
 ylabel('Angle (rad)')
 legend('Ref. \theta_v - \theta_{v0}','\theta_v - \theta_{v0}')
-grid on
 
 ax3 = subplot(3,2,3);
-plot(time,uh_dat)
-hold on
-plot(time(1:end-1),diff(uh_dat))
+plot(time,WhRef_dat,time,Wh_dat)
 grid on
-title('Horizontal Fan Control Action')
+title('Tail-Rotor Speed')
 xlabel('Time (s)')
-ylabel('Fan Voltage (V)')
-legend('u_h','\Delta u_h')
-grid on
+ylabel('Angular Speed (rad/s)')
+legend('\omega_h^{ref}','\omega_h')
 
 ax4 = subplot(3,2,4);
-plot(time,uv_dat)
-hold on
-plot(time(1:end-1),diff(uv_dat))
+plot(time,WvRef_dat,time,Wv_dat)
 grid on
-title('Vertical Fan Control Action')
+title('Main-Rotor Speed')
 xlabel('Time (s)')
-ylabel('Fan Voltage (V)')
-legend('u_v','\Delta u_v')
-grid on
+ylabel('Angular Speed (rad/s)')
+legend('\omega_v^{ref}','\omega_v')
 
 ax5 = subplot(3,2,5);
-plot(time,WhRef_dat)
-hold on
-plot(time(1:end-1),diff(WhRef_dat))
+plot(time,uh_dat,time,duh_dat)
 grid on
-title('MPC Computed Horizontal Fan Speed Reference')
+title('Tail-Rotor Control Action')
 xlabel('Time (s)')
-ylabel('Fan Voltage (V)')
-legend('\omega_h^{ref}','\Delta \omega_h^{ref}')
-grid on
+ylabel('Motor Voltage (V)')
+legend('u_h','\Delta u_h')
 
 ax6 = subplot(3,2,6);
-plot(time,WvRef_dat)
-hold on
-plot(time(1:end-1),diff(WvRef_dat))
+plot(time,uv_dat,time,duv_dat)
 grid on
-title('MPC Computed Vertcal Fan Speed Reference')
+title('Main-Rotor Control Action')
 xlabel('Time (s)')
-ylabel('Fan Speed (V)')
-legend('\omega_v^{ref}','\Delta \omega_v^{ref}')
-grid on
+ylabel('Motor Voltage (V)')
+legend('u_v','\Delta u_v')
 
 linkaxes([ax1,ax3,ax5],'x')
 linkaxes([ax2,ax4,ax6],'x')
 
 figure
-plot(time,ti)
-title('Compute Time (s)')
-xlabel('Time (s)')
+subplot(2,1,1)
+plot(time,t_dat)
+ylabel('Online Controller Time (s)')
 grid on
 
+subplot(2,1,2)
+stairs(time,iter_outer_dat)
+hold on
+stairs(time,iter_h_dat)
+stairs(time,iter_v_dat)
+xlabel('Time (s)')
+ylabel('Iterations')
+legend('Outer MIMO','Tail rotor','Main rotor')
+grid on
