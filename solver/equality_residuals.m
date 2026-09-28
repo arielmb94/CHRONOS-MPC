@@ -16,14 +16,9 @@ rp_0(s_idx) = B(:,:,1)*u(:,1)-s(:,1)-beq_0;
 
 for k = 1:N-1
     % [A B -I][s u s+]'-beq
-<<<<<<< HEAD
     rp_k(s_idx,k) = A(:,:,k+1)*s(:,k)+B(:,:,k+1)*u(:,k+1)-s(:,k+1)...
                             -beq_k(:,k);
 end
-=======
-    mpc.rp_k(mpc.s_col,k) = mpc.A(:,:,k+1)*mpc.s(:,k)+mpc.B(:,:,k+1)*mpc.u(:,k+1)-mpc.s(:,k+1)...
-                            -mpc.beq_k(:,k);
->>>>>>> 26539f3 (adapt mpc_solve to 3D time staged matrices)
 end
 
 function [rp_0,rp_k] = equality_du_local(rp_0,rp_k,u,su,su_idx,N)

@@ -68,7 +68,6 @@ end
 
     mpc = rollstates(mpc,s_prev,u_prev,x_ref,mpc.d);
 
-<<<<<<< HEAD
     if ~isempty(dh_in)
         mpc.dh(:,:) = fill_vec(mpc.dh,dh_in,1);
     end
@@ -77,11 +76,6 @@ end
                             mpc.has_h_cnstr,mpc.quad_custom_cost,mpc.lin_custom_cost,...
                             s_prev,u_prev);
     mpc = initialize_inequality_slacks(mpc);
-=======
-    x0(mpc.g_index) = 1/mpc.t;
-    x0(mpc.v_index) = 1/mpc.t;
-    mpc.x0 = x0;
->>>>>>> 9d5c3b4 (time varying constraint limits and slack costs)
     
 end
 
@@ -155,11 +149,7 @@ if ~isempty(mpc.has_du_cnstr)
         u_k = max(u_k_prev + du_min_strict, u_k);
     end
     % Check maximum rate limit
-<<<<<<< HEAD
     if ~isempty(mpc.du_cnstr.max_limit)
-=======
-    if mpc.du_cnstr.max_limit
->>>>>>> 9d5c3b4 (time varying constraint limits and slack costs)
         du_max_strict = mpc.du_cnstr.max(:,k) - mpc.slack_epsilon;
         u_k = min(u_k_prev + du_max_strict, u_k);
     end
@@ -168,20 +158,12 @@ end
 % 3. Clip for Absolute Constraints (u)
 if ~isempty(mpc.has_u_cnstr)
     % Check minimum absolute limit
-<<<<<<< HEAD
     if ~isempty(mpc.u_cnstr.min_limit)
-=======
-    if mpc.u_cnstr.min_limit
->>>>>>> 9d5c3b4 (time varying constraint limits and slack costs)
         u_min_strict = mpc.u_cnstr.min(:,k) + mpc.slack_epsilon;
         u_k = max(u_min_strict, u_k);
     end
     % Check maximum absolute limit
-<<<<<<< HEAD
     if ~isempty(mpc.u_cnstr.max_limit)
-=======
-    if mpc.u_cnstr.max_limit
->>>>>>> 9d5c3b4 (time varying constraint limits and slack costs)
         u_max_strict = mpc.u_cnstr.max(:,k) - mpc.slack_epsilon;
         u_k = min(u_max_strict, u_k);
     end
@@ -197,21 +179,13 @@ end
 % system
 if ~isempty(mpc.has_s_cnstr)
     % Check minimum state limits
-<<<<<<< HEAD
     if ~isempty(mpc.s_cnstr.min_limit)
-=======
-    if mpc.s_cnstr.min_limit
->>>>>>> 9d5c3b4 (time varying constraint limits and slack costs)
         s_min_strict = mpc.s_cnstr.min(:,k) + mpc.slack_epsilon;
             x_next = max(s_min_strict, x_next);
     end
 
     % Check maximum state limits
-<<<<<<< HEAD
     if ~isempty(mpc.s_cnstr.max_limit)
-=======
-    if mpc.s_cnstr.max_limit
->>>>>>> 9d5c3b4 (time varying constraint limits and slack costs)
         s_max_strict = mpc.s_cnstr.max(:,k) - mpc.slack_epsilon;
             x_next = min(s_max_strict, x_next);
 

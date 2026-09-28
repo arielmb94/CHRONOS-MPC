@@ -72,7 +72,7 @@ function Pk_pred = compute_schedul_iterative(mpc, x_prev, u_prev, xref, x_ref_te
         
         % Solve preliminary MPC to obtain refined mpc structure
         % (mpc_solve now returns the updated mpc struct containing new mpc.s)
-        [~, ~, mpc_next] = mpc_solve(mpc_pred, x_prev, u_prev, xref, x_ref_ter, d, [], []);
+        [~, mpc_next, ~] = mpc_solve(mpc_pred, x_prev, u_prev, xref, x_ref_ter, d, [], []);
                                 
         % Update mpc struct for next iteration
         mpc = mpc_next;

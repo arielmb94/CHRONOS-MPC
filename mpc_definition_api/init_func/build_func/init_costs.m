@@ -335,7 +335,6 @@ for k = 1:mpc.N-1
         mpc.R_E(:,:,k) = mpc.D(:,:,k)'*mpc.Qe(:,:,k)*mpc.D(:,:,k);
     end
 end
-mpc.tracking_cost_index_k = index_k;
 
 if ~isempty(mpc.y_use_s) && ~isempty(mpc.y_use_u)
     mpc.Q_f0_k(s_index,s_index,:) = mpc.Q_f0_k(s_index,s_index,:) + mpc.Q_E;

@@ -74,13 +74,13 @@ for k = 1:Sim_samples
     % Choose only one method to use by uncommenting it and commenting the others
     
     % Method 1: Frozen trajectory
-    % Pk = compute_schedul_frozen(mpc, x_prev, my_sched_fun);
+    %Pk = compute_schedul_frozen(mpc, x_prev, my_sched_fun);
     
     % Method 2: Iterative Fast trajectory
-    % Pk = compute_schedul_iterative_fast(mpc, x_prev, my_sched_fun, n_rho);
+    Pk = compute_schedul_iterative_fast(mpc, x_prev, my_sched_fun, n_rho);
     
     % Method 3: Iterative (SQP-like) trajectory refinement
-    Pk = compute_schedul_iterative(mpc, x_prev, u_prev, xf, x_ref, [], my_sched_fun, compute_A, [], [], n_rho, n_iter);
+    %Pk = compute_schedul_iterative(mpc, x_prev, u_prev, xf, x_ref, [], my_sched_fun, compute_A, [], [], n_rho, n_iter);
     
     % Method 4: Recursive extrapolation trajectory
     % Pk = compute_schedul_recursive(mpc, x_prev, n_rho, my_sched_fun, my_jacob_fun, rho_min, rho_max);
@@ -92,7 +92,7 @@ for k = 1:Sim_samples
     mpc = update_mpc_dynamics(mpc, A_lpv, [], []);
     
     % Solve mpc iteration
-    [u_prev, iter, mpc] = mpc_solve(mpc, x_prev, u_prev, xf, x_ref, [], [], []);
+    [u_prev, mpc, iter] = mpc_solve(mpc, x_prev, u_prev, xf, x_ref, [], [], []);
     
     tk = toc;
     

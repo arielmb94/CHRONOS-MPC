@@ -88,13 +88,13 @@ for i = 1:Sim_samples
     % Pk = compute_schedul_frozen(mpc, x_mpc, my_sched_fun);
     
     % Method 2: Iterative Fast trajectory (Warm-Start)
-    Pk = compute_schedul_iterative_fast(mpc, x_mpc, my_sched_fun, n_rho);
+    %Pk = compute_schedul_iterative_fast(mpc, x_mpc, my_sched_fun, n_rho);
     
     % Method 3: Iterative (SQP-like) trajectory refinement
-    % Pk = compute_schedul_iterative(mpc, x_mpc, u_prev, ref, [], [], my_sched_fun, compute_A, compute_B, [], n_rho, n_iter);
+    %Pk = compute_schedul_iterative(mpc, x_mpc, u_prev, ref, [], [], my_sched_fun, compute_A, compute_B, [], n_rho, n_iter);
     
     % Method 4: Recursive extrapolation trajectory
-    % Pk = compute_schedul_recursive(mpc, x_mpc, n_rho, my_sched_fun, my_jacob_fun, rho_min, rho_max);
+    Pk = compute_schedul_recursive(mpc, x_mpc, n_rho, my_sched_fun, my_jacob_fun, rho_min, rho_max);
     
     % Build 3D affine matrix arrays using the interface
     A_lpv = traj_mat(compute_A, Pk, n_rho, n);
@@ -104,7 +104,7 @@ for i = 1:Sim_samples
     mpc = update_mpc_dynamics(mpc, A_lpv, B_lpv, []);
     
     % Solve mpc iteration
-    [u_prev,iter,mpc] = mpc_solve(mpc, x_mpc, u_prev, ref, [], [], [], []);
+    [u_prev,mpc,iter_dat(i)] = mpc_solve(mpc, x_mpc, u_prev, ref, [], [], [], []);
     
     ti(i) = toc;
     
@@ -184,7 +184,7 @@ linkaxes([ax2,ax4,ax6],'x')
 
 figure
 subplot(2,1,1)
-plot(time,t_dat)
+plot(time,ti)
 ylabel('Online Controller Time (s)')
 grid on
 
