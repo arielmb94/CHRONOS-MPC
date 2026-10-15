@@ -8,6 +8,8 @@ Changing operating conditions, coupled dynamics, and actuator limits make demand
 
 CHRONOS uses Linear Parameter Varying (LPV) models to bring nonlinear control into a structured convex optimization framework. You supply the prediction model and update it as operating conditions change; CHRONOS handles the rest for each solve. This gives you a practical nonlinear MPC workflow without writing solver code or deriving gradients and Hessians for the supported costs and constraints.
 
+![logo](./logo.png)
+
 ---
 
 ## Table of Contents
