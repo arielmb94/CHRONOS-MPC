@@ -79,11 +79,11 @@ for k = 1:Sim_samples
     t_dat(k) = tk;
     iter_dat(k) = iter;
 
-    % 4. Apply the first control action to the nonlinear plant
-    h1_next = h1 + Ts*(u_k-sqrt(2*g*h1))/Ab;
-    h2_next = h2 + Ts*(sqrt(2*g*h1)-sqrt(2*g*h2))/Ab;
-
-    x_prev = [h1_next;h2_next];
+    % 4. Apply the first control action as a zero-order hold for one sample
+    [~,x_ode] = ode45(@(t,h) [(u_k-sqrt(2*g*h(1)))/Ab;
+                              (sqrt(2*g*h(1))-sqrt(2*g*h(2)))/Ab], ...
+                      [0 Ts],x_prev);
+    x_prev = x_ode(end,:)';
     u_prev = u_k;
 
 end

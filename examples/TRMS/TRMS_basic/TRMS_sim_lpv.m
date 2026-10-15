@@ -86,9 +86,11 @@ for i = 1:Sim_samples
     duv_dat(i) = u_k(2)-u_prev(2);
     iter_dat(i) = iter;
 
-    % 5. Apply the first control action to the nonlinear plant
-    dt_x = TRMS(Wh,Omh,Thth,Wv,Omv,Thtv,u_k(1),u_k(2));
-    x = x + Ts*dt_x;
+    % 5. Apply the physical motor voltages as a zero-order hold for one sample
+    [~,x_ode] = ode45(@(t,x) TRMS(x(1),x(2),x(3),x(4),x(5),x(6), ...
+                                  u_k(1),u_k(2)), ...
+                      [0 Ts],x);
+    x = x_ode(end,:)';
     u_prev = u_k;
 
 end
