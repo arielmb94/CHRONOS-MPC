@@ -1,20 +1,22 @@
-function mpc = init_mpc_dyn_continuous_tustin(mpc, Ac, Bc, Bdc, Ts)
+function mpc = init_mpc_dyn_continuous_tustin(mpc, Ac, Bc, Bdc, Ts, M)
     nx = size(Ac, 1);
-    I = eye(nx);
-    
-    M = I - (Ts/2) * Ac;
-    
-    rhs_A = I + (Ts/2) * Ac;
-    rhs_B = Ts * Bc;
-    
-    Ad = solveLinearSystemLU(M, rhs_A);
-    Bd = solveLinearSystemLU(M, rhs_B);
-    
-    if isempty(Bdc) || (isscalar(Bdc) && Bdc == 0)
-        Bdd = 0;
+    has_dist = ~(isempty(Bdc) || (isscalar(Bdc) && Bdc == 0));
+    if (nargin < 6) || isempty(M) || (isscalar(M) && M == 0)
+        M_mat = eye(nx);
     else
-        rhs_Bd = Ts * Bdc;
-        Bdd = solveLinearSystemLU(M, rhs_Bd);
+        M_mat = M;
+    end
+    
+    % (M - (Ts/2)*Ac)*s+ = (M + (Ts/2)*Ac)*s + Ts*Bc*u + Ts*Bdc*d
+    W = M_mat - (Ts/2) * Ac;
+    rhs_A = M_mat + (Ts/2) * Ac;
+    
+    Ad = solveLinearSystemLU(W, rhs_A);
+    Bd = solveLinearSystemLU(W, Ts * Bc);
+    if has_dist
+        Bdd = solveLinearSystemLU(W, Ts * Bdc);
+    else
+        Bdd = 0;
     end
     
     mpc = init_mpc_dynamics(mpc, Ad, Bd, Bdd);
