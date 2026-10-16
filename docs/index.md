@@ -1,5 +1,11 @@
 # CHRONOS
 
+```{image} ../logo.png
+:alt: CHRONOS logo
+:width: 400px
+:align: center
+```
+
 **Model Predictive Control for linear parameter-varying systems in MATLAB.**
 
 CHRONOS lets you define a prediction model, objectives, and constraints in
@@ -8,8 +14,9 @@ each sampling instant. LPV models let you represent changing operating
 conditions within a structured MPC formulation.
 
 ```{note}
-This is an initial documentation preview. Tutorials, the user guide, and the
-API reference will be added as the documentation develops.
+This is an initial documentation preview with references for all 31 public
+API functions. Tutorials and the user guide will be added as the
+documentation develops.
 ```
 
 ## Controller workflow
@@ -24,6 +31,13 @@ CHRONOS is developed in MATLAB, with an online solver designed for C/C++
 generation using MATLAB Coder.
 
 ## Explore CHRONOS
+
+```{toctree}
+:maxdepth: 2
+
+Home <self>
+API reference <api/index>
+```
 
 - [Source code and installation overview](https://github.com/arielmb94/CHRONOS-MPC)
 - [Introductory tutorial](https://github.com/arielmb94/CHRONOS-MPC/tree/docs/tutorials/01%20-%20First%20Step)

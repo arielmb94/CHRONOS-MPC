@@ -1,0 +1,21 @@
+# Initialization API
+
+```{toctree}
+:maxdepth: 1
+
+init_mpc
+init_mpc_dynamics
+init_mpc_output
+init_mpc_Tracking_cost
+init_mpc_Control_cost
+init_mpc_ControlRate_cost
+init_mpc_Custom_cost
+init_mpc_state_cnstr
+init_mpc_control_cnstr
+init_mpc_control_rate_cnstr
+init_mpc_output_cnstr
+init_mpc_custom_cnstr
+init_mpc_ter_ingredients
+init_mpc_ter_ingredients_dlqr
+build_chronos_mpc
+```

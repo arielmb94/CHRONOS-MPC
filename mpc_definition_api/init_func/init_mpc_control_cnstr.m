@@ -1,3 +1,4 @@
+function mpc = init_mpc_control_cnstr(mpc,u_min,u_max)
 % INIT_MPC_CONTROL_CNSTR Add hard bounds on the control action.
 %
 %   mpc = INIT_MPC_CONTROL_CNSTR(mpc, u_min, u_max) constrains the control
@@ -24,7 +25,7 @@
 %   Example - limit every control input to the interval [-1, 1]:
 %
 %       mpc = init_mpc_control_cnstr(mpc, -1, 1);
-function mpc = init_mpc_control_cnstr(mpc,u_min,u_max)
+
 arguments
     mpc
     u_min = [];

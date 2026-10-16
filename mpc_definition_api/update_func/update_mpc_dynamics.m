@@ -1,3 +1,4 @@
+function mpc = update_mpc_dynamics(mpc,A,B,Bd)
 % UPDATE_MPC_DYNAMICS Update the prediction-model matrices.
 %
 %   mpc = UPDATE_MPC_DYNAMICS(mpc, A, B, Bd) updates selected matrices in
@@ -25,7 +26,7 @@
 %   Example - update only A and B:
 %
 %       mpc = update_mpc_dynamics(mpc, A, B, []);
-function mpc = update_mpc_dynamics(mpc,A,B,Bd)
+
 
 if ~isempty(A)
     mpc.A(:,:,:) = fill_mat(mpc.A, A, 1);

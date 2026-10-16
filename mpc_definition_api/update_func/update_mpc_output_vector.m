@@ -1,3 +1,4 @@
+function mpc = update_mpc_output_vector(mpc,C,D,Dd)
 % UPDATE_MPC_OUTPUT_VECTOR Update the tracking-output model.
 %
 %   mpc = UPDATE_MPC_OUTPUT_VECTOR(mpc, C, D, Dd) updates selected
@@ -32,7 +33,7 @@
 %   Example - update only the state and control coefficients:
 %
 %       mpc = update_mpc_output_vector(mpc, C, D, []);
-function mpc = update_mpc_output_vector(mpc,C,D,Dd)
+
 
 if ~isempty(C) && ~isempty(mpc.y_use_s)
     if ~isempty(mpc.tracking_cost)

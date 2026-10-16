@@ -1,3 +1,6 @@
+function mpc = init_mpc_custom_cnstr(mpc,Ch,Dh,Dsuh,Ddh,...
+                                            h_min,h_max, ...
+                                            qv_min,qv_max)
 % INIT_MPC_CUSTOM_CNSTR Add bounds on a user-defined linear signal.
 %
 %   mpc = INIT_MPC_CUSTOM_CNSTR(mpc, Ch, Dh, Dsuh, Ddh, h_min, h_max)
@@ -52,9 +55,7 @@
 %                                    -0.2, 0.2, 100, 100);
 %
 %   Pass u_ref as the dh_in argument of MPC_SOLVE at runtime.
-function mpc = init_mpc_custom_cnstr(mpc,Ch,Dh,Dsuh,Ddh,...
-                                            h_min,h_max, ...
-                                            qv_min,qv_max)
+
 arguments
     mpc
     Ch = []

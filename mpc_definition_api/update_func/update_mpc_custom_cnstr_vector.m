@@ -1,3 +1,4 @@
+function mpc = update_mpc_custom_cnstr_vector(mpc,Ch,Dh,Dsuh,Ddh)
 % UPDATE_MPC_CUSTOM_CNSTR_VECTOR Update the custom-constraint signal model.
 %
 %   mpc = UPDATE_MPC_CUSTOM_CNSTR_VECTOR(mpc, Ch, Dh, Dsuh, Ddh) updates
@@ -34,7 +35,7 @@
 %   Example - update only Ch and Dh:
 %
 %       mpc = update_mpc_custom_cnstr_vector(mpc, Ch, Dh, [], []);
-function mpc = update_mpc_custom_cnstr_vector(mpc,Ch,Dh,Dsuh,Ddh)
+
 
 if ~isempty(Ch) && ~isempty(mpc.h_cnstr.use_s)
 

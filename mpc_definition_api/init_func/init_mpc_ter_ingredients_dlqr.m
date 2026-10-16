@@ -1,3 +1,5 @@
+function mpc = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,...
+                                             xN_ref_is_y)
 % INIT_MPC_TER_INGREDIENTS_DLQR Add a DLQR terminal-state cost.
 %
 %   mpc = INIT_MPC_TER_INGREDIENTS_DLQR(mpc, Qx, Ru) computes
@@ -42,8 +44,7 @@
 %       Ru = 0.1 * eye(nu);
 %       mpc = init_mpc_ter_ingredients_dlqr(mpc, Qx, Ru);
 %       % Pass xN_ref as xN_ref_in when calling MPC_SOLVE.
-function mpc = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,...
-                                             xN_ref_is_y)
+
 arguments
     mpc
     Qx

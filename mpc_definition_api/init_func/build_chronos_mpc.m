@@ -1,3 +1,4 @@
+function mpc = build_chronos_mpc(mpc,s_prev,u_prev,d_in,dh_in,x_ref)
 % BUILD_CHRONOS_MPC This function must always be called at the end of
 % the initialization process. Initializes a feasible stage-local iterate for
 % the MPC solver and initializes costs and constraint structures based on
@@ -33,7 +34,7 @@
 %   Example - build with no optional runtime signals:
 %
 %       mpc = build_chronos_mpc(mpc, s_prev, u_prev, [], [], []);
-function mpc = build_chronos_mpc(mpc,s_prev,u_prev,d_in,dh_in,x_ref)
+
 arguments
     mpc
     s_prev

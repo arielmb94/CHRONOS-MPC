@@ -1,3 +1,4 @@
+function mpc = init_mpc_ControlRate_cost(mpc,Rdu)
 % INIT_MPC_CONTROLRATE_COST Add a quadratic control-rate penalty.
 %
 %   mpc = INIT_MPC_CONTROLRATE_COST(mpc, Rdu) penalizes changes in the
@@ -26,7 +27,7 @@
 %
 %       Rdu = diag([1, 0.5]);
 %       mpc = init_mpc_ControlRate_cost(mpc, Rdu);
-function mpc = init_mpc_ControlRate_cost(mpc,Rdu)
+
 
 if isempty(Rdu) || ~any(Rdu(:))
     return;

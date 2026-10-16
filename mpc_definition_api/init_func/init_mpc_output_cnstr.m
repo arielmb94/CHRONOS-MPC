@@ -1,3 +1,4 @@
+function mpc = init_mpc_output_cnstr(mpc,y_min,y_max,qv_min,qv_max)
 % INIT_MPC_OUTPUT_CNSTR Add bounds on the predicted output.
 %
 %   mpc = INIT_MPC_OUTPUT_CNSTR(mpc, y_min, y_max) constrains the output
@@ -44,7 +45,7 @@
 %       D = zeros(1, mpc.nu);
 %       mpc = init_mpc_output(mpc, C, D);
 %       mpc = init_mpc_output_cnstr(mpc, -2, 2, 100, 100);
-function mpc = init_mpc_output_cnstr(mpc,y_min,y_max,qv_min,qv_max)
+
 arguments
     mpc
     y_min = []

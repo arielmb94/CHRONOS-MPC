@@ -1,3 +1,4 @@
+function mpc = init_mpc_output(mpc,C,D,Dd)
 % INIT_MPC_OUTPUT Define the tracking output. INIT_MPC_DYNAMICS installs 
 %   y_k = s_k as the default. Use this function to define a different 
 %   output signal.
@@ -37,7 +38,7 @@
 %
 %       C = [1, zeros(1, nx-1)];
 %       mpc = init_mpc_output(mpc, C, [], []);
-function mpc = init_mpc_output(mpc,C,D,Dd)
+
 arguments
     mpc
     C = []

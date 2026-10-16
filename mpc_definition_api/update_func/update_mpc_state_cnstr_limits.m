@@ -1,3 +1,4 @@
+function mpc = update_mpc_state_cnstr_limits(mpc,min,max)
 % UPDATE_MPC_STATE_CNSTR_LIMITS Update predicted-state bounds.
 %
 %   mpc = UPDATE_MPC_STATE_CNSTR_LIMITS(mpc, x_min, x_max) updates
@@ -22,7 +23,7 @@
 %   Example - update only the upper bound:
 %
 %       mpc = update_mpc_state_cnstr_limits(mpc, [], x_max);
-function mpc = update_mpc_state_cnstr_limits(mpc,min,max)
+
 
 if ~isempty(min) && ~isempty(mpc.s_cnstr.min_limit)
 

@@ -1,3 +1,4 @@
+function mpc = init_mpc_Custom_cost(mpc,Cz,Dz,Dsuz,Ddz,Qz,qz)
 % INIT_MPC_CUSTOM_COST Add a quadratic or linear cost on a user-defined signal.
 %
 %   mpc = INIT_MPC_CUSTOM_COST(mpc, Cz, Dz, Dsuz, Ddz, Qz, qz) defines
@@ -46,7 +47,7 @@
 %       mpc = init_mpc_Custom_cost(mpc, Cz, Dz, Dsuz, Ddz, Qz, []);
 %
 %   Pass u_ref as the dz_in argument of MPC_SOLVE at runtime.
-function mpc = init_mpc_Custom_cost(mpc,Cz,Dz,Dsuz,Ddz,Qz,qz)
+
 arguments
     mpc
     Cz = []

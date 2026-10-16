@@ -1,3 +1,4 @@
+function mpc = init_mpc_Control_cost(mpc,Ru,ru)
 % INIT_MPC_CONTROL_COST Add quadratic and/or linear control penalties.
 %
 %   mpc = INIT_MPC_CONTROL_COST(mpc, Ru) adds the quadratic term
@@ -36,7 +37,7 @@
 %       ru = zeros(nu, 1);
 %       ru(1) = 0.02;
 %       mpc = init_mpc_Control_cost(mpc, Ru, ru);
-function mpc = init_mpc_Control_cost(mpc,Ru,ru)
+
 arguments
     mpc
     Ru = []

@@ -1,3 +1,4 @@
+function mpc = update_mpc_control_rate_cnstr_limits(mpc,min,max)
 % UPDATE_MPC_CONTROL_RATE_CNSTR_LIMITS Update control-rate bounds.
 %
 %   mpc = UPDATE_MPC_CONTROL_RATE_CNSTR_LIMITS(mpc, du_min, du_max) updates
@@ -22,7 +23,7 @@
 %   Example - update only the rate lower bound:
 %
 %       mpc = update_mpc_control_rate_cnstr_limits(mpc, du_min, []);
-function mpc = update_mpc_control_rate_cnstr_limits(mpc,min,max)
+
 
 if ~isempty(min) && ~isempty(mpc.du_cnstr.min_limit)
 

@@ -1,3 +1,4 @@
+function mpc = update_mpc_slack_cost(mpc, cnstr, qv_min, qv_max)
 % UPDATE_MPC_SLACK_COST Update soft-constraint violation penalties.
 %
 %   mpc = UPDATE_MPC_SLACK_COST(mpc, cnstr, qv_min, qv_max) replaces the
@@ -30,7 +31,7 @@
 %   Example - update only state lower-bound penalties:
 %
 %       mpc = update_mpc_slack_cost(mpc, mpc.s_cnstr, qv_min, []);
-function mpc = update_mpc_slack_cost(mpc, cnstr, qv_min, qv_max)
+
 % Note: The struct fields cnstr.qv_min and cnstr.qv_max are intentionally 
 % NOT updated here to maintain a clean single-output API (returning only mpc). 
 % The underlying solver only requires the updated global mpc.grad_qv vectors.

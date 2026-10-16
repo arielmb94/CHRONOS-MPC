@@ -1,3 +1,4 @@
+function mpc = update_mpc_Custom_cost_vector(mpc,Cz,Dz,Dsuz,Ddz)
 % UPDATE_MPC_CUSTOM_COST_VECTOR Update the custom-cost signal model.
 %
 %   mpc = UPDATE_MPC_CUSTOM_COST_VECTOR(mpc, Cz, Dz, Dsuz, Ddz) updates
@@ -34,7 +35,7 @@
 %   Example - update only Cz and Dz:
 %
 %       mpc = update_mpc_Custom_cost_vector(mpc, Cz, Dz, [], []);
-function mpc = update_mpc_Custom_cost_vector(mpc,Cz,Dz,Dsuz,Ddz)
+
 
 if ~isempty(Cz) && ~isempty(mpc.z_use_s)
     if ~isempty(mpc.quad_custom_cost)

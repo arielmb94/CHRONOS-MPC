@@ -4,6 +4,11 @@ build:
   os: ubuntu-24.04
   tools:
     python: "3.13"
+  jobs:
+    build:
+      html:
+        # The MATLAB autodoc extension requires serial reading.
+        - python -m sphinx -T -W --keep-going -j 1 -b html -d _build/doctrees docs "$READTHEDOCS_OUTPUT/html"
 
 sphinx:
   configuration: docs/conf.py

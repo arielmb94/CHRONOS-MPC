@@ -1,3 +1,4 @@
+function mpc = init_mpc_state_cnstr(mpc,x_min,x_max,qv_min,qv_max)
 % INIT_MPC_STATE_CNSTR Add bounds on the predicted state.
 %
 %   mpc = INIT_MPC_STATE_CNSTR(mpc, x_min, x_max) constrains the predicted
@@ -35,7 +36,7 @@
 %   Example - apply bounds to a two-state model:
 %
 %       mpc = init_mpc_state_cnstr(mpc, [-5; -2], [5; 2], 100, 100);
-function mpc = init_mpc_state_cnstr(mpc,x_min,x_max,qv_min,qv_max)
+
 arguments
     mpc
     x_min = []

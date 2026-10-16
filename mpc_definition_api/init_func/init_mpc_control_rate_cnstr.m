@@ -1,3 +1,4 @@
+function mpc = init_mpc_control_rate_cnstr(mpc,du_min,du_max)
 % INIT_MPC_CONTROL_RATE_CNSTR Add bounds on the control-action rate.
 %
 %   mpc = INIT_MPC_CONTROL_RATE_CNSTR(mpc, du_min, du_max) constrains
@@ -25,7 +26,7 @@
 %   Example - limit each control move to +/-0.1 per sample:
 %
 %       mpc = init_mpc_control_rate_cnstr(mpc, -0.1, 0.1);
-function mpc = init_mpc_control_rate_cnstr(mpc,du_min,du_max)
+
 arguments
     mpc
     du_min = [];

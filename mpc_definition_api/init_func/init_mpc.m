@@ -1,3 +1,4 @@
+function mpc = init_mpc(N)
 % INIT_MPC Create the CHRONOS MPC structure.
 %
 %   mpc = INIT_MPC(N) creates an empty MPC structure with prediction
@@ -21,7 +22,7 @@
 %       mpc = init_mpc(20);
 %       mpc = init_mpc_dynamics(mpc, A, B, []);
 %       mpc = init_mpc_output(mpc, C, [], []);
-function mpc = init_mpc(N)
+
 arguments
     N = 10
 end

@@ -1,3 +1,4 @@
+function mpc = init_mpc_dynamics(mpc,A,B,Bd)
 % INIT_MPC_DYNAMICS Define the prediction model.
 %
 %   mpc = INIT_MPC_DYNAMICS(mpc, A, B) defines
@@ -38,7 +39,7 @@
 %
 %       mpc = init_mpc(20);
 %       mpc = init_mpc_dynamics(mpc, A, B, []);
-function mpc = init_mpc_dynamics(mpc,A,B,Bd)
+
 arguments
     mpc
     A = []

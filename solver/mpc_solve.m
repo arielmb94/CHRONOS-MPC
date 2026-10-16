@@ -1,3 +1,5 @@
+function [u0,mpc,iter] = mpc_solve(mpc,s_prev,u_prev,r_in,xN_ref_in,...
+                                   d_in,dz_in,dh_in)
 % MPC_SOLVE Solve the current MPC problem.
 %
 %   [u0, mpc, iter] = MPC_SOLVE(mpc, s_prev, u_prev, r_in, xN_ref_in, ...
@@ -17,9 +19,13 @@
 %                 the remaining stages; columns beyond the horizon are
 %                 ignored. Pass [] when tracking is not used.
 %     xN_ref_in - Optional nx column vector, reference for the terminal state
-%                 xN of the prediction horizon. Required whenever the MPC
-%                 problem contains terminal ingredients. If not used, pass
-%                 an empty vector [].
+%                 xN of the prediction horizon. Required with terminal
+%                 ingredients unless xN_ref_is_y was enabled during terminal
+%                 initialization. With that shortcut, [] copies the current
+%                 stored terminal tracking reference mpc.r_ter; the tracking
+%                 output must be the full state in the same component order.
+%                 A nonempty xN_ref_in overrides the shortcut. Pass [] when
+%                 terminal ingredients are not used.
 %     d_in      - Optional known input for the dynamics and output model. It
 %                 can be an nd-by-1 column vector or an nd-by-L matrix. A
 %                 single column is reused for all stages. If L < N, the last
@@ -49,8 +55,7 @@
 %   Example - solve with no optional runtime signals:
 %
 %       [u0, mpc, iter] = mpc_solve(mpc, s_prev, u_prev, [], [], [], [], []);
-function [u0,mpc,iter] = mpc_solve(mpc,s_prev,u_prev,r_in,xN_ref_in,...
-                                   d_in,dz_in,dh_in)
+
 
 % handle input vector sizes
 len_r_in = size(r_in,2);

@@ -1,3 +1,4 @@
+function mpc = update_mpc_ter_ingredients(mpc,P)
 % UPDATE_MPC_TER_INGREDIENTS Update the terminal-state cost weight.
 %
 %   mpc = UPDATE_MPC_TER_INGREDIENTS(mpc, P) replaces the weight in
@@ -14,7 +15,7 @@
 %
 %   Output:
 %     mpc     - Updated CHRONOS MPC structure.
-function mpc = update_mpc_ter_ingredients(mpc,P)
+
 
 if ~isempty(mpc.ter_ingredients)
     mpc.recompute_cost_hess = 1;
