@@ -4,7 +4,7 @@ end
 
 function [delta_u,delta_xe,Q_hat,R_hat_0,R_hat,Y_hat,rx_hat,ru_hat,ru_hat_0,rp_hat_0,rp_hat,K_ric,d_ric,d_ric_0,QA_ric,QB_ric,solve_rhs_ric,solve_result_ric] = riccati_KKT_local(N,R_0,Q,R,Y,Q_ter,Q_hat,R_hat_0,R_hat,Y_hat,ru_0,rx,ru,rx_ter,rx_hat,ru_hat,ru_hat_0,rp_0,rp,rp_hat_0,rp_hat,K_ric,d_ric,d_ric_0,QA_ric,QB_ric,solve_rhs_ric,solve_result_ric,A,B,delta_u,delta_xe,eps_thknv,nu,nxe,xe_col)
 
-linsolve_opts = struct('SYM',true);
+% linsolve_opts = struct('SYM',true);
 
 Q_hat(:,:,N) = Q_ter;
 rx_hat(:,N) = rx_ter;
@@ -36,8 +36,10 @@ for k = N-1:-1:1
     solve_rhs_ric(:,xe_col) = Y_hat(:,:,k);
     solve_rhs_ric(:,nxe+1) = ru_hat(:,k);
 
-    solve_result_ric(:,:) = linsolve(R_hat(:,:,k),...
-                                     solve_rhs_ric,linsolve_opts);
+    % solve_result_ric(:,:) = linsolve(R_hat(:,:,k),...
+    %                                  solve_rhs_ric,linsolve_opts);
+    solve_result_ric(:,:) = solveLinearSystemLDL(R_hat(:,:,k),...
+                                     solve_rhs_ric);
 
     K_ric(:,:,k) = solve_result_ric(:,xe_col);
     d_ric(:,k) = solve_result_ric(:,nxe+1);
@@ -65,8 +67,9 @@ rp_hat_0(:) = rx_hat(:,1) + ...
 
 ru_hat_0(:) = ru_0 + B(:,:,1)'*rp_hat_0;
 
-d_ric_0(:) = linsolve(R_hat_0,ru_hat_0,...
-                      linsolve_opts);
+% d_ric_0(:) = linsolve(R_hat_0,ru_hat_0,...
+%                       linsolve_opts);
+d_ric_0(:) = solveLinearSystemLDL(R_hat_0,ru_hat_0);
 
 % u_0 = -d_0
 delta_u(:,1) = -d_ric_0;
