@@ -260,6 +260,7 @@ mpc.nv_k = [0 0 0]; % soft inequalites per horizon step
 mpc.qv = 50; % Slack variable penalty
 mpc.slack_epsilon = 1e-3;
 mpc.eps_thknv = 1e-6;
+mpc.lambda2 = 1;
 mpc.H_CustomCost_0 = [];
 
 end

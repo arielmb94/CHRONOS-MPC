@@ -169,6 +169,7 @@ while mpc.eps <= lambda2*0.5 && continue_Newton && iter < mpc.max_iter
     iter = iter+1;
 end
 
+mpc.lambda2 = lambda2;
 u0 = mpc.u(:,1);
 
 end
