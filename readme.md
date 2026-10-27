@@ -67,13 +67,13 @@ mpc = init_mpc_control_rate_cnstr(mpc, du_min, du_max);
 mpc = init_mpc_Tracking_cost(mpc, Qe);
 
 % Build once: initialize the fixed-size solver workspace
-mpc = build_chronos_mpc(mpc, s_prev, u_prev, [], []);
+mpc = build_chronos_mpc(mpc, x_prev, u_prev, [], []);
 
 % At each control sample: supply updated model matrices and current inputs
 mpc = update_mpc_dynamics(mpc, A, B, []);
 
 % Compute the next control action
-[u0, mpc, iter] = mpc_solve(mpc, s_prev, u_prev, r_in, [], [], [], []);
+[u0, mpc, iter] = mpc_solve(mpc, x_prev, u_prev, r_in, [], [], [], []);
 ```
 
 ---
@@ -111,7 +111,7 @@ $$
 In order to add custom behaviour to the MPC formulation, such as indicating economic targets, CHRONOS gives you the flexibility to add custom terms to the cost function. For this, you can define custom time-varying vectors $z_k$ defined as
 
 $$
-z_k = C_{z,k}x_k+D_{z,k}u_k+D_{su,z,k}u_{k-1}+D_{dz,k}dz_k,
+z_k = C_{z,k}x_k+D_{z,k}u_k+D_{xu,z,k}u_{k-1}+D_{dz,k}dz_k,
 $$
 
 CHRONOS then allows you to add quadratic and linear costs to this vector:
@@ -128,7 +128,7 @@ Similarly, you can define custom constraints by defining a vector $h_k$ in the s
 
 $$
 \begin{aligned}
-h_k &= C_{h,k}x_k+D_{h,k}u_k+D_{su,h,k}u_{k-1}+D_{dh,k}dh_k, \\
+h_k &= C_{h,k}x_k+D_{h,k}u_k+D_{xu,h,k}u_{k-1}+D_{dh,k}dh_k, \\
 \end{aligned}
 $$
 

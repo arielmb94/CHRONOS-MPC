@@ -2,23 +2,23 @@ function mpc = genEqualities(mpc)
 
 nx = mpc.nx;
 nu = mpc.nu;
-nse = mpc.nse;
+nxe = mpc.nxe;
 
-s_col = 1:nx;
+x_col = 1:nx;
 if ~isempty(mpc.has_du)
-    su_col = nx+1:nse;
+    xu_col = nx+1:nxe;
 else
-    su_col = [];
+    xu_col = [];
 end
-u_col = nse+1:nse+nu;
+u_col = nxe+1:nxe+nu;
 
-mpc.s_col = s_col;
-mpc.su_col = su_col;
-mpc.se_col = [s_col su_col];
+mpc.x_col = x_col;
+mpc.xu_col = xu_col;
+mpc.xe_col = [x_col xu_col];
 mpc.u_col = u_col;
 
-mpc.rp_0 = zeros(nse,1);
-mpc.rp_k = zeros(nse,mpc.N-1);
+mpc.rp_0 = zeros(nxe,1);
+mpc.rp_k = zeros(nxe,mpc.N-1);
 mpc.beq_0 = zeros(nx,1);
 mpc.beq_k = zeros(nx,mpc.N-1);
 

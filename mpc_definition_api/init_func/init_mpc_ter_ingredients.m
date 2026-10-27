@@ -3,7 +3,7 @@ function mpc = init_mpc_ter_ingredients(mpc,P,xN_ref_is_y)
 %
 %   mpc = INIT_MPC_TER_INGREDIENTS(mpc, P) adds the terminal penalty
 %
-%       J_terminal = (xN_ref - s_N)' * P * (xN_ref - s_N)
+%       J_terminal = (xN_ref - x_N)' * P * (xN_ref - x_N)
 %
 %   using the supplied terminal weight. P must be one nx-by-nx matrix; a
 %   scalar is expanded as P*eye(nx). Zero P is stored as a zero weight;
@@ -14,7 +14,7 @@ function mpc = init_mpc_ter_ingredients(mpc,P,xN_ref_is_y)
 %   mpc = INIT_MPC_TER_INGREDIENTS(mpc, P, true) enables the tracking-reference
 %   shortcut. When xN_ref_in is empty, CHRONOS reuses the tracking reference
 %   as the terminal-state reference. Use this option only when the tracking
-%   output is the full state, y = s, with the same component order. An
+%   output is the full state, y = x, with the same component order. An
 %   explicitly supplied xN_ref_in always takes precedence.
 %
 %   By default, xN_ref_is_y is false and the user must pass the full-state

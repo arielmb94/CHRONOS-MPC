@@ -3,7 +3,7 @@ function mpc = update_mpc_state_cnstr_limits(mpc,min,max)
 %
 %   mpc = UPDATE_MPC_STATE_CNSTR_LIMITS(mpc, x_min, x_max) updates
 %
-%       x_min_k <= s_k <= x_max_k.
+%       x_min_k <= x_k <= x_max_k.
 %
 %   Use [] to leave either bound unchanged. The corresponding lower or
 %   upper bound must first be enabled with INIT_MPC_STATE_CNSTR.
@@ -25,22 +25,22 @@ function mpc = update_mpc_state_cnstr_limits(mpc,min,max)
 %       mpc = update_mpc_state_cnstr_limits(mpc, [], x_max);
 
 
-if ~isempty(min) && ~isempty(mpc.s_cnstr.min_limit)
+if ~isempty(min) && ~isempty(mpc.x_cnstr.min_limit)
 
     if isscalar(min)
-        mpc.s_cnstr.min(:,:) = min;
+        mpc.x_cnstr.min(:,:) = min;
     else
-        mpc.s_cnstr.min(:,:) = fill_vec(mpc.s_cnstr.min, min, 1);
+        mpc.x_cnstr.min(:,:) = fill_vec(mpc.x_cnstr.min, min, 1);
     end
 
 end
 
-if ~isempty(max) && ~isempty(mpc.s_cnstr.max_limit)
+if ~isempty(max) && ~isempty(mpc.x_cnstr.max_limit)
     
     if isscalar(max)
-        mpc.s_cnstr.max(:,:) = max;
+        mpc.x_cnstr.max(:,:) = max;
     else
-        mpc.s_cnstr.max(:,:) = fill_vec(mpc.s_cnstr.max, max, 1);
+        mpc.x_cnstr.max(:,:) = fill_vec(mpc.x_cnstr.max, max, 1);
     end
 
 end

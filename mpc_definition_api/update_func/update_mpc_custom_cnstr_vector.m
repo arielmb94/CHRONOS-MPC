@@ -1,10 +1,10 @@
-function mpc = update_mpc_custom_cnstr_vector(mpc,Ch,Dh,Dsuh,Ddh)
+function mpc = update_mpc_custom_cnstr_vector(mpc,Ch,Dh,Dxuh,Ddh)
 % UPDATE_MPC_CUSTOM_CNSTR_VECTOR Update the custom-constraint signal model.
 %
-%   mpc = UPDATE_MPC_CUSTOM_CNSTR_VECTOR(mpc, Ch, Dh, Dsuh, Ddh) updates
+%   mpc = UPDATE_MPC_CUSTOM_CNSTR_VECTOR(mpc, Ch, Dh, Dxuh, Ddh) updates
 %   selected coefficients in
 %
-%       h_k = Ch_k*s_k + Dh_k*u_k + Dsuh_k*su_k + Ddh_k*dh_k.
+%       h_k = Ch_k*x_k + Dh_k*u_k + Dxuh_k*xu_k + Ddh_k*dh_k.
 %
 %   Use [] to leave a coefficient unchanged. The signal and its bounds must
 %   first be defined with INIT_MPC_CUSTOM_CNSTR. This updater cannot change
@@ -13,7 +13,7 @@ function mpc = update_mpc_custom_cnstr_vector(mpc,Ch,Dh,Dsuh,Ddh)
 %
 %   Coefficients may be constant matrices or contain L horizon stages in
 %   their third dimension. If L < N, the last supplied stage is reused for
-%   the remaining stages. Here, su_k is the control action preceding u_k,
+%   the remaining stages. Here, xu_k is the control action preceding u_k,
 %   and dh_k is the dedicated fixed known input supplied to MPC_SOLVE.
 % 
 %   Existing custom bounds use the updated signal model. To
@@ -24,7 +24,7 @@ function mpc = update_mpc_custom_cnstr_vector(mpc,Ch,Dh,Dsuh,Ddh)
 %     Ch      - Optional state coefficient, size nh-by-nx or nh-by-nx-by-L.
 %     Dh      - Optional control coefficient, size nh-by-nu or
 %               nh-by-nu-by-L.
-%     Dsuh    - Optional previous-control coefficient, size nh-by-nu or
+%     Dxuh    - Optional previous-control coefficient, size nh-by-nu or
 %               nh-by-nu-by-L.
 %     Ddh     - Optional fixed-known-input coefficient, size nh-by-ndh or
 %               nh-by-ndh-by-L.
@@ -37,7 +37,7 @@ function mpc = update_mpc_custom_cnstr_vector(mpc,Ch,Dh,Dsuh,Ddh)
 %       mpc = update_mpc_custom_cnstr_vector(mpc, Ch, Dh, [], []);
 
 
-if ~isempty(Ch) && ~isempty(mpc.h_cnstr.use_s)
+if ~isempty(Ch) && ~isempty(mpc.h_cnstr.use_x)
 
     len_Ch = size(Ch,3);
     mpc.Ch(:,:,:) = fill_mat(mpc.Ch, Ch, 1);
@@ -58,9 +58,9 @@ if ~isempty(Dh) && ~isempty(mpc.h_cnstr.use_u)
 
 end
 
-if ~isempty(Dsuh) && ~isempty(mpc.h_cnstr.use_su)
-    mpc.Dsuh(:,:,:) = fill_mat(mpc.Dsuh, Dsuh, 1);
-    if ~isempty(mpc.h_cnstr.use_k0), mpc.Dsuh_0(:,:) = Dsuh(mpc.h_cnstr.rows_k0,:,1); end
+if ~isempty(Dxuh) && ~isempty(mpc.h_cnstr.use_xu)
+    mpc.Dxuh(:,:,:) = fill_mat(mpc.Dxuh, Dxuh, 1);
+    if ~isempty(mpc.h_cnstr.use_k0), mpc.Dxuh_0(:,:) = Dxuh(mpc.h_cnstr.rows_k0,:,1); end
 
 end
 

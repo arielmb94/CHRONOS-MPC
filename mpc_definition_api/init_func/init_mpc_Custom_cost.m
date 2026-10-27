@@ -1,15 +1,15 @@
-function mpc = init_mpc_Custom_cost(mpc,Cz,Dz,Dsuz,Ddz,Qz,qz)
+function mpc = init_mpc_Custom_cost(mpc,Cz,Dz,Dxuz,Ddz,Qz,qz)
 % INIT_MPC_CUSTOM_COST Add a quadratic or linear cost on a user-defined signal.
 %
-%   mpc = INIT_MPC_CUSTOM_COST(mpc, Cz, Dz, Dsuz, Ddz, Qz, qz) defines
+%   mpc = INIT_MPC_CUSTOM_COST(mpc, Cz, Dz, Dxuz, Ddz, Qz, qz) defines
 %
-%       z_k = Cz_k*s_k + Dz_k*u_k + Dsuz_k*su_k + Ddz_k*dz_k
+%       z_k = Cz_k*x_k + Dz_k*u_k + Dxuz_k*xu_k + Ddz_k*dz_k
 %
 %   and adds quadratic and/or linear penalties on z_k:
 %
 %       J_custom += 0.5*z_k'*Qz_k*z_k + qz_k'*z_k
 %
-%   Use [] for a coefficient or penalty that is not needed. Here, su_k is
+%   Use [] for a coefficient or penalty that is not needed. Here, xu_k is
 %   the control action preceding u_k, and dz_k is a dedicated fixed known
 %   input supplied through the dz_in argument of MPC_SOLVE.
 %
@@ -26,7 +26,7 @@ function mpc = init_mpc_Custom_cost(mpc,Cz,Dz,Dsuz,Ddz,Qz,qz)
 %     mpc     - CHRONOS MPC structure.
 %     Cz      - State coefficient, size nz-by-nx or nz-by-nx-by-L.
 %     Dz      - Control coefficient, size nz-by-nu or nz-by-nu-by-L.
-%     Dsuz    - Previous-control coefficient, size nz-by-nu or
+%     Dxuz    - Previous-control coefficient, size nz-by-nu or
 %               nz-by-nu-by-L.
 %     Ddz     - Fixed-known-input coefficient, size nz-by-ndz or
 %               nz-by-ndz-by-L.
@@ -41,10 +41,10 @@ function mpc = init_mpc_Custom_cost(mpc,Cz,Dz,Dsuz,Ddz,Qz,qz)
 %       % z = u - u_ref
 %       Cz   = zeros(nu, nx);
 %       Dz   = eye(nu);
-%       Dsuz = [];
+%       Dxuz = [];
 %       Ddz  = -eye(nu);
 %       Qz   = eye(nu);
-%       mpc = init_mpc_Custom_cost(mpc, Cz, Dz, Dsuz, Ddz, Qz, []);
+%       mpc = init_mpc_Custom_cost(mpc, Cz, Dz, Dxuz, Ddz, Qz, []);
 %
 %   Pass u_ref as the dz_in argument of MPC_SOLVE at runtime.
 
@@ -52,7 +52,7 @@ arguments
     mpc
     Cz = []
     Dz = []
-    Dsuz = []
+    Dxuz = []
     Ddz = []
     Qz = [];
     qz = [];
@@ -62,13 +62,13 @@ end
 % validation, independently of their supplied dimensions.
 if ~isempty(Cz) && ~any(Cz(:)), Cz = []; end
 if ~isempty(Dz) && ~any(Dz(:)), Dz = []; end
-if ~isempty(Dsuz) && ~any(Dsuz(:)), Dsuz = []; end
+if ~isempty(Dxuz) && ~any(Dxuz(:)), Dxuz = []; end
 if ~isempty(Ddz) && ~any(Ddz(:)), Ddz = []; end
 if ~isempty(Qz) && ~any(Qz(:)), Qz = []; end
 if ~isempty(qz) && ~any(qz(:)), qz = []; end
 
 % A custom cost needs both a decision-dependent signal and an active weight.
-if (isempty(Cz) && isempty(Dz) && isempty(Dsuz)) || ...
+if (isempty(Cz) && isempty(Dz) && isempty(Dxuz)) || ...
         (isempty(Qz) && isempty(qz))
     return;
 end
@@ -79,12 +79,12 @@ if ~isempty(Cz)
 elseif ~isempty(Dz)
     mpc.nz = size(Dz,1);
 else
-    mpc.nz = size(Dsuz,1);
+    mpc.nz = size(Dxuz,1);
 end
 
 validate_matrix(Cz, mpc.nz, mpc.nx, 'Cz');
 validate_matrix(Dz, mpc.nz, mpc.nu, 'Dz');
-validate_matrix(Dsuz, mpc.nz, mpc.nu, 'Dsuz');
+validate_matrix(Dxuz, mpc.nz, mpc.nu, 'Dxuz');
 if ~isempty(Ddz)
     mpc.ndz = size(Ddz,2);
     validate_matrix(Ddz, mpc.nz, mpc.ndz, 'Ddz');
@@ -109,7 +109,7 @@ if ~isempty(qz) && size(qz,1) == 1
 end
 
 if ~isempty(Cz)
-    mpc.z_use_s = 1;
+    mpc.z_use_x = 1;
 
     len_Cz = size(Cz,3);
     if len_Cz < mpc.N
@@ -136,19 +136,19 @@ if ~isempty(Dz)
     end
 end
 
-if ~isempty(Dsuz)
-    mpc.z_use_su = 1;
+if ~isempty(Dxuz)
+    mpc.z_use_xu = 1;
 
     mpc.has_du = 1;
 
-    len_Dsuz = size(Dsuz,3);
-    if len_Dsuz < mpc.N
-        mpc.Dsuz = zeros(mpc.nz,mpc.nu,mpc.N-1);
-        mpc.Dsuz = fill_mat(mpc.Dsuz, Dsuz, 1);
-        Dsuz_ter = mpc.Dsuz(:,:,mpc.N-1);
+    len_Dxuz = size(Dxuz,3);
+    if len_Dxuz < mpc.N
+        mpc.Dxuz = zeros(mpc.nz,mpc.nu,mpc.N-1);
+        mpc.Dxuz = fill_mat(mpc.Dxuz, Dxuz, 1);
+        Dxuz_ter = mpc.Dxuz(:,:,mpc.N-1);
     else
-        mpc.Dsuz = Dsuz(:,:,1:mpc.N-1);
-        Dsuz_ter = Dsuz(:,:,mpc.N);
+        mpc.Dxuz = Dxuz(:,:,1:mpc.N-1);
+        Dxuz_ter = Dxuz(:,:,mpc.N);
     end
 end
 
@@ -171,7 +171,7 @@ mpc.z_use_k0 = [];
 mpc.z_use_ter = [];
 mpc.Cz_0 = [];
 mpc.Dz_0 = [];
-mpc.Dsuz_0 = [];
+mpc.Dxuz_0 = [];
 mpc.Ddz_0 = [];
 mpc.Cz_ter = [];
 mpc.z_rows_k0 = [];
@@ -185,20 +185,20 @@ if mpc.nz_0
     mpc.z_rows_k0 = z_row_0;
     mpc.z_use_k0 = 1;
 
-    if ~isempty(mpc.z_use_s), mpc.Cz_0 = Cz(mpc.z_rows_k0,:,1); end
+    if ~isempty(mpc.z_use_x), mpc.Cz_0 = Cz(mpc.z_rows_k0,:,1); end
     if ~isempty(mpc.z_use_u), mpc.Dz_0 = Dz(mpc.z_rows_k0,:,1); end
-    if ~isempty(mpc.z_use_su), mpc.Dsuz_0 = Dsuz(mpc.z_rows_k0,:,1); end
+    if ~isempty(mpc.z_use_xu), mpc.Dxuz_0 = Dxuz(mpc.z_rows_k0,:,1); end
     if ~isempty(mpc.z_use_d), mpc.Ddz_0 = Ddz(mpc.z_rows_k0,:,1); end
 end
 
-% at k = N, only rows strictly dependent on s are considered
-if ~isempty(mpc.z_use_s)
-    strict_s_rows = any(Cz_ter~=0,2);
-    if ~isempty(mpc.z_use_u), strict_s_rows = strict_s_rows & all(Dz_ter==0,2); end
-    if ~isempty(mpc.z_use_su), strict_s_rows = strict_s_rows & all(Dsuz_ter==0,2); end
-    if ~isempty(mpc.z_use_d), strict_s_rows = strict_s_rows & all(Ddz_ter==0,2); end
+% at k = N, only rows strictly dependent on x are considered
+if ~isempty(mpc.z_use_x)
+    strict_x_rows = any(Cz_ter~=0,2);
+    if ~isempty(mpc.z_use_u), strict_x_rows = strict_x_rows & all(Dz_ter==0,2); end
+    if ~isempty(mpc.z_use_xu), strict_x_rows = strict_x_rows & all(Dxuz_ter==0,2); end
+    if ~isempty(mpc.z_use_d), strict_x_rows = strict_x_rows & all(Ddz_ter==0,2); end
 
-    z_row_ter = find(strict_s_rows);
+    z_row_ter = find(strict_x_rows);
     mpc.nz_ter = length(z_row_ter);
 else
     mpc.nz_ter = 0;

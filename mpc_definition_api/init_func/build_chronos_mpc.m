@@ -1,18 +1,18 @@
-function mpc = build_chronos_mpc(mpc,s_prev,u_prev,d_in,dh_in,x_ref)
+function mpc = build_chronos_mpc(mpc,x_prev,u_prev,d_in,dh_in,x_ref)
 % BUILD_CHRONOS_MPC This function must always be called at the end of
 % the initialization process. Initializes a feasible stage-local iterate for
 % the MPC solver and initializes costs and constraint structures based on
 % initialization data. 
 %
-%   mpc = BUILD_CHRONOS_MPC(mpc, s_prev, u_prev) calculates a strictly feasible
+%   mpc = BUILD_CHRONOS_MPC(mpc, x_prev, u_prev) calculates a strictly feasible
 %   initial iterate using a system rollout.
 %
-%   mpc = BUILD_CHRONOS_MPC(mpc, s_prev, u_prev, d_in, dh_in, x_ref) allows the
+%   mpc = BUILD_CHRONOS_MPC(mpc, x_prev, u_prev, d_in, dh_in, x_ref) allows the
 %   inclusion of reference trajectories and measured disturbances.
 %
 %   Inputs:
 %     mpc    - CHRONOS MPC structure.
-%     s_prev - [nx x 1] Current measured state vector.
+%     x_prev - [nx x 1] Current measured state vector.
 %     u_prev - [nu x 1] Last applied control input.
 %     d_in   - Optional known input for the dynamics and output model. It
 %              can be an nd-by-1 column vector or an nd-by-L matrix, where
@@ -33,11 +33,11 @@ function mpc = build_chronos_mpc(mpc,s_prev,u_prev,d_in,dh_in,x_ref)
 %
 %   Example - build with no optional runtime signals:
 %
-%       mpc = build_chronos_mpc(mpc, s_prev, u_prev, [], [], []);
+%       mpc = build_chronos_mpc(mpc, x_prev, u_prev, [], [], []);
 
 arguments
     mpc
-    s_prev
+    x_prev
     u_prev
     d_in = []
     dh_in = [] 
@@ -67,7 +67,7 @@ end
         mpc.d(:,:) = fill_vec(mpc.d,d_in,1);
     end
 
-    mpc = rollstates(mpc,s_prev,u_prev,x_ref,mpc.d);
+    mpc = rollstates(mpc,x_prev,u_prev,x_ref,mpc.d);
 
     if ~isempty(dh_in)
         mpc.dh(:,:) = fill_vec(mpc.dh,dh_in,1);
@@ -75,7 +75,7 @@ end
 
     mpc = get_mpc_variables(mpc,mpc.has_du,mpc.tracking_cost,mpc.has_y_cnstr,...
                             mpc.has_h_cnstr,mpc.quad_custom_cost,mpc.lin_custom_cost,...
-                            s_prev,u_prev);
+                            x_prev,u_prev);
     mpc = initialize_inequality_slacks(mpc);
     
 end
@@ -94,7 +94,7 @@ mpc.v_0(:) = 0;
 mpc.v_k(:,:) = 0;
 mpc.v_ter(:) = 0;
 mpc = inequality_residuals(mpc,mpc.g_0,mpc.g_k,mpc.g_ter,...
-    mpc.has_s_cnstr,mpc.has_u_cnstr,mpc.has_du_cnstr,...
+    mpc.has_x_cnstr,mpc.has_u_cnstr,mpc.has_du_cnstr,...
     mpc.has_y_cnstr,mpc.has_h_cnstr);
 
 [mpc.g_0,mpc.v_0] = initialize_inequality_slacks_local(...
@@ -109,7 +109,7 @@ if ~isempty(mpc.v_ter)
 end
 
 mpc = inequality_residuals(mpc,mpc.g_0,mpc.g_k,mpc.g_ter,...
-    mpc.has_s_cnstr,mpc.has_u_cnstr,mpc.has_du_cnstr,...
+    mpc.has_x_cnstr,mpc.has_u_cnstr,mpc.has_du_cnstr,...
     mpc.has_y_cnstr,mpc.has_h_cnstr);
 
 end
@@ -125,9 +125,9 @@ end
 
 end
 
-function mpc = rollstates(mpc,s_prev,u_prev,x_ref,d)
+function mpc = rollstates(mpc,x_prev,u_prev,x_ref,d)
 
-x_k = s_prev;
+x_k = x_prev;
 u_k_prev = u_prev;
  
 for k = 1 : mpc.N
@@ -178,17 +178,17 @@ end
     end
 % clamp x: for safety net in case we are dealing with unstable
 % system
-if ~isempty(mpc.has_s_cnstr)
+if ~isempty(mpc.has_x_cnstr)
     % Check minimum state limits
-    if ~isempty(mpc.s_cnstr.min_limit)
-        s_min_strict = mpc.s_cnstr.min(:,k) + mpc.slack_epsilon;
-            x_next = max(s_min_strict, x_next);
+    if ~isempty(mpc.x_cnstr.min_limit)
+        x_min_strict = mpc.x_cnstr.min(:,k) + mpc.slack_epsilon;
+            x_next = max(x_min_strict, x_next);
     end
 
     % Check maximum state limits
-    if ~isempty(mpc.s_cnstr.max_limit)
-        s_max_strict = mpc.s_cnstr.max(:,k) - mpc.slack_epsilon;
-            x_next = min(s_max_strict, x_next);
+    if ~isempty(mpc.x_cnstr.max_limit)
+        x_max_strict = mpc.x_cnstr.max(:,k) - mpc.slack_epsilon;
+            x_next = min(x_max_strict, x_next);
 
     end
 end
@@ -196,9 +196,9 @@ end
     % 5. Store the stage-local iterate
     mpc.u(:,k) = u_k;
     if ~isempty(mpc.has_du)
-        mpc.su(:,k) = u_k_prev;
+        mpc.xu(:,k) = u_k_prev;
     end
-    mpc.s(:,k) = x_next;
+    mpc.x(:,k) = x_next;
 
     % 6. Prepare for next step
     x_k = x_next;
@@ -210,18 +210,18 @@ end
 function mpc = preallocate_riccati(mpc)
     
     n_interior = mpc.N-1;
-    mpc.Q_hat = zeros(mpc.nse,mpc.nse,mpc.N);
+    mpc.Q_hat = zeros(mpc.nxe,mpc.nxe,mpc.N);
     mpc.R_hat = zeros(mpc.nu,mpc.nu,n_interior);
-    mpc.Y_hat = zeros(mpc.nu,mpc.nse,n_interior);
-    mpc.K_ric = zeros(mpc.nu,mpc.nse,n_interior);
+    mpc.Y_hat = zeros(mpc.nu,mpc.nxe,n_interior);
+    mpc.K_ric = zeros(mpc.nu,mpc.nxe,n_interior);
     mpc.d_ric = zeros(mpc.nu,n_interior);
-    mpc.rs_hat = zeros(mpc.nse,mpc.N);
-    mpc.rp_hat = zeros(mpc.nse,n_interior);
+    mpc.rx_hat = zeros(mpc.nxe,mpc.N);
+    mpc.rp_hat = zeros(mpc.nxe,n_interior);
     mpc.ru_hat = zeros(mpc.nu,n_interior);
 
     mpc.R_hat_0 = zeros(mpc.nu,mpc.nu);
     mpc.d_ric_0 = zeros(mpc.nu,1);
-    mpc.rp_hat_0 = zeros(mpc.nse,1);
+    mpc.rp_hat_0 = zeros(mpc.nxe,1);
     mpc.ru_hat_0 = zeros(mpc.nu,1);
 
     mpc.QA_ric = zeros(mpc.nx,mpc.nx);
@@ -232,6 +232,6 @@ function mpc = preallocate_riccati(mpc)
         mpc.QB_ric = zeros(mpc.nx,mpc.nu);
         mpc.G_ric = [];
     end
-    mpc.solve_rhs_ric = zeros(mpc.nu,mpc.nse+1);
-    mpc.solve_result_ric = zeros(mpc.nu,mpc.nse+1);
+    mpc.solve_rhs_ric = zeros(mpc.nu,mpc.nxe+1);
+    mpc.solve_result_ric = zeros(mpc.nu,mpc.nxe+1);
 end

@@ -54,8 +54,8 @@ for k = 1:Sim_samples
             h1_j = x_prev(1);
             h2_j = x_prev(2);
         else
-            h1_j = mpc.s(1,j-1);
-            h2_j = mpc.s(2,j-1);
+            h1_j = mpc.x(1,j-1);
+            h2_j = mpc.x(2,j-1);
         end
 
         A_lpv(:,:,j) = eye(2)+Ts*[-sqrt(2*g)*sqrt(h1_j)/(Ab*h1_j) 0;

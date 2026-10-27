@@ -5,7 +5,7 @@ function mpc = update_mpc_slack_cost(mpc, cnstr, qv_min, qv_max)
 %   lower- and/or upper-bound violation penalties for an initialized soft
 %   constraint. Pass one of these structures as cnstr:
 %
-%       mpc.s_cnstr    predicted-state constraints
+%       mpc.x_cnstr    predicted-state constraints
 %       mpc.y_cnstr    output constraints
 %       mpc.h_cnstr    custom-signal constraints
 %
@@ -21,7 +21,7 @@ function mpc = update_mpc_slack_cost(mpc, cnstr, qv_min, qv_max)
 %
 %   Inputs:
 %     mpc     - Built CHRONOS MPC structure.
-%     cnstr   - Initialized mpc.s_cnstr, mpc.y_cnstr, or mpc.h_cnstr.
+%     cnstr   - Initialized mpc.x_cnstr, mpc.y_cnstr, or mpc.h_cnstr.
 %     qv_min  - Optional lower-bound penalty: scalar, n-by-1, or n-by-L.
 %     qv_max  - Optional upper-bound penalty: scalar, n-by-1, or n-by-L.
 %
@@ -30,7 +30,7 @@ function mpc = update_mpc_slack_cost(mpc, cnstr, qv_min, qv_max)
 %
 %   Example - update only state lower-bound penalties:
 %
-%       mpc = update_mpc_slack_cost(mpc, mpc.s_cnstr, qv_min, []);
+%       mpc = update_mpc_slack_cost(mpc, mpc.x_cnstr, qv_min, []);
 
 % Note: The struct fields cnstr.qv_min and cnstr.qv_max are intentionally 
 % NOT updated here to maintain a clean single-output API (returning only mpc). 

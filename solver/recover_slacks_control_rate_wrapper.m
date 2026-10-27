@@ -1,15 +1,15 @@
 function mpc = recover_slacks_control_rate_wrapper(mpc,du_cnstr)
 [mpc.delta_g_0,mpc.delta_g_k] = recover_slacks_control_rate_local(...
-    mpc.delta_g_0,mpc.delta_g_k,mpc.N,mpc.delta_u,mpc.delta_se,...
+    mpc.delta_g_0,mpc.delta_g_k,mpc.N,mpc.delta_u,mpc.delta_xe,...
     mpc.iS_ri_hat_0,mpc.iS_ri_hat_k,mpc.g_0,mpc.g_k,mpc.g2_0,mpc.g2_k,...
-    mpc.nu,mpc.su_col,du_cnstr.min_limit,du_cnstr.max_limit,...
+    mpc.nu,mpc.xu_col,du_cnstr.min_limit,du_cnstr.max_limit,...
     du_cnstr.min_ineqRow_0,du_cnstr.max_ineqRow_0,...
     du_cnstr.min_ineqRow_k,du_cnstr.max_ineqRow_k);
 end
 
 function [delta_g_0,delta_g_k] = recover_slacks_control_rate_local(...
-    delta_g_0,delta_g_k,N,delta_u,delta_se,iS_ri_hat_0,iS_ri_hat_k,g_0,g_k,...
-    g2_0,g2_k,nu,su_col,min_limit,max_limit,min_ineqRow_0,max_ineqRow_0,...
+    delta_g_0,delta_g_k,N,delta_u,delta_xe,iS_ri_hat_0,iS_ri_hat_k,g_0,g_k,...
+    g2_0,g2_k,nu,xu_col,min_limit,max_limit,min_ineqRow_0,max_ineqRow_0,...
     min_ineqRow_k,max_ineqRow_k)
 if ~isempty(min_limit) && ~isempty(max_limit)
     %k = 0
@@ -34,8 +34,8 @@ if ~isempty(min_limit) && ~isempty(max_limit)
             row_min_i = min_ineqRow_k(i);
             row_max_i = max_ineqRow_k(i);
 
-            su_i = su_col(i);
-            du_i = delta_u(i,k+1)-delta_se(su_i,k);
+            xu_i = xu_col(i);
+            du_i = delta_u(i,k+1)-delta_xe(xu_i,k);
 
             g_min_i = g_k(row_min_i,k);
             g_max_i = g_k(row_max_i,k);
@@ -64,9 +64,9 @@ elseif ~isempty(min_limit)
         for i = 1:nu
             row_i = min_ineqRow_k(i);
 
-            % A_i = [I -I] <-- [su u]
-            su_i = su_col(i);
-            du_i = delta_u(i,k+1)-delta_se(su_i,k);
+            % A_i = [I -I] <-- [xu u]
+            xu_i = xu_col(i);
+            du_i = delta_u(i,k+1)-delta_xe(xu_i,k);
 
             g_i = g_k(row_i,k);
             g2_i = g2_k(row_i,k);
@@ -89,9 +89,9 @@ elseif ~isempty(max_limit)
         for i = 1:nu
             row_i = max_ineqRow_k(i);
 
-            % A_i = [-I I] <-- [su u]
-            su_i = su_col(i);
-            du_i = delta_u(i,k+1)-delta_se(su_i,k);
+            % A_i = [-I I] <-- [xu u]
+            xu_i = xu_col(i);
+            du_i = delta_u(i,k+1)-delta_xe(xu_i,k);
 
             g_i = g_k(row_i,k);
             g2_i = g2_k(row_i,k);

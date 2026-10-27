@@ -2,12 +2,12 @@ function mpc = recover_slacks_output_wrapper(mpc,y_cnstr)
 [mpc.delta_g_0,mpc.delta_g_k,mpc.delta_g_ter,mpc.delta_v_0,mpc.delta_v_k,...
     mpc.delta_v_ter] = recover_slacks_output_local(mpc.delta_g_0,mpc.delta_g_k,...
     mpc.delta_g_ter,mpc.delta_v_0,mpc.delta_v_k,mpc.delta_v_ter,mpc.N,...
-    mpc.delta_u,mpc.delta_se,mpc.iS_ri_hat_0,mpc.iS_ri_hat_k,...
+    mpc.delta_u,mpc.delta_xe,mpc.iS_ri_hat_0,mpc.iS_ri_hat_k,...
     mpc.iS_ri_hat_ter,mpc.iS_0,mpc.iS_k,mpc.iS_ter,mpc.g_0,mpc.g_k,...
     mpc.g_ter,mpc.g2_0,mpc.g2_k,mpc.g2_ter,mpc.v2_0,mpc.v2_k,mpc.v2_ter,...
     mpc.rv_v2_0,mpc.rv_v2_k,mpc.rv_v2_ter,mpc.D_0,mpc.C,mpc.D,mpc.C_ter,...
-    mpc.s_col,y_cnstr.min_limit,y_cnstr.max_limit,y_cnstr.use_k0,...
-    y_cnstr.use_s,y_cnstr.use_u,y_cnstr.use_ter,...
+    mpc.x_col,y_cnstr.min_limit,y_cnstr.max_limit,y_cnstr.use_k0,...
+    y_cnstr.use_x,y_cnstr.use_u,y_cnstr.use_ter,...
     y_cnstr.min_ineqRow_0,y_cnstr.max_ineqRow_0,...
     y_cnstr.min_row_v_0,y_cnstr.max_row_v_0,...
     y_cnstr.min_ineqRow_k,y_cnstr.max_ineqRow_k,...
@@ -17,10 +17,10 @@ end
 
 function [delta_g_0,delta_g_k,delta_g_ter,delta_v_0,delta_v_k,delta_v_ter] = ...
     recover_slacks_output_local(delta_g_0,delta_g_k,delta_g_ter,delta_v_0,...
-    delta_v_k,delta_v_ter,N,delta_u,delta_se,iS_ri_hat_0,iS_ri_hat_k,...
+    delta_v_k,delta_v_ter,N,delta_u,delta_xe,iS_ri_hat_0,iS_ri_hat_k,...
     iS_ri_hat_ter,iS_0,iS_k,iS_ter,g_0,g_k,g_ter,g2_0,g2_k,g2_ter,v2_0,...
-    v2_k,v2_ter,rv_v2_0,rv_v2_k,rv_v2_ter,D_0,C,D,C_ter,s_col,min_limit,...
-    max_limit,use_k0,use_s,use_u,use_ter,min_ineqRow_0,max_ineqRow_0,...
+    v2_k,v2_ter,rv_v2_0,rv_v2_k,rv_v2_ter,D_0,C,D,C_ter,x_col,min_limit,...
+    max_limit,use_k0,use_x,use_u,use_ter,min_ineqRow_0,max_ineqRow_0,...
     min_row_v_0,max_row_v_0,min_ineqRow_k,max_ineqRow_k,min_row_v_k,...
     max_row_v_k,min_ineqRow_ter,max_ineqRow_ter)
 if ~isempty(min_limit) && ~isempty(max_limit)
@@ -41,10 +41,10 @@ if ~isempty(min_limit) && ~isempty(max_limit)
 
     % k = 1,...,N-1
     for k = 1:N-1
-        if ~isempty(use_s) && ~isempty(use_u)
-            delta_y_k = C(:,:,k) * delta_se(s_col,k) + D(:,:,k) * delta_u(:,k+1);
-        elseif ~isempty(use_s)
-            delta_y_k = C(:,:,k) * delta_se(s_col,k);
+        if ~isempty(use_x) && ~isempty(use_u)
+            delta_y_k = C(:,:,k) * delta_xe(x_col,k) + D(:,:,k) * delta_u(:,k+1);
+        elseif ~isempty(use_x)
+            delta_y_k = C(:,:,k) * delta_xe(x_col,k);
         elseif ~isempty(use_u)
             delta_y_k = D(:,:,k) * delta_u(:,k+1);
         else
@@ -63,7 +63,7 @@ if ~isempty(min_limit) && ~isempty(max_limit)
 
     % k = N
     if ~isempty(use_ter)
-        delta_y_ter = C_ter * delta_se(s_col,N);
+        delta_y_ter = C_ter * delta_xe(x_col,N);
 
         mu_min = iS_ri_hat_ter(min_ineqRow_ter) - iS_ter(min_ineqRow_ter) .* delta_y_ter;
         mu_max = iS_ri_hat_ter(max_ineqRow_ter) + iS_ter(max_ineqRow_ter) .* delta_y_ter;
@@ -88,10 +88,10 @@ elseif ~isempty(min_limit)
 
     % k = 1,...,N-1
     for k = 1:N-1
-        if ~isempty(use_s) && ~isempty(use_u)
-            delta_y_k = C(:,:,k) * delta_se(s_col,k) + D(:,:,k) * delta_u(:,k+1);
-        elseif ~isempty(use_s)
-            delta_y_k = C(:,:,k) * delta_se(s_col,k);
+        if ~isempty(use_x) && ~isempty(use_u)
+            delta_y_k = C(:,:,k) * delta_xe(x_col,k) + D(:,:,k) * delta_u(:,k+1);
+        elseif ~isempty(use_x)
+            delta_y_k = C(:,:,k) * delta_xe(x_col,k);
         elseif ~isempty(use_u)
             delta_y_k = D(:,:,k) * delta_u(:,k+1);
         else
@@ -106,7 +106,7 @@ elseif ~isempty(min_limit)
 
     % k = N
     if ~isempty(use_ter)
-        delta_y_ter = C_ter * delta_se(s_col,N);
+        delta_y_ter = C_ter * delta_xe(x_col,N);
         mu = iS_ri_hat_ter(min_ineqRow_ter) - iS_ter(min_ineqRow_ter) .* delta_y_ter;
 
         delta_g_ter(min_ineqRow_ter) = g_ter(min_ineqRow_ter) - g2_ter(min_ineqRow_ter) .* mu;
@@ -126,10 +126,10 @@ elseif ~isempty(max_limit)
 
     % k = 1,...,N-1
     for k = 1:N-1
-        if ~isempty(use_s) && ~isempty(use_u)
-            delta_y_k = C(:,:,k) * delta_se(s_col,k) + D(:,:,k) * delta_u(:,k+1);
-        elseif ~isempty(use_s)
-            delta_y_k = C(:,:,k) * delta_se(s_col,k);
+        if ~isempty(use_x) && ~isempty(use_u)
+            delta_y_k = C(:,:,k) * delta_xe(x_col,k) + D(:,:,k) * delta_u(:,k+1);
+        elseif ~isempty(use_x)
+            delta_y_k = C(:,:,k) * delta_xe(x_col,k);
         elseif ~isempty(use_u)
             delta_y_k = D(:,:,k) * delta_u(:,k+1);
         else
@@ -144,7 +144,7 @@ elseif ~isempty(max_limit)
 
     % k = N
     if ~isempty(use_ter)
-        delta_y_ter = C_ter * delta_se(s_col,N);
+        delta_y_ter = C_ter * delta_xe(x_col,N);
         mu = iS_ri_hat_ter(max_ineqRow_ter) + iS_ter(max_ineqRow_ter) .* delta_y_ter;
 
         delta_g_ter(max_ineqRow_ter) = g_ter(max_ineqRow_ter) - g2_ter(max_ineqRow_ter) .* mu;

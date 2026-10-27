@@ -62,16 +62,16 @@ y_max = [];
 
 %% Optional custom constraints (inactive)
 
-% Custom constrained signal: h = Ch*x+Dh*u+Dsuh*su+Ddh*dh
+% Custom constrained signal: h = Ch*x+Dh*u+Dxuh*xu+Ddh*dh
 Ch = [];
 Dh = [];
-Dsuh = [];
+Dxuh = [];
 Ddh = [];
 
 h_min = [];
 h_max = [];
 
-%mpc = init_mpc_custom_cnstr(mpc,Ch,Dh,Dsuh,Ddh,h_min,h_max);
+%mpc = init_mpc_custom_cnstr(mpc,Ch,Dh,Dxuh,Ddh,h_min,h_max);
 
 %% Terminal Ingredients
 
@@ -103,17 +103,17 @@ ru = [];    % Linear penalty on control action vector: ru'*u
 
 %% Optional custom cost (inactive)
 
-% Custom performance signal: z = Cz*x+Dz*u+Dsuz*su+Ddz*dz
+% Custom performance signal: z = Cz*x+Dz*u+Dxuz*xu+Ddz*dz
 Cz = [];
 Dz = [];
-Dsuz = [];
+Dxuz = [];
 Ddz = [];
 
 Qz = [];    % Quadratic penalty on performance vector: z'*Qz*z
 qz = [];    % Linear penalty on performance vector: qz'*z 
 
 % Init performance cost
-%mpc = init_mpc_Custom_cost(mpc,Cz,Dz,Dsuz,Ddz,Qz,qz);
+%mpc = init_mpc_Custom_cost(mpc,Cz,Dz,Dxuz,Ddz,Qz,qz);
 
 %% Init conditions for simulation
 

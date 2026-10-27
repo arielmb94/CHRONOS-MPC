@@ -49,22 +49,22 @@ The controller uses a prediction horizon of $N=10$ samples. Its state, input,
 and tracked output are
 
 ```math
-s_k=\begin{bmatrix}h_{1,k}\\h_{2,k}\end{bmatrix},\qquad
-u_k=\text{inlet flow},\qquad y_k=\begin{bmatrix}0&1\end{bmatrix}s_k=h_{2,k}.
+x_k=\begin{bmatrix}h_{1,k}\\h_{2,k}\end{bmatrix},\qquad
+u_k=\text{inlet flow},\qquad y_k=\begin{bmatrix}0&1\end{bmatrix}x_k=h_{2,k}.
 ```
 
 At every sampling instant, CHRONOS solves the configured problem
 
 ```math
 \begin{aligned}
-\min_{s,u}\quad
-J={}&(s_{ref,N}-s_N)^T P(s_{ref,N}-s_N) \\
+\min_{x,u}\quad
+J={}&(x_{ref,N}-x_N)^T P(x_{ref,N}-x_N) \\
 &+\frac{1}{2}\sum_{k=1}^{N}(r_k-y_k)^TQ_e(r_k-y_k)
 +\frac{1}{2}\sum_{k=0}^{N-1}\Delta u_k^T R_{du}\Delta u_k
 \\
 \text{subject to}\quad
-&s_{k+1}=A_{d,k}s_k+B_du_k, && k=0,\ldots,N-1,\\
-&0.01\le s_k\le 1, && k=1,\ldots,N,\\
+&x_{k+1}=A_{d,k}x_k+B_du_k, && k=0,\ldots,N-1,\\
+&0.01\le x_k\le 1, && k=1,\ldots,N,\\
 &0\le u_k\le 10, && k=0,\ldots,N-1,\\
 &-0.1\le\Delta u_k\le0.1, && k=0,\ldots,N-1.
 \end{aligned}

@@ -52,8 +52,8 @@ following affine forms:
 $$
 \begin{aligned}
 y_k &= C_k x_k+D_k u_k+D_{d,k}d_k,\\
-z_k &= C_{z,k}x_k+D_{z,k}u_k+D_{su,z,k}su_k+D_{dz,k}d_{z,k},\\
-h_k &= C_{h,k}x_k+D_{h,k}u_k+D_{su,h,k}su_k+D_{dh,k}d_{h,k}.
+z_k &= C_{z,k}x_k+D_{z,k}u_k+D_{xu,z,k}xu_k+D_{dz,k}d_{z,k},\\
+h_k &= C_{h,k}x_k+D_{h,k}u_k+D_{xu,h,k}xu_k+D_{dh,k}d_{h,k}.
 \end{aligned}
 $$
 
@@ -61,14 +61,14 @@ The dimensions of $y_k$, $z_k$, and $h_k$ are $n_y$, $n_z$, and $n_h$,
 respectively. The known inputs satisfy $d_z\in\mathbb{R}^{n_{dz}}$ and
 $d_h\in\mathbb{R}^{n_{dh}}$; they are specific to the custom-cost and
 custom-constraint signals. When a control-rate or custom-signal term uses
-$su_k$, it denotes the control action preceding $u_k$. Once the scheduling
+$xu_k$, it denotes the control action preceding $u_k$. Once the scheduling
 values are fixed, each supported signal is affine in its decision variables.
 
 | Signal | Coefficient dimensions |
 | --- | --- |
 | $y$ | $C:n_y\times n_x$; $D:n_y\times n_u$; $D_d:n_y\times n_d$ |
-| $z$ | $C_z:n_z\times n_x$; $D_z,D_{su,z}:n_z\times n_u$; $D_{dz}:n_z\times n_{dz}$ |
-| $h$ | $C_h:n_h\times n_x$; $D_h,D_{su,h}:n_h\times n_u$; $D_{dh}:n_h\times n_{dh}$ |
+| $z$ | $C_z:n_z\times n_x$; $D_z,D_{xu,z}:n_z\times n_u$; $D_{dz}:n_z\times n_{dz}$ |
+| $h$ | $C_h:n_h\times n_x$; $D_h,D_{xu,h}:n_h\times n_u$; $D_{dh}:n_h\times n_{dh}$ |
 
 During a solve, scheduling values are fixed for each stage. One value can be
 shared across the prediction horizon, or the values can vary by stage. If

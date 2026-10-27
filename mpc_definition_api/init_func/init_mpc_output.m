@@ -1,11 +1,11 @@
 function mpc = init_mpc_output(mpc,C,D,Dd)
 % INIT_MPC_OUTPUT Define the tracking output. INIT_MPC_DYNAMICS installs 
-%   y_k = s_k as the default. Use this function to define a different 
+%   y_k = x_k as the default. Use this function to define a different
 %   output signal.
 %
 %   mpc = INIT_MPC_OUTPUT(mpc, C, D, Dd) defines
 %
-%       y_k = C_k*s_k + D_k*u_k + Dd_k*d_k.
+%       y_k = C_k*x_k + D_k*u_k + Dd_k*d_k.
 %
 %   The output can be used by tracking costs and output constraints. The
 %   input d_k is shared with the dynamics and is supplied as the d_in
@@ -90,12 +90,12 @@ mpc.Dd_0 = [];
 mpc.C_ter = [];
 mpc.y_rows_k0 = [];
 mpc.y_rows_ter = [];
-mpc.y_use_s = [];
+mpc.y_use_x = [];
 mpc.y_use_u = [];
 mpc.y_use_d = [];
 
 if ~isempty(C) && any(C(:))
-    mpc.y_use_s = 1;
+    mpc.y_use_x = 1;
 
     len_C = size(C,3);
     mpc.C = zeros(mpc.ny,mpc.nx,mpc.N-1);
@@ -136,7 +136,7 @@ if mpc.ny_0
     mpc.y_rows_k0 = y_row_0;
     mpc.y_use_k0 = 1;
 
-    if ~isempty(mpc.y_use_s), mpc.C_0 = C(mpc.y_rows_k0,:,1); end
+    if ~isempty(mpc.y_use_x), mpc.C_0 = C(mpc.y_rows_k0,:,1); end
     if ~isempty(mpc.y_use_u), mpc.D_0 = D(mpc.y_rows_k0,:,1); end
     if ~isempty(mpc.y_use_d), mpc.Dd_0 = Dd(mpc.y_rows_k0,:,1); end
 else
@@ -144,13 +144,13 @@ else
     mpc.y_use_k0 = [];
 end
 
-% at k = N, only rows strictly dependent on s are considered
-if ~isempty(mpc.y_use_s)
-    strict_s_rows = any(C_ter~=0,2);
-    if ~isempty(mpc.y_use_u), strict_s_rows = strict_s_rows & all(D_ter==0,2); end
-    if ~isempty(mpc.y_use_d), strict_s_rows = strict_s_rows & all(Dd_ter==0,2); end
+% at k = N, only rows strictly dependent on x are considered
+if ~isempty(mpc.y_use_x)
+    strict_x_rows = any(C_ter~=0,2);
+    if ~isempty(mpc.y_use_u), strict_x_rows = strict_x_rows & all(D_ter==0,2); end
+    if ~isempty(mpc.y_use_d), strict_x_rows = strict_x_rows & all(Dd_ter==0,2); end
 
-    y_row_ter = find(strict_s_rows);
+    y_row_ter = find(strict_x_rows);
     mpc.ny_ter = length(y_row_ter);
 else
     mpc.ny_ter = 0;

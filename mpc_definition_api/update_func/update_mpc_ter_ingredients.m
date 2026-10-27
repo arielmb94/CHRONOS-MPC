@@ -3,7 +3,7 @@ function mpc = update_mpc_ter_ingredients(mpc,P)
 %
 %   mpc = UPDATE_MPC_TER_INGREDIENTS(mpc, P) replaces the weight in
 %
-%       J_terminal = (xN_ref-s_N)'*P*(xN_ref-s_N).
+%       J_terminal = (xN_ref-x_N)'*P*(xN_ref-x_N).
 %
 %   This function accepts a new P directly; it does not rerun the 
 %   terminal ingredient calculation.

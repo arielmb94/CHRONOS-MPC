@@ -1,4 +1,4 @@
-function mpc = inequality_residuals(mpc,g_0,g_k,g_ter,has_s_cnstr,has_u_cnstr,...
+function mpc = inequality_residuals(mpc,g_0,g_k,g_ter,has_x_cnstr,has_u_cnstr,...
     has_du_cnstr,has_y_cnstr,has_h_cnstr)
 
 if ~isempty(g_0)
@@ -10,7 +10,7 @@ end
 if ~isempty(g_ter)
     mpc.ri_ter = inequality_residual_terminal_local(mpc.ri_ter,mpc.g_ter,mpc.v_ter);
 end
-if ~isempty(has_s_cnstr), mpc = inequality_state_wrapper(mpc,mpc.s_cnstr); end
+if ~isempty(has_x_cnstr), mpc = inequality_state_wrapper(mpc,mpc.x_cnstr); end
 if ~isempty(has_u_cnstr), mpc = inequality_control_wrapper(mpc,mpc.u_cnstr); end
 if ~isempty(has_du_cnstr), mpc = inequality_control_rate_wrapper(mpc,mpc.du_cnstr); end
 if ~isempty(has_y_cnstr), mpc = inequality_output_wrapper(mpc,mpc.y_cnstr); end

@@ -1,13 +1,13 @@
 % Computes output vectors of the form: y = Cs + Du + Dd
 function [y_0,y,y_ter,err_0,err,err_ter] = get_mpc_y( ...
-    y_0,y,y_ter,err_0,err,err_ter,s,u,d,r_0,r,r_ter,s_prev,N, ...
-    tracking_cost,y_use_k0,y_use_s,y_use_u,y_use_d,y_use_ter, ...
+    y_0,y,y_ter,err_0,err,err_ter,x,u,d,r_0,r,r_ter,x_prev,N, ...
+    tracking_cost,y_use_k0,y_use_x,y_use_u,y_use_d,y_use_ter, ...
     C_0,D_0,Dd_0,C,D,Dd,C_ter)
 
 if y_use_k0
     y_0(:) = D_0*u(:,1);
-    if y_use_s
-        y_0(:) = y_0(:) + C_0*s_prev;
+    if y_use_x
+        y_0(:) = y_0(:) + C_0*x_prev;
     end
     if y_use_d
         y_0(:) = y_0(:) + Dd_0*d(:,1);
@@ -20,8 +20,8 @@ end
 
 y(:,:) = 0;
 for k = 1:N-1
-    if y_use_s
-        y(:,k) = y(:,k) + C(:,:,k)*s(:,k);
+    if y_use_x
+        y(:,k) = y(:,k) + C(:,:,k)*x(:,k);
     end
     if y_use_u
         y(:,k) = y(:,k) + D(:,:,k)*u(:,k+1);
@@ -35,7 +35,7 @@ if tracking_cost
 end
 
 if y_use_ter
-    y_ter(:) = C_ter*s(:,N);
+    y_ter(:) = C_ter*x(:,N);
 
     if tracking_cost
         err_ter(:) = r_ter - y_ter;

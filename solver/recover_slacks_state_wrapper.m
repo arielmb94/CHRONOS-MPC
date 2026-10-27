@@ -1,18 +1,18 @@
-function mpc = recover_slacks_state_wrapper(mpc,s_cnstr)
+function mpc = recover_slacks_state_wrapper(mpc,x_cnstr)
 [mpc.delta_g_k,mpc.delta_g_ter,mpc.delta_v_k,mpc.delta_v_ter] = ...
     recover_slacks_state_local(mpc.delta_g_k,mpc.delta_g_ter,mpc.delta_v_k,...
-    mpc.delta_v_ter,mpc.N,mpc.delta_se,mpc.iS_ri_hat_k,mpc.iS_ri_hat_ter,...
+    mpc.delta_v_ter,mpc.N,mpc.delta_xe,mpc.iS_ri_hat_k,mpc.iS_ri_hat_ter,...
     mpc.iS_k,mpc.iS_ter,mpc.g_k,mpc.g_ter,mpc.g2_k,mpc.g2_ter,...
     mpc.v2_k,mpc.v2_ter,mpc.rv_v2_k,mpc.rv_v2_ter,mpc.nx,...
-    s_cnstr.min_limit,s_cnstr.max_limit,...
-    s_cnstr.min_ineqRow_k,s_cnstr.max_ineqRow_k,...
-    s_cnstr.min_row_v_k,s_cnstr.max_row_v_k,...
-    s_cnstr.min_ineqRow_ter,s_cnstr.max_ineqRow_ter);
+    x_cnstr.min_limit,x_cnstr.max_limit,...
+    x_cnstr.min_ineqRow_k,x_cnstr.max_ineqRow_k,...
+    x_cnstr.min_row_v_k,x_cnstr.max_row_v_k,...
+    x_cnstr.min_ineqRow_ter,x_cnstr.max_ineqRow_ter);
 end
 
 function [delta_g_k,delta_g_ter,delta_v_k,delta_v_ter] = ...
     recover_slacks_state_local(delta_g_k,delta_g_ter,delta_v_k,delta_v_ter,...
-    N,delta_se,iS_ri_hat_k,iS_ri_hat_ter,iS_k,iS_ter,g_k,g_ter,g2_k,g2_ter,...
+    N,delta_xe,iS_ri_hat_k,iS_ri_hat_ter,iS_k,iS_ter,g_k,g_ter,g2_k,g2_ter,...
     v2_k,v2_ter,rv_v2_k,rv_v2_ter,nx,min_limit,max_limit,min_ineqRow_k,...
     max_ineqRow_k,min_row_v_k,max_row_v_k,min_ineqRow_ter,max_ineqRow_ter)
 if ~isempty(min_limit) && ~isempty(max_limit)
@@ -24,9 +24,9 @@ if ~isempty(min_limit) && ~isempty(max_limit)
             row_max_i = max_ineqRow_k(i);
 
             mu_min_i = iS_ri_hat_k(row_min_i,k) - ...
-                iS_k(row_min_i,k)*delta_se(i,k);
+                iS_k(row_min_i,k)*delta_xe(i,k);
             mu_max_i = iS_ri_hat_k(row_max_i,k) + ...
-                iS_k(row_max_i,k)*delta_se(i,k);
+                iS_k(row_max_i,k)*delta_xe(i,k);
 
             g_min_i = g_k(row_min_i,k);
             g_max_i = g_k(row_max_i,k);
@@ -54,9 +54,9 @@ if ~isempty(min_limit) && ~isempty(max_limit)
         row_max_i = max_ineqRow_ter(i);
 
         mu_min_i = iS_ri_hat_ter(row_min_i) - ...
-            iS_ter(row_min_i)*delta_se(i,N);
+            iS_ter(row_min_i)*delta_xe(i,N);
         mu_max_i = iS_ri_hat_ter(row_max_i) + ...
-            iS_ter(row_max_i)*delta_se(i,N);
+            iS_ter(row_max_i)*delta_xe(i,N);
 
         g_min_i = g_ter(row_min_i);
         g_max_i = g_ter(row_max_i);
@@ -81,8 +81,8 @@ elseif ~isempty(min_limit)
         for i = 1:nx
             row_i = min_ineqRow_k(i);
 
-            % A_i = -I <-- s
-            mu_i = iS_ri_hat_k(row_i,k)-iS_k(row_i,k)*delta_se(i,k);
+            % A_i = -I <-- x
+            mu_i = iS_ri_hat_k(row_i,k)-iS_k(row_i,k)*delta_xe(i,k);
 
             g_i = g_k(row_i,k);
             g2_i = g2_k(row_i,k);
@@ -100,8 +100,8 @@ elseif ~isempty(min_limit)
     for i = 1:nx
         row_i = min_ineqRow_ter(i);
 
-        % A_i = -I <-- s
-        mu_i = iS_ri_hat_ter(row_i)-iS_ter(row_i)*delta_se(i,N);
+        % A_i = -I <-- x
+        mu_i = iS_ri_hat_ter(row_i)-iS_ter(row_i)*delta_xe(i,N);
 
         g_i = g_ter(row_i);
         g2_i = g2_ter(row_i);
@@ -117,8 +117,8 @@ elseif ~isempty(max_limit)
         for i = 1:nx
             row_i = max_ineqRow_k(i);
 
-            % A_i = I <-- s
-            mu_i = iS_ri_hat_k(row_i,k)+iS_k(row_i,k)*delta_se(i,k);
+            % A_i = I <-- x
+            mu_i = iS_ri_hat_k(row_i,k)+iS_k(row_i,k)*delta_xe(i,k);
 
             g_i = g_k(row_i,k);
             g2_i = g2_k(row_i,k);
@@ -135,8 +135,8 @@ elseif ~isempty(max_limit)
     for i = 1:nx
         row_i = max_ineqRow_ter(i);
 
-        % A_i = I <-- s
-        mu_i = iS_ri_hat_ter(row_i)+iS_ter(row_i)*delta_se(i,N);
+        % A_i = I <-- x
+        mu_i = iS_ri_hat_ter(row_i)+iS_ter(row_i)*delta_xe(i,N);
 
         g_i = g_ter(row_i);
         g2_i = g2_ter(row_i);

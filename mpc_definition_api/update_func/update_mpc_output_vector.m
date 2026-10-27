@@ -4,7 +4,7 @@ function mpc = update_mpc_output_vector(mpc,C,D,Dd)
 %   mpc = UPDATE_MPC_OUTPUT_VECTOR(mpc, C, D, Dd) updates selected
 %   coefficients in
 %
-%       y_k = C_k*s_k + D_k*u_k + Dd_k*d_k.
+%       y_k = C_k*x_k + D_k*u_k + Dd_k*d_k.
 %
 %   Use [] to leave a coefficient unchanged. The output must first be
 %   defined with INIT_MPC_DYNAMICS or INIT_MPC_OUTPUT. This updater cannot
@@ -35,7 +35,7 @@ function mpc = update_mpc_output_vector(mpc,C,D,Dd)
 %       mpc = update_mpc_output_vector(mpc, C, D, []);
 
 
-if ~isempty(C) && ~isempty(mpc.y_use_s)
+if ~isempty(C) && ~isempty(mpc.y_use_x)
     if ~isempty(mpc.tracking_cost)
         mpc.update_tracking = true;
     end

@@ -3,7 +3,7 @@ function mpc = update_mpc_dynamics(mpc,A,B,Bd)
 %
 %   mpc = UPDATE_MPC_DYNAMICS(mpc, A, B, Bd) updates selected matrices in
 %
-%       s_(k+1) = A_k*s_k + B_k*u_k + Bd_k*d_k.
+%       x_(k+1) = A_k*x_k + B_k*u_k + Bd_k*d_k.
 %
 %   Use [] to leave a matrix unchanged. The dynamics must first be defined
 %   with INIT_MPC_DYNAMICS. Online updates cannot change the matrix dimensions

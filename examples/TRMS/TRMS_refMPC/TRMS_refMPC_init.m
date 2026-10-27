@@ -85,14 +85,14 @@ Cz = [-1 0 0 0 0 0;
       0 0 0 -1 0 0];
 Dz = [0 0 1 0;
       0 0 0 1];
-Dsuz = [];
+Dxuz = [];
 Ddz = [];
 
 % Penalty matrix for the performance cost
 Qz = diag([100 100]);
 
 % Init performance cost
-mpc = init_mpc_Custom_cost(mpc,Cz,Dz,Dsuz,Ddz,Qz);
+mpc = init_mpc_Custom_cost(mpc,Cz,Dz,Dxuz,Ddz,Qz);
 
 %% Finalize controller
 

@@ -117,27 +117,27 @@ v_rows_k = [];
 start_index = 1;
 start_index_v = 1;
 
-    if ~isempty(mpc.has_s_cnstr)
-        if ~isempty(mpc.s_cnstr.min_limit)
+    if ~isempty(mpc.has_x_cnstr)
+        if ~isempty(mpc.x_cnstr.min_limit)
             % Lower-bound inequality rows.
             row = start_index:start_index+nx-1;
             row_v = start_index_v:start_index_v+nx-1;
 
-            mpc.s_cnstr.min_ineqRow_k = row;
-            mpc.s_cnstr.min_row_v_k = row_v;
+            mpc.x_cnstr.min_ineqRow_k = row;
+            mpc.x_cnstr.min_row_v_k = row_v;
            
             v_rows_k = [v_rows_k; row'];
 
             start_index = start_index + nx;
             start_index_v = start_index_v + nx;
         end
-        if ~isempty(mpc.s_cnstr.max_limit)
+        if ~isempty(mpc.x_cnstr.max_limit)
             % Upper-bound inequality rows.
             row = start_index:start_index+nx-1;
             row_v = start_index_v:start_index_v+nx-1;
 
-            mpc.s_cnstr.max_ineqRow_k = row;
-            mpc.s_cnstr.max_row_v_k = row_v;
+            mpc.x_cnstr.max_ineqRow_k = row;
+            mpc.x_cnstr.max_row_v_k = row_v;
 
             v_rows_k = [v_rows_k; row'];
 
@@ -247,20 +247,20 @@ mpc.v_rows_k = v_rows_k;
 %% k = N
 start_index = 1;
 
-if ~isempty(mpc.has_s_cnstr)
-    if ~isempty(mpc.s_cnstr.min_limit)
+if ~isempty(mpc.has_x_cnstr)
+    if ~isempty(mpc.x_cnstr.min_limit)
         % Lower-bound inequality rows.
         row = start_index:start_index+nx-1;
 
-        mpc.s_cnstr.min_ineqRow_ter = row;
+        mpc.x_cnstr.min_ineqRow_ter = row;
 
         start_index = start_index + nx;
     end
-    if ~isempty(mpc.s_cnstr.max_limit)
+    if ~isempty(mpc.x_cnstr.max_limit)
         % Upper-bound inequality rows.
         row = start_index:start_index+nx-1;
 
-        mpc.s_cnstr.max_ineqRow_ter = row;
+        mpc.x_cnstr.max_ineqRow_ter = row;
 
         start_index = start_index + nx;
     end

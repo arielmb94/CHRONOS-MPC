@@ -1,14 +1,14 @@
-function [u0,mpc,iter] = mpc_solve(mpc,s_prev,u_prev,r_in,xN_ref_in,...
+function [u0,mpc,iter] = mpc_solve(mpc,x_prev,u_prev,r_in,xN_ref_in,...
                                    d_in,dz_in,dh_in)
 % MPC_SOLVE Solve the current MPC problem.
 %
-%   [u0, mpc, iter] = MPC_SOLVE(mpc, s_prev, u_prev, r_in, xN_ref_in, ...
+%   [u0, mpc, iter] = MPC_SOLVE(mpc, x_prev, u_prev, r_in, xN_ref_in, ...
 %       d_in, dz_in, dh_in) solves the current MPC problem.
 %
 %   Inputs:
 %     mpc       - CHRONOS MPC structure with the persistent stage-local
 %                 iterate.
-%     s_prev    - nx column vector, last measured or estimated system state
+%     x_prev    - nx column vector, last measured or estimated system state
 %                 value.
 %     u_prev    - nu column vector, control action applied to the system on
 %                 the previous sampling time.
@@ -54,7 +54,7 @@ function [u0,mpc,iter] = mpc_solve(mpc,s_prev,u_prev,r_in,xN_ref_in,...
 %
 %   Example - solve with no optional runtime signals:
 %
-%       [u0, mpc, iter] = mpc_solve(mpc, s_prev, u_prev, [], [], [], [], []);
+%       [u0, mpc, iter] = mpc_solve(mpc, x_prev, u_prev, [], [], [], [], []);
 
 
 % handle input vector sizes
@@ -112,7 +112,7 @@ if mpc.recompute_cost_hess
 end
 
 % update dynamics equality RHS
-mpc = update_mpc_beq(mpc,s_prev,mpc.A(:,:,1),mpc.dyn_use_d);
+mpc = update_mpc_beq(mpc,x_prev,mpc.A(:,:,1),mpc.dyn_use_d);
 
 % Set Newton solver condition at start
 continue_Newton = true;
@@ -120,7 +120,7 @@ iter = 0;
 
 mpc = get_mpc_variables(mpc,mpc.has_du,mpc.tracking_cost,mpc.has_y_cnstr,...
                          mpc.has_h_cnstr,mpc.quad_custom_cost,mpc.lin_custom_cost,...
-                         s_prev,u_prev);
+                         x_prev,u_prev);
 
 lambda2 = 1;
 
@@ -134,12 +134,12 @@ while mpc.eps <= lambda2*0.5 && continue_Newton && iter < mpc.max_iter
 
     if ~isempty(mpc.g_0) || ~isempty(mpc.g_k) || ~isempty(mpc.g_ter)
         mpc = inequality_residuals(mpc,mpc.g_0,mpc.g_k,mpc.g_ter,...
-            mpc.has_s_cnstr,mpc.has_u_cnstr,mpc.has_du_cnstr,...
+            mpc.has_x_cnstr,mpc.has_u_cnstr,mpc.has_du_cnstr,...
             mpc.has_y_cnstr,mpc.has_h_cnstr);
     end
 
     mpc = reduced_KKT_elements(mpc,mpc.has_u_cnstr,mpc.has_du_cnstr,...
-        mpc.has_s_cnstr,mpc.has_y_cnstr,mpc.has_h_cnstr,...
+        mpc.has_x_cnstr,mpc.has_y_cnstr,mpc.has_h_cnstr,...
         mpc.g_0,mpc.g_k,mpc.g_ter);
 
     if ~isempty(mpc.has_du)
@@ -149,23 +149,23 @@ while mpc.eps <= lambda2*0.5 && continue_Newton && iter < mpc.max_iter
     end
 
     if ~isempty(mpc.g_0) || ~isempty(mpc.g_k) || ~isempty(mpc.g_ter)
-        mpc = recover_slacks(mpc,mpc.has_s_cnstr,mpc.has_u_cnstr,...
+        mpc = recover_slacks(mpc,mpc.has_x_cnstr,mpc.has_u_cnstr,...
             mpc.has_du_cnstr,mpc.has_y_cnstr,mpc.has_h_cnstr);
     end
 
     lambda2 = get_lambda2(mpc);
 
     % Feasibility line search
-    [mpc.g_0,mpc.g_k,mpc.g_ter,mpc.v_0,mpc.v_k,mpc.v_ter,mpc.u,mpc.s,...
-        mpc.su,continue_Newton] = line_search_local(mpc.g_0,mpc.g_k,...
-        mpc.g_ter,mpc.v_0,mpc.v_k,mpc.v_ter,mpc.u,mpc.s,mpc.su,...
+    [mpc.g_0,mpc.g_k,mpc.g_ter,mpc.v_0,mpc.v_k,mpc.v_ter,mpc.u,mpc.x,...
+        mpc.xu,continue_Newton] = line_search_local(mpc.g_0,mpc.g_k,...
+        mpc.g_ter,mpc.v_0,mpc.v_k,mpc.v_ter,mpc.u,mpc.x,mpc.xu,...
         mpc.delta_g_0,mpc.delta_g_k,mpc.delta_g_ter,...
         mpc.delta_v_0,mpc.delta_v_k,mpc.delta_v_ter,mpc.delta_u,...
-        mpc.delta_se,mpc.s_col,mpc.su_col,mpc.has_du,mpc.Beta,mpc.min_l,...
+        mpc.delta_xe,mpc.x_col,mpc.xu_col,mpc.has_du,mpc.Beta,mpc.min_l,...
         continue_Newton);
     mpc = get_mpc_variables(mpc,mpc.has_du,mpc.tracking_cost,mpc.has_y_cnstr,...
                              mpc.has_h_cnstr,mpc.quad_custom_cost,mpc.lin_custom_cost,...
-                             s_prev,u_prev);
+                             x_prev,u_prev);
     iter = iter+1;
 end
 
@@ -174,10 +174,10 @@ u0 = mpc.u(:,1);
 
 end
 
-function [g_0,g_k,g_ter,v_0,v_k,v_ter,u,s,su,continue_Newton] = ...
-    line_search_local(g_0,g_k,g_ter,v_0,v_k,v_ter,u,s,su,...
+function [g_0,g_k,g_ter,v_0,v_k,v_ter,u,x,xu,continue_Newton] = ...
+    line_search_local(g_0,g_k,g_ter,v_0,v_k,v_ter,u,x,xu,...
     delta_g_0,delta_g_k,delta_g_ter,delta_v_0,delta_v_k,delta_v_ter,...
-    delta_u,delta_se,s_col,su_col,has_du,Beta,min_l,continue_Newton)
+    delta_u,delta_xe,x_col,xu_col,has_du,Beta,min_l,continue_Newton)
 l = 1;
 g_0_hat = g_0+l*delta_g_0;
 g_k_hat = g_k+l*delta_g_k;
@@ -215,8 +215,8 @@ v_0(:) = v_0_hat;
 v_k(:,:) = v_k_hat;
 v_ter(:) = v_ter_hat;
 u(:,:) = u+l*delta_u;
-s(:,:) = s+l*delta_se(s_col,:);
+x(:,:) = x+l*delta_xe(x_col,:);
 if ~isempty(has_du)
-    su(:,:) = su+l*delta_se(su_col,:);
+    xu(:,:) = xu+l*delta_xe(xu_col,:);
 end
 end

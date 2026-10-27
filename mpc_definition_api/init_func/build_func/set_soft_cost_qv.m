@@ -1,7 +1,7 @@
 function mpc = set_soft_cost_qv(mpc)
 
-if ~isempty(mpc.has_s_cnstr)
-    mpc.s_cnstr = init_gradSlack(mpc,mpc.s_cnstr);
+if ~isempty(mpc.has_x_cnstr)
+    mpc.x_cnstr = init_gradSlack(mpc,mpc.x_cnstr);
 end
 
 if ~isempty(mpc.has_y_cnstr)

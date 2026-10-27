@@ -1,14 +1,14 @@
-function mpc = init_mpc_custom_cnstr(mpc,Ch,Dh,Dsuh,Ddh,...
+function mpc = init_mpc_custom_cnstr(mpc,Ch,Dh,Dxuh,Ddh,...
                                             h_min,h_max, ...
                                             qv_min,qv_max)
 % INIT_MPC_CUSTOM_CNSTR Add bounds on a user-defined linear signal.
 %
-%   mpc = INIT_MPC_CUSTOM_CNSTR(mpc, Ch, Dh, Dsuh, Ddh, h_min, h_max)
+%   mpc = INIT_MPC_CUSTOM_CNSTR(mpc, Ch, Dh, Dxuh, Ddh, h_min, h_max)
 %   defines the custom signal
 %
-%       h_k = Ch_k*s_k + Dh_k*u_k + Dsuh_k*su_k + Ddh_k*dh_k
+%       h_k = Ch_k*x_k + Dh_k*u_k + Dxuh_k*xu_k + Ddh_k*dh_k
 %
-%   and constrains it to h_min <= h_k <= h_max. Here, su_k is the control
+%   and constrains it to h_min <= h_k <= h_max. Here, xu_k is the control
 %   action preceding u_k, and dh_k is a dedicated fixed known input for the
 %   custom constraint. Use [] for a coefficient or bound that is not needed.
 %   Coefficient matrices, bounds, and penalties may vary over the horizon.
@@ -29,7 +29,7 @@ function mpc = init_mpc_custom_cnstr(mpc,Ch,Dh,Dsuh,Ddh,...
 %     mpc     - CHRONOS MPC structure.
 %     Ch      - State coefficient, size nh-by-nx or nh-by-nx-by-L.
 %     Dh      - Control coefficient, size nh-by-nu or nh-by-nu-by-L.
-%     Dsuh    - Previous-control coefficient, size nh-by-nu or nh-by-nu-by-L.
+%     Dxuh    - Previous-control coefficient, size nh-by-nu or nh-by-nu-by-L.
 %     Ddh     - Fixed-known-input coefficient, size nh-by-ndh or
 %               nh-by-ndh-by-L.
 %     h_min   - Lower bound: scalar, nh-by-1, or nh-by-L. Use [] for no
@@ -49,9 +49,9 @@ function mpc = init_mpc_custom_cnstr(mpc,Ch,Dh,Dsuh,Ddh,...
 %       % h = u - u_ref, with -0.2 <= h <= 0.2
 %       Ch   = zeros(nu, nx);
 %       Dh   = eye(nu);
-%       Dsuh = [];
+%       Dxuh = [];
 %       Ddh  = -eye(nu);
-%       mpc = init_mpc_custom_cnstr(mpc, Ch, Dh, Dsuh, Ddh, ...
+%       mpc = init_mpc_custom_cnstr(mpc, Ch, Dh, Dxuh, Ddh, ...
 %                                    -0.2, 0.2, 100, 100);
 %
 %   Pass u_ref as the dh_in argument of MPC_SOLVE at runtime.
@@ -60,7 +60,7 @@ arguments
     mpc
     Ch = []
     Dh = []
-    Dsuh = []
+    Dxuh = []
     Ddh = []
     h_min = []
     h_max = []
@@ -72,13 +72,13 @@ end
 % inference or validation, independently of their supplied dimensions.
 if ~isempty(Ch) && ~any(Ch(:)), Ch = []; end
 if ~isempty(Dh) && ~any(Dh(:)), Dh = []; end
-if ~isempty(Dsuh) && ~any(Dsuh(:)), Dsuh = []; end
+if ~isempty(Dxuh) && ~any(Dxuh(:)), Dxuh = []; end
 if ~isempty(Ddh) && ~any(Ddh(:)), Ddh = []; end
 
 % A custom constraint requires an active bound and a decision-dependent
 % primary signal term. Ddh alone cannot define the signal.
 if (isempty(h_min) && isempty(h_max)) || ...
-        (isempty(Ch) && isempty(Dh) && isempty(Dsuh))
+        (isempty(Ch) && isempty(Dh) && isempty(Dxuh))
     return;
 end
 
@@ -93,12 +93,12 @@ if ~isempty(Ch)
 elseif ~isempty(Dh)
     mpc.nh = size(Dh,1);
 else
-    mpc.nh = size(Dsuh,1);
+    mpc.nh = size(Dxuh,1);
 end
 
 validate_matrix(Ch, mpc.nh, mpc.nx, 'Ch');
 validate_matrix(Dh, mpc.nh, mpc.nu, 'Dh');
-validate_matrix(Dsuh, mpc.nh, mpc.nu, 'Dsuh');
+validate_matrix(Dxuh, mpc.nh, mpc.nu, 'Dxuh');
 if ~isempty(Ddh)
     mpc.ndh = size(Ddh,2);
     validate_matrix(Ddh, mpc.nh, mpc.ndh, 'Ddh');
@@ -113,9 +113,9 @@ validate_column_vector(qv_max, mpc.nh, 'qv_max');
 % general constraints boolean
 mpc.has_h_cnstr = 1;
 
-h_cnstr.use_s = [];
+h_cnstr.use_x = [];
 h_cnstr.use_u = [];
-h_cnstr.use_su = [];
+h_cnstr.use_xu = [];
 h_cnstr.use_d = [];
 h_cnstr.rows_k0 = [];
 h_cnstr.rows_ter = [];
@@ -132,12 +132,12 @@ h_cnstr.max_row_v_k = [];
 
 mpc.Ch_0 = [];
 mpc.Dh_0 = [];
-mpc.Dsuh_0 = [];
+mpc.Dxuh_0 = [];
 mpc.Ddh_0 = [];
 mpc.Ch_ter = [];
 
 if ~isempty(Ch)
-    h_cnstr.use_s = 1;
+    h_cnstr.use_x = 1;
 
     len_Ch = size(Ch,3);
     if len_Ch < mpc.N
@@ -164,18 +164,18 @@ if ~isempty(Dh)
     end
 end
 
-if ~isempty(Dsuh)
-    h_cnstr.use_su = 1;
+if ~isempty(Dxuh)
+    h_cnstr.use_xu = 1;
     mpc.has_du = 1;
 
-    len_Dsuh = size(Dsuh,3);
-    if len_Dsuh < mpc.N
-        mpc.Dsuh = zeros(mpc.nh,mpc.nu,mpc.N-1);
-        mpc.Dsuh = fill_mat(mpc.Dsuh, Dsuh, 1);
-        Dsuh_ter = mpc.Dsuh(:,:,mpc.N-1);
+    len_Dxuh = size(Dxuh,3);
+    if len_Dxuh < mpc.N
+        mpc.Dxuh = zeros(mpc.nh,mpc.nu,mpc.N-1);
+        mpc.Dxuh = fill_mat(mpc.Dxuh, Dxuh, 1);
+        Dxuh_ter = mpc.Dxuh(:,:,mpc.N-1);
     else
-        mpc.Dsuh = Dsuh(:,:,1:mpc.N-1);
-        Dsuh_ter = Dsuh(:,:,mpc.N);
+        mpc.Dxuh = Dxuh(:,:,1:mpc.N-1);
+        Dxuh_ter = Dxuh(:,:,mpc.N);
     end
 end
 
@@ -204,20 +204,20 @@ if mpc.nh_0
     h_cnstr.rows_k0 = h_row_0;
     h_cnstr.use_k0 = 1;
 
-    if ~isempty(h_cnstr.use_s), mpc.Ch_0 = Ch(h_cnstr.rows_k0,:,1); end
+    if ~isempty(h_cnstr.use_x), mpc.Ch_0 = Ch(h_cnstr.rows_k0,:,1); end
     if ~isempty(h_cnstr.use_u), mpc.Dh_0 = Dh(h_cnstr.rows_k0,:,1); end
-    if ~isempty(h_cnstr.use_su), mpc.Dsuh_0 = Dsuh(h_cnstr.rows_k0,:,1); end
+    if ~isempty(h_cnstr.use_xu), mpc.Dxuh_0 = Dxuh(h_cnstr.rows_k0,:,1); end
     if ~isempty(h_cnstr.use_d), mpc.Ddh_0 = Ddh(h_cnstr.rows_k0,:,1); end
 end
 
-% at k = N, only rows strictly dependent on s are considered
-if ~isempty(h_cnstr.use_s)
-    strict_s_rows = any(Ch_ter~=0,2);
-    if ~isempty(h_cnstr.use_u), strict_s_rows = strict_s_rows & all(Dh_ter==0,2); end
-    if ~isempty(h_cnstr.use_su), strict_s_rows = strict_s_rows & all(Dsuh_ter==0,2); end
-    if ~isempty(h_cnstr.use_d), strict_s_rows = strict_s_rows & all(Ddh_ter==0,2); end
+% at k = N, only rows strictly dependent on x are considered
+if ~isempty(h_cnstr.use_x)
+    strict_x_rows = any(Ch_ter~=0,2);
+    if ~isempty(h_cnstr.use_u), strict_x_rows = strict_x_rows & all(Dh_ter==0,2); end
+    if ~isempty(h_cnstr.use_xu), strict_x_rows = strict_x_rows & all(Dxuh_ter==0,2); end
+    if ~isempty(h_cnstr.use_d), strict_x_rows = strict_x_rows & all(Ddh_ter==0,2); end
 
-    h_row_ter = find(strict_s_rows);
+    h_row_ter = find(strict_x_rows);
     mpc.nh_ter = length(h_row_ter);
 else
     mpc.nh_ter = 0;

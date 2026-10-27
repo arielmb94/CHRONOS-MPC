@@ -1,15 +1,15 @@
-function Ai = appendGeneralizedConstraint(Ai, row, s_col, su_col, u_col, C_mat, Dsu_mat, D_mat)
+function Ai = appendGeneralizedConstraint(Ai, row, x_col, xu_col, u_col, C_mat, Dxu_mat, D_mat)
 % APPENDGENERALIZEDCONSTRAINT Inserts a unified linear constraint block.
-% Inserts the Jacobian blocks for C*s + Dsu*su + D*u.
+% Inserts the Jacobian blocks for C*x + Dxu*xu + D*u.
 
-    % 1. State term (C * s_k)
-    if ~isempty(s_col) && ~isempty(C_mat)
-        Ai(row, s_col) = C_mat;
+    % 1. State term (C * x_k)
+    if ~isempty(x_col) && ~isempty(C_mat)
+        Ai(row, x_col) = C_mat;
     end
 
-    % 2. Rate/Past Input term (Dsu * su_k)
-    if ~isempty(su_col) && ~isempty(Dsu_mat)
-        Ai(row, su_col) = Dsu_mat;
+    % 2. Rate/Past Input term (Dxu * xu_k)
+    if ~isempty(xu_col) && ~isempty(Dxu_mat)
+        Ai(row, xu_col) = Dxu_mat;
     end
     
     % 3. Control Input term (D * u_k)
