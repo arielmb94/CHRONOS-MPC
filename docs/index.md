@@ -15,8 +15,9 @@ conditions within a structured MPC formulation.
 
 ```{note}
 This is an initial documentation preview with references for all 31 public
-API functions. Tutorials and the user guide will be added as the
-documentation develops.
+API functions. The User Guide begins with a chapter on translating nonlinear
+models to LPV-MPC; further chapters will be added as the documentation
+develops.
 ```
 
 ## Controller workflow
@@ -36,6 +37,7 @@ generation using MATLAB Coder.
 :maxdepth: 2
 
 Home <self>
+User Guide <user-guide/index>
 API reference <api/index>
 ```
 
