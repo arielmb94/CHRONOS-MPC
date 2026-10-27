@@ -1,22 +1,24 @@
-# From nonlinear to LPV-MPC
+# From nonlinear to LPV models
 
-**Objective:** learn how to express nonlinear dynamics and signals in the
-linear parameter-varying (LPV) form used by CHRONOS.
+CHRONOS does not attempt to work directly with nonlinear systems. Instead, it relies on the user providing the MPC problem ingredients (dynamics, costs, constraints, etc.) using Linear Parameter Varying (LPV) or Linear Time Varying (LTV) formulations. In exchange for this effort, the tradeoff for users can be summarized in the following *contract*:
 
-**Prerequisites:** familiarity with state-space models, MPC, and MATLAB.
+```{note}
+Give CHRONOS your dynamics and the signals used to define costs and constraints in its supported LPV/LTV forms. In return, CHRONOS turns them into a structured MPC problem and takes care of the optimization work in the background using implementations designed for maximum computational efficiency.
 
-**Expected outcome:** choose an exact embedding or a local approximation,
-identify its scheduling variables, and obtain the discrete matrices and
-signals needed to define a CHRONOS controller.
+For a fixed LPV / LTV schedule, every optimum is global. Analytical derivatives, structured constraint reductions, and a custom KKT recursion let CHRONOS exploit the model’s structure, solving the problem without requiring generic horizon-wide dense KKT linear solvers. Stage-varying models and custom cost/constraint signals still let you capture rich model and performance behavior.
+```
+
+This guide aims to explain how to translate your nonlinear models and signals into the LPV format.
+
 
 ```{contents}
 :local:
 :depth: 2
 ```
 
-## CHRONOS model and notation
+## LPV models
 
-Nonlinear continuous-time dynamics are commonly written as
+Most system dynamics can be expressed in the form of a nonlinear ODE, expressed generally as:
 
 $$
 \dot{x}=f(x,u,d),
@@ -24,51 +26,31 @@ $$
 
 where $x\in\mathbb{R}^{n_x}$ is the state, $u\in\mathbb{R}^{n_u}$ is the
 control input, and $d\in\mathbb{R}^{n_d}$ is a known disturbance or other
-known input. To use this model with CHRONOS, express its dynamics in LPV form:
+known input. 
+
+CHRONOS does not work directly with nonlinear systems, instead, it expects the dynamics to be expressed in the standard LPV form:
 
 $$
 \dot{x}=A(\rho)x+B(\rho)u+B_d(\rho)d.
 $$
 
-Here $A(\rho)$, $B(\rho)$, and $B_d(\rho)$ are coefficient matrices selected
-by the scheduling variable or vector $\rho$. For a fixed $\rho$, the model is
-linear in $x$, $u$, and $d$.
+where $A(\rho)$, $B(\rho)$, and $B_d(\rho)$ are coefficient matrices whose elements are not fixed for ever, but can evolve over time based on a scheduling vector $\rho$. Through the process know as *nonlinear embedding*, the varying parameters $\rho$ absorb the nonlinearities and time-varying behaviour of the original nonlinear ODE model. Through this process we then obtain a linear-like representation of the original nonlinear system. 
 
-The same idea applies to a nonlinear output or signal,
+The advantage of the LPV form is that it is input-to-output linear in the states $x$ and control inputs $u$. This results in a highly structured modeling framework, which allows us to use linear algebra to work with our nonlinear system despite the nonlinearities embedded within the $A(\rho)$, $B(\rho)$, and $B_d(\rho)$ coefficient matrices.
+
+The same idea applies to a nonlinear signal,
 
 $$
 y=f_y(x,u,d),
 $$
 
-which CHRONOS can represent in the form
+which could be represented in the LPV form
 
 $$
 y=C(\rho)x+D(\rho)u+D_d(\rho)d.
 $$
 
-CHRONOS represents custom performance and constraint signals with the
-following affine forms:
 
-$$
-\begin{aligned}
-y_k &= C_k x_k+D_k u_k+D_{d,k}d_k,\\
-z_k &= C_{z,k}x_k+D_{z,k}u_k+D_{xu,z,k}xu_k+D_{dz,k}d_{z,k},\\
-h_k &= C_{h,k}x_k+D_{h,k}u_k+D_{xu,h,k}xu_k+D_{dh,k}d_{h,k}.
-\end{aligned}
-$$
-
-The dimensions of $y_k$, $z_k$, and $h_k$ are $n_y$, $n_z$, and $n_h$,
-respectively. The known inputs satisfy $d_z\in\mathbb{R}^{n_{dz}}$ and
-$d_h\in\mathbb{R}^{n_{dh}}$; they are specific to the custom-cost and
-custom-constraint signals. When a control-rate or custom-signal term uses
-$xu_k$, it denotes the control action preceding $u_k$. Once the scheduling
-values are fixed, each supported signal is affine in its decision variables.
-
-| Signal | Coefficient dimensions |
-| --- | --- |
-| $y$ | $C:n_y\times n_x$; $D:n_y\times n_u$; $D_d:n_y\times n_d$ |
-| $z$ | $C_z:n_z\times n_x$; $D_z,D_{xu,z}:n_z\times n_u$; $D_{dz}:n_z\times n_{dz}$ |
-| $h$ | $C_h:n_h\times n_x$; $D_h,D_{xu,h}:n_h\times n_u$; $D_{dh}:n_h\times n_{dh}$ |
 
 During a solve, scheduling values are fixed for each stage. One value can be
 shared across the prediction horizon, or the values can vary by stage. If
@@ -105,7 +87,7 @@ $$
 
 For a fixed scheduling value $\rho$, $A(\rho)$ is fixed and the model is
 linear in the state and input. Since $\rho=x$ in this example, CHRONOS can
-update the system matrices at each time instance with
+update the system matrices at each time instant with
 [`update_mpc_dynamics`](../api/online/update_mpc_dynamics.md).
 
 The [scaled autonomous vehicle example](https://github.com/arielmb94/CHRONOS-MPC/blob/docs/examples/Scaled%20Autonomous%20Vehicle/readme.md)
@@ -163,9 +145,48 @@ and [`sim_two_tank_lpv.m`](https://github.com/arielmb94/CHRONOS-MPC/blob/docs/ex
 
 ### 3. Taylor linearization
 
-When exact factorization is not useful, approximate only the nonfactorable
-terms around a local operating point. For example, the stirring-tank model
-approximates the reaction term $-kce^{-M/v}$ around $(c^o,v^o)$:
+An exact LPV factorization can still produce a fixed-schedule model that
+misses a state coupling needed to represent how the control affects the
+variable of interest. In that case, locally linearize only the nonlinear
+term that carries the missing coupling. The remaining dynamics can keep their
+exact factorization, and the physical state and control coordinates do not
+need to change.
+
+The stirring-tank example shows this situation. Its nonlinear model is
+
+$$
+\begin{aligned}
+\dot{c} &= (1-c)/\theta_f-kce^{-M/v},\\
+\dot{v} &= (x_f-v)/\theta_f+kce^{-M/v}-\alpha u(v-x_c),
+\end{aligned}
+$$
+
+where the coolant input $u$ acts on temperature $v$, and the concentration
+$c$ depends on temperature through the reaction term $-kce^{-M/v}$. A direct
+factorization gives
+
+$$
+\begin{bmatrix}\dot{c}\\\dot{v}\end{bmatrix}
+=
+\begin{bmatrix}
+-1/\theta_f-ke^{-M/v} & 0\\
+ke^{-M/v} & -1/\theta_f
+\end{bmatrix}
+\begin{bmatrix}c\\v\end{bmatrix}
++\begin{bmatrix}0\\-\alpha(v-x_c)\end{bmatrix}u
++\begin{bmatrix}1/\theta_f\\x_f/\theta_f\end{bmatrix}d,
+\qquad d=1.
+$$
+
+This factorization is exact when the coefficient schedule uses the current
+temperature. But when the schedule is fixed, the first row has no term
+multiplying $v$, and $u$ enters only the temperature equation. The frozen
+linear model therefore has no path from $u$ through $v$ to $c$ and is not
+controllable.
+
+The nonlinear model does contain this coupling through $-kce^{-M/v}$. To
+expose it, approximate only that term with a first-order Taylor expansion
+around $(c^o,v^o)$:
 
 $$
 q^o=\frac{k c^o M e^{-M/v^o}}{(v^o)^2},
@@ -173,40 +194,51 @@ q^o=\frac{k c^o M e^{-M/v^o}}{(v^o)^2},
 -kce^{-M/v}\approx-k e^{-M/v^o}c-q^o(v-v^o).
 $$
 
-The rest of the model can retain its exact LPV embedding. This termwise
-approximation introduces a coefficient multiplying $v$ while keeping the
-physical states $c$ and $v$. See the
-[stirring-tank example](https://github.com/arielmb94/CHRONOS-MPC/blob/docs/examples/Stirring%20Tank%20Reactor/readme.md)
-and its [`stirring_tank_init.m`](https://github.com/arielmb94/CHRONOS-MPC/blob/docs/examples/Stirring%20Tank%20Reactor/stirring_tank_init.m).
+The term $-q^o v$ adds a temperature coefficient to the concentration
+equation; the offset $q^o v^o$ is carried through the known-input term. With
+$x=[c\;v]^T$ and $d=[1\;v^o]^T$, the resulting hybrid LPV model is
 
-Alternatively, apply a first-order Taylor expansion to the full vector field
-at $(x^o,u^o)$:
+$$
+\dot{x}=
+\begin{bmatrix}
+-1/\theta_f-ke^{-M/v^o} & -q^o\\
+ke^{-M/v^o} & -1/\theta_f
+\end{bmatrix}x
++\begin{bmatrix}0\\-\alpha(v^o-x_c)\end{bmatrix}u
++\begin{bmatrix}
+1/\theta_f & q^o\\
+x_f/\theta_f & 0
+\end{bmatrix}d.
+$$
+
+The temperature-to-concentration coefficient now connects the state affected
+by the control to the concentration equation. Only the term needed to expose
+this path is approximated; the other terms retain their factorized form. In
+the repository example, $(c^o,v^o)$ is the measured reactor state at the
+current control sample. See the
+[stirring-tank example README](https://github.com/arielmb94/CHRONOS-MPC/blob/docs/examples/Stirring%20Tank%20Reactor/readme.md)
+and [`stirring_tank_init.m`](https://github.com/arielmb94/CHRONOS-MPC/blob/docs/examples/Stirring%20Tank%20Reactor/stirring_tank_init.m).
+
+More generally, a first-order expansion of the full vector field at
+$(x^o,u^o)$ gives
 
 $$
 f(x,u)\approx f(x^o,u^o)+A_o(x-x^o)+B_o(u-u^o)
 =A_o x+B_o u+c_o,
 $$
 
-where $A_o=\partial f/\partial x$ and $B_o=\partial f/\partial u$ at the
-operating point, and
+where $A_o=\partial f/\partial x$, $B_o=\partial f/\partial u$, and
 
 $$
 c_o=f(x^o,u^o)-A_o x^o-B_o u^o.
 $$
 
-This keeps the original state and control coordinates; it does not require
-the controller to use deviation variables $x-x^o$ and $u-u^o$. Put the
-constant offset in CHRONOS's known-input term, for example
-
-$$
-\dot{x}\approx A_o x+B_o u+B_{d,o}d,
-\qquad d=1,\quad B_{d,o}=c_o.
-$$
-
-For an offset decomposed into several known quantities, use a matching vector
-$d$ and matrix $B_d$. Taylor expansion of selected terms and Taylor expansion
-of the full vector field are both local approximations: their accuracy is
-expected near the chosen operating point, not over the entire state space.
+At an equilibrium, $f(x^o,u^o)=0$, so
+$c_o=-A_o x^o-B_o u^o$. This affine offset can be represented by
+CHRONOS's known-input term, for example $d=1$ and $B_{d,o}=c_o$. This form
+keeps the original state and control coordinates rather than introducing
+deviation variables. Partial and full Taylor expansions are local
+approximations whose accuracy is expected near the chosen operating point.
 
 ## Discretize the model
 
