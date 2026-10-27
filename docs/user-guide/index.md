@@ -1,11 +1,15 @@
 # User Guide
 
-The User Guide explains how to formulate and run CHRONOS controllers. It
-currently starts with a guide to translating nonlinear models into the LPV
-form used by CHRONOS.
+The User Guide introduces the MPC problem and ingredients supported by
+CHRONOS, then explains how to translate nonlinear models into its LPV form
+and configure, solve, and update the controller.
 
 ```{toctree}
 :maxdepth: 1
 
-From nonlinear to LPV-MPC <from-nonlinear-problems-to-lpv-mpc>
+CHRONOS overview <chronos-overview>
+from-nonlinear-problems-to-lpv-mpc
+Defining the MPC problem <defining-the-mpc-problem>
+Solving and updating online <online-updates>
+Your first controller <your-first-controller>
 ```

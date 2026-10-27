@@ -15,9 +15,11 @@ conditions within a structured MPC formulation.
 
 ```{note}
 This is an initial documentation preview with references for all 31 public
-API functions. The User Guide begins with a chapter on translating nonlinear
-models to LPV-MPC; further chapters will be added as the documentation
-develops.
+API functions. Start with [Your first controller](user-guide/your-first-controller.md)
+for a complete two-tank walkthrough. The User Guide also covers the CHRONOS overview, translating
+nonlinear models into LPV form, defining the MPC problem, and solving and updating
+online; further chapters
+will be added as the documentation develops.
 ```
 
 ## Controller workflow

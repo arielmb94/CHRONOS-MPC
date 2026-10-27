@@ -1,22 +1,27 @@
-# From nonlinear to LPV-MPC
+# From nonlinear to LPV models
 
-**Objective:** learn how to express nonlinear dynamics and signals in the
-linear parameter-varying (LPV) form used by CHRONOS.
+CHRONOS does not attempt to work directly with nonlinear systems. Instead, it relies on the user providing the MPC problem ingredients (dynamics, costs, constraints, etc.) using Linear Parameter Varying (LPV) or Linear Time Varying (LTV) formulations. In exchange for this effort, the tradeoff for users can be summarized in the following *contract*:
 
-**Prerequisites:** familiarity with state-space models, MPC, and MATLAB.
+```{note}
+Give CHRONOS your dynamics and cost/constraint signals in its supported
+LPV/LTV forms. In return, CHRONOS assembles and solves a structured MPC
+problem using implementations designed for maximum computational efficiency.
 
-**Expected outcome:** choose an exact embedding or a local approximation,
-identify its scheduling variables, and obtain the discrete matrices and
-signals needed to define a CHRONOS controller.
+For a fixed LPV/LTV schedule, every optimum is global. Stage-varying models and custom cost/constraint signals still let you capture rich model and performance behavior.
+```
+
+This guide explains how to represent nonlinear models and signals in LPV
+form. Subsequent guide pages show how to use these representations to
+define an MPC problem with the CHRONOS API.
 
 ```{contents}
 :local:
 :depth: 2
 ```
 
-## CHRONOS model and notation
+## LPV models
 
-Nonlinear continuous-time dynamics are commonly written as
+System dynamics are generally expressed as a nonlinear ODE:
 
 $$
 \dot{x}=f(x,u,d),
@@ -24,110 +29,186 @@ $$
 
 where $x\in\mathbb{R}^{n_x}$ is the state, $u\in\mathbb{R}^{n_u}$ is the
 control input, and $d\in\mathbb{R}^{n_d}$ is a known disturbance or other
-known input. To use this model with CHRONOS, express its dynamics in LPV form:
+known input. 
+
+CHRONOS does not work directly with nonlinear systems; instead, it expects the dynamics to be expressed in the standard LPV form:
 
 $$
-\dot{x}=A(\rho)x+B(\rho)u+B_d(\rho)d.
+\dot x=A(\rho)x+B(\rho)u+B_d(\rho)d.
 $$
 
-Here $A(\rho)$, $B(\rho)$, and $B_d(\rho)$ are coefficient matrices selected
-by the scheduling variable or vector $\rho$. For a fixed $\rho$, the model is
-linear in $x$, $u$, and $d$.
+Here $A(\rho)$, $B(\rho)$, and $B_d(\rho)$ depend on a scheduling vector
+$\rho$. Through *nonlinear embedding*, nonlinear terms in the original
+model are expressed through these varying coefficients.
 
-The same idea applies to a nonlinear output or signal,
+```{note}
+CHRONOS uses a fixed schedule of the varying parameter $\rho$ during the solve stage. The varying parameters could be constant across the prediction horizon, for example using the current measured state, or vary from stage to stage using previous MPC predictions or an external forecast.
+```
+
+With this schedule fixed, the dynamics are input-output linear in $x$, $u$, and $d$.
+This structure lets CHRONOS use linear algebra to solve the prediction
+problem, even when the original model is nonlinear.
+
+The same idea applies to a nonlinear signal,
 
 $$
 y=f_y(x,u,d),
 $$
 
-which CHRONOS can represent in the form
+which could be represented in the LPV form
 
 $$
 y=C(\rho)x+D(\rho)u+D_d(\rho)d.
 $$
 
-CHRONOS represents custom performance and constraint signals with the
-following affine forms:
 
-$$
-\begin{aligned}
-y_k &= C_k x_k+D_k u_k+D_{d,k}d_k,\\
-z_k &= C_{z,k}x_k+D_{z,k}u_k+D_{xu,z,k}xu_k+D_{dz,k}d_{z,k},\\
-h_k &= C_{h,k}x_k+D_{h,k}u_k+D_{xu,h,k}xu_k+D_{dh,k}d_{h,k}.
-\end{aligned}
-$$
+The following section shows three ways to derive LPV formulations from nonlinear models:
 
-The dimensions of $y_k$, $z_k$, and $h_k$ are $n_y$, $n_z$, and $n_h$,
-respectively. The known inputs satisfy $d_z\in\mathbb{R}^{n_{dz}}$ and
-$d_h\in\mathbb{R}^{n_{dh}}$; they are specific to the custom-cost and
-custom-constraint signals. When a control-rate or custom-signal term uses
-$xu_k$, it denotes the control action preceding $u_k$. Once the scheduling
-values are fixed, each supported signal is affine in its decision variables.
-
-| Signal | Coefficient dimensions |
-| --- | --- |
-| $y$ | $C:n_y\times n_x$; $D:n_y\times n_u$; $D_d:n_y\times n_d$ |
-| $z$ | $C_z:n_z\times n_x$; $D_z,D_{xu,z}:n_z\times n_u$; $D_{dz}:n_z\times n_{dz}$ |
-| $h$ | $C_h:n_h\times n_x$; $D_h,D_{xu,h}:n_h\times n_u$; $D_{dh}:n_h\times n_{dh}$ |
-
-During a solve, scheduling values are fixed for each stage. One value can be
-shared across the prediction horizon, or the values can vary by stage. If
-$\rho$ depends on the state, its values are available from CHRONOS's internal
-state trajectory; an external forecast is another option. Matrix coefficients
-are evaluated at the corresponding scheduling values. Later guide pages cover
-scheduling and update details.
+*   {ref}`Direct factorization <lpv-direct-factorization>`
+*   {ref}`Algebraic manipulation <lpv-algebraic-manipulation>`
+*   {ref}`(Local) Taylor linearization <lpv-taylor-linearization>`
 
 ## Three ways to represent nonlinear equations
 
-The following sections show three ways to derive LPV coefficients for
-nonlinear dynamics and signals: direct factorization, algebraic manipulation,
-and Taylor linearization.
 
+
+(lpv-direct-factorization)=
 ### 1. Direct factorization
 
-If the equations already collect the states, controls, and known inputs
-linearly, write
+The most straightforward method is to directly factorize our model with respect to the states $x$, control inputs $u$, and known inputs $d$ whenever the model allows it. Factorizing the nonlinear model gives:
 
 $$
-\dot{x}=A_c(\rho)x+B_c(\rho)u+E_c(\rho)d.
+\dot{x}=A(\rho)x+B(\rho)u+B_d(\rho)d,
 $$
 
-This is an exact factorization: the nonlinearity is in the coefficients as
+where the nonlinearity is in the coefficients as
 functions of the schedule $\rho$, rather than in products among the modeled
 state and control variables after the schedule is fixed.
 
-For a scalar example,
+#### Scalar Example 1
+
+Let's assume the following scalar model:
 
 $$
-\dot{x}=-x^2+u=(-x)x+u=A(\rho)x+Bu,
-\qquad \rho=x,\quad A(\rho)=-\rho,\quad B=1.
+\dot x = -x\sin(x) + u
 $$
 
-For a fixed scheduling value $\rho$, $A(\rho)$ is fixed and the model is
-linear in the state and input. Since $\rho=x$ in this example, CHRONOS can
-update the system matrices at each time instance with
-[`update_mpc_dynamics`](../api/online/update_mpc_dynamics.md).
-
-The [scaled autonomous vehicle example](https://github.com/arielmb94/CHRONOS-MPC/blob/docs/examples/Scaled%20Autonomous%20Vehicle/readme.md)
-uses the lateral bicycle model
+By factorizing the right-hand side with respect to $x$ and $u$, we obtain the following LPV model:
 
 $$
-\begin{bmatrix}\dot v_y\\\ddot\psi\end{bmatrix}
-=A_c(v_x)
-\begin{bmatrix}v_y\\\dot\psi\end{bmatrix}
-+B_c(v_x)\delta,
+\dot x = \left[-\sin(x) \right]x + \left[1\right]u,\qquad \rho=\sin(x),\quad A(\rho)=-\rho,\quad B=1.
 $$
 
-where longitudinal speed $v_x$ schedules the matrices. The example evaluates
-them in [`update_BM.m`](https://github.com/arielmb94/CHRONOS-MPC/blob/docs/examples/Scaled%20Autonomous%20Vehicle/update_BM.m)
-and initializes the prediction model in
-[`sav_lat_controller_init.m`](https://github.com/arielmb94/CHRONOS-MPC/blob/docs/examples/Scaled%20Autonomous%20Vehicle/sav_lat_controller_init.m).
+Note that if we expand the LPV representation by multiplying the resulting $A(\rho)$ and $B(\rho)$ matrices by the state and control input, respectively, we get back the original nonlinear model.
 
+
+
+#### Scalar Example 2
+
+Let's assume the following scalar model:
+
+$$
+\dot x = -x^2 + u
+$$
+
+Now we factorize the right-hand side, writing the squared term as $x\cdot x$:
+
+$$
+\dot x = \left[-x \right]x + \left[1\right]u,\qquad \rho=x,\quad A(\rho)=-\rho,\quad B=1.
+$$
+
+As we can see, this process is quite straightforward for scalar systems and for terms with a single dependency on the states or inputs. 
+
+#### Coupled two-state system
+
+Consider a system with two states and coupled nonlinearities, assuming
+$x>0$ and $y>0$ throughout this example:
+
+$$
+\begin{aligned}
+\dot x &= -xy+u\\
+\dot y &= -x^2y
+\end{aligned}
+$$
+
+We are now presented with multiple choices for factorizing with respect to the states. However, in these scenarios, we must be careful and always check whether the representation we pick satisfies the controllability condition.
+
+For example, let's consider the following LPV representation:
+
+$$
+\begin{bmatrix}
+\dot x \\
+\dot y
+\end{bmatrix} = 
+\begin{bmatrix}
+0 & -x \\
+0 & -x^2
+\end{bmatrix}\begin{bmatrix}
+x \\
+y
+\end{bmatrix} + 
+\begin{bmatrix}
+1 \\
+0
+\end{bmatrix} u
+$$
+
+If we expand this system by multiplying the $A(\rho)$ and $B(\rho)$ matrices by the state and control input vectors, respectively, we get back the original nonlinear model. However, if we compute the controllability matrix $\left[ B\; AB\right]$ for this system, we find that it is rank deficient.
+
+On the other hand, the following LPV representation of the system does not present such a problem:
+
+$$
+\begin{bmatrix}
+\dot x \\
+\dot y
+\end{bmatrix} = 
+\begin{bmatrix}
+0 & -x \\
+-xy & 0
+\end{bmatrix}\begin{bmatrix}
+x \\
+y
+\end{bmatrix} + 
+\begin{bmatrix}
+1 \\
+0
+\end{bmatrix} u
+$$
+
+```{note}
+When translating the dynamics from a nonlinear model to an LPV one, always check the controllability conditions of the LPV model you obtained. You can do the check analytically or by replacing the terms of your $A(\rho)$ and $B(\rho)$ matrices with appropriate values.
+```
+
+(lpv-algebraic-manipulation)=
 ### 2. Algebraic manipulation
 
-If a term is not directly factorizable, an exact algebraic identity may expose
-the state or input factor needed for a matrix representation. For the
-two-tank model,
+The nonlinear model is not always directly factorizable with respect to the states and/or control inputs. However, an exact algebraic identity may expose the state or input factor needed for a matrix representation.
+
+#### Scalar Example
+
+Let's assume the following scalar model:
+
+$$
+\dot x = -\sin(x) + u
+$$
+
+Here we cannot factorize the model on the states at it is contained within the $\sin(x)$ term.Instead we can manipulate the model by multipliying and dividing the term $\sin(x)$ by the state value: 
+
+$$
+\sin(x)= \frac{\sin(x)\cdot x}{x}
+$$
+
+Under this manipulation we can now factorize the nonlinear model on the state, obtaining the following LPV model:
+
+$$
+\dot x = \left[-\frac{\sin(x)}{x} \right]x + \left[1\right]u,\qquad \rho=\frac{\sin(x)}{x},\quad A(\rho)=-\rho,\quad B=1.
+$$
+
+Note that if we expand the LPV representation by multiplying the resulting $A(\rho)$ and $B(\rho)$ matrices by the state and control input, respectively, we get back the original nonlinear model. However this model ill-defined for $x=0$, for this reason, this approach is only recommended in an scenario where $x>0$, and 0 is not part of the set.
+
+#### Two-Tank Water-Level Example
+
+Let's look now at a slightly more complex problem, the nonlinear water-level ODE from the [two-tank example](https://github.com/arielmb94/CHRONOS-MPC/blob/docs/examples/Two%20Tank/readme.md):
 
 $$
 \begin{aligned}
@@ -136,15 +217,14 @@ $$
 \end{aligned}
 $$
 
-For positive tank heights,
+The states $x = [h_1\; h_2]^T$ are not factorizable as they are inside square root terms. For positive tank heights, we can do the following algebraic manipulation:
 
 $$
-\sqrt{2gh_i}=\frac{\sqrt{2gh_i}}{h_i}h_i,
+\sqrt{2gh_i}=\frac{\sqrt{2gh_i}}{h_i}h_i.
 \qquad h_i>0.
 $$
 
-Thus, with $x=[h_1\;h_2]^T$ and $\rho=[h_1\;h_2]^T$, the same equations
-can be written exactly on that domain as
+Using this modification, we can now rewrite the same equations as the following LPV model with $\rho=[h_1\;h_2]^T$:
 
 $$
 \dot{x}=
@@ -155,65 +235,164 @@ $$
 +\begin{bmatrix}1/A_b\\0\end{bmatrix}u.
 $$
 
-The coefficient expression is undefined at $h_i=0$, so this representation
-requires strictly positive heights. The [two-tank example](https://github.com/arielmb94/CHRONOS-MPC/blob/docs/examples/Two%20Tank/readme.md)
-uses this embedding; its initializer and LPV simulation are
-[`two_tank_init.m`](https://github.com/arielmb94/CHRONOS-MPC/blob/docs/examples/Two%20Tank/two_tank_init.m)
-and [`sim_two_tank_lpv.m`](https://github.com/arielmb94/CHRONOS-MPC/blob/docs/examples/Two%20Tank/sim_two_tank_lpv.m).
+Note that the coefficient expression is undefined at $h_i=0$, something to always consider when using this approach to obtain a factorizable model.
 
+(lpv-taylor-linearization)=
 ### 3. Taylor linearization
 
-When exact factorization is not useful, approximate only the nonfactorable
-terms around a local operating point. For example, the stirring-tank model
-approximates the reaction term $-kce^{-M/v}$ around $(c^o,v^o)$:
+As we have seen, direct factorization can sometimes lead to non-controllable LPV representations, and algebraic manipulation might not be suitable if $\rho=0$ is part of the set of varying parameters.
+
+In these cases, we can use local linearization of only some nonlinear
+terms, e.g. those that carry the missing coupling or contain nonfactorizable nonlinearities, while the remaining dynamics can keep their exact factorization. With this selective linearization, the physical state and control coordinates do not need to change.
+
+
+#### Coupled two-state system
+
+Consider again the two-state system, with the same assumptions $x>0$ and $y>0$:
 
 $$
-q^o=\frac{k c^o M e^{-M/v^o}}{(v^o)^2},
-\qquad
--kce^{-M/v}\approx-k e^{-M/v^o}c-q^o(v-v^o).
+\begin{aligned}
+\dot x &= -xy+u\\
+\dot y &= -x^2y
+\end{aligned}
 $$
 
-The rest of the model can retain its exact LPV embedding. This termwise
-approximation introduces a coefficient multiplying $v$ while keeping the
-physical states $c$ and $v$. See the
-[stirring-tank example](https://github.com/arielmb94/CHRONOS-MPC/blob/docs/examples/Stirring%20Tank%20Reactor/readme.md)
-and its [`stirring_tank_init.m`](https://github.com/arielmb94/CHRONOS-MPC/blob/docs/examples/Stirring%20Tank%20Reactor/stirring_tank_init.m).
+Rather than directly factorizing the first ODE, let's do a Taylor expansion of the $xy$ term, from which we obtain:
 
-Alternatively, apply a first-order Taylor expansion to the full vector field
-at $(x^o,u^o)$:
+$$
+\begin{aligned}
+&\left\{
+\begin{aligned}
+\dot x &= -x^*y^*-y^*(x-x^*)-x^*(y-y^*)+u \\
+\dot y &= -x^2y 
+\end{aligned} 
+\right. \\
+&\left\{
+\begin{aligned}
+\dot x &= -y^*x-x^*y + u + x^*y^* \\
+\dot y &= -x^2y 
+\end{aligned}
+\right.
+\end{aligned}
+$$
+
+By directly factorizing with respect to the states and control inputs and treating the fixed term as a known input $d=x^*y^*$, we obtain the LPV model:
+
+$$
+\begin{bmatrix}
+\dot x \\
+\dot y
+\end{bmatrix} = 
+\begin{bmatrix}
+-y^* & -x^* \\
+-xy & 0
+\end{bmatrix}\begin{bmatrix}
+x \\
+y
+\end{bmatrix} + 
+\begin{bmatrix}
+1 \\
+0
+\end{bmatrix} u + 
+\begin{bmatrix}
+1 \\
+0
+\end{bmatrix} d, \qquad d = x^*y^*
+$$
+
+Note that, in practice, a scheduling parameter $x^*$ coming from the Taylor expansion will be treated in the same way as a state $x$ from the direct factorization of the nonlinear model.
+
+#### Stirring-Tank Example
+
+Let's consider the nonlinear dynamics of the end-product concentration and temperature used in the [stirring-tank example](https://github.com/arielmb94/CHRONOS-MPC/blob/docs/examples/Stirring%20Tank%20Reactor/readme.md).
+
+$$
+\begin{aligned}
+\dot{c} &= (1-c)/\theta_f-kce^{-M/v},\\
+\dot{v} &= (x_f-v)/\theta_f+kce^{-M/v}-\alpha u(v-x_c),
+\end{aligned}
+$$
+
+where the coolant input $u$ acts on temperature $v$, and the concentration
+$c$ depends on temperature through the reaction term $-kce^{-M/v}$. A direct
+factorization gives
+
+$$
+\begin{bmatrix}\dot{c}\\\dot{v}\end{bmatrix}
+=
+\begin{bmatrix}
+-1/\theta_f-ke^{-M/v} & 0\\
+ke^{-M/v} & -1/\theta_f
+\end{bmatrix}
+\begin{bmatrix}c\\v\end{bmatrix}
++\begin{bmatrix}0\\-\alpha(v-x_c)\end{bmatrix}u
++\begin{bmatrix}1/\theta_f\\x_f/\theta_f\end{bmatrix}d,
+\qquad d=1.
+$$
+
+This factorization is exact when the coefficient schedule uses the current
+temperature. However, in this LPV model, there is no path from the control input to the concentration $c$ dynamics; thus, it is not controllable.
+
+The nonlinear model does contain this coupling through $-kce^{-M/v}$. To
+expose it, let's approximate only that term with a first-order Taylor expansion
+around $v^o$:
+
+$$
+-kce^{-M/v}\approx-k e^{-M/v^o}c-q(v-v^o),\qquad q=\frac{k c M e^{-M/v^o}}{(v^o)^2}.
+$$
+
+The term $-q v$ adds a temperature coefficient to the concentration
+equation; the offset $q v^o$ is carried through the known-input term. With
+$x=[c\;v]^T$ and $d=[1\;v^o]^T$, the resulting LPV model is
+
+$$
+\dot{x}=
+\begin{bmatrix}
+-1/\theta_f-ke^{-M/v^o} & -q\\
+ke^{-M/v} & -1/\theta_f
+\end{bmatrix}x
++\begin{bmatrix}0\\-\alpha(v-x_c)\end{bmatrix}u
++\begin{bmatrix}
+1/\theta_f & q\\
+x_f/\theta_f & 0
+\end{bmatrix}d.
+$$
+
+The temperature-to-concentration coefficient now connects the state affected
+by the control to the concentration equation. Only the term needed to expose
+this path is approximated; the other terms retain their factorized form.
+
+#### Full Taylor Expansion
+
+More generally, a first-order expansion of the full vector field at
+$(x^o,u^o)$ gives
 
 $$
 f(x,u)\approx f(x^o,u^o)+A_o(x-x^o)+B_o(u-u^o)
 =A_o x+B_o u+c_o,
 $$
 
-where $A_o=\partial f/\partial x$ and $B_o=\partial f/\partial u$ at the
-operating point, and
+where $A_o=\partial f/\partial x$, $B_o=\partial f/\partial u$, and
 
 $$
 c_o=f(x^o,u^o)-A_o x^o-B_o u^o.
 $$
 
-This keeps the original state and control coordinates; it does not require
-the controller to use deviation variables $x-x^o$ and $u-u^o$. Put the
-constant offset in CHRONOS's known-input term, for example
-
-$$
-\dot{x}\approx A_o x+B_o u+B_{d,o}d,
-\qquad d=1,\quad B_{d,o}=c_o.
-$$
-
-For an offset decomposed into several known quantities, use a matching vector
-$d$ and matrix $B_d$. Taylor expansion of selected terms and Taylor expansion
-of the full vector field are both local approximations: their accuracy is
-expected near the chosen operating point, not over the entire state space.
+At an equilibrium, $f(x^o,u^o)=0$, so
+$c_o=-A_o x^o-B_o u^o$. This affine offset can be represented by
+CHRONOS's known-input term, for example $d=1$ and $B_{d,o}=c_o$. This form
+keeps the original state and control coordinates rather than introducing
+deviation variables. Partial and full Taylor expansions are local
+approximations whose accuracy is expected near the chosen operating point.
 
 ## Discretize the model
 
-CHRONOS uses a discrete-time prediction model. For a continuous LPV model
+So far, we have been using continuous-time models in this guide. However, CHRONOS, like any other MPC solver, assumes discrete prediction models. Thus, the LPV representation we obtain for the dynamics needs to be discretized.
+
+For a continuous LPV model
 
 $$
-\dot{x}=A_c(\rho)x+B_c(\rho)u+E_c(\rho)d,
+\dot{x}=A_c(\rho)x+B_c(\rho)u+B_{d,c}(\rho)d,
 $$
 
 the discrete prediction model is
@@ -228,45 +407,15 @@ Under forward Euler with sample time $T_s$, the coefficients are
 $$
 A_k=I+T_sA_{c,k},\qquad
 B_k=T_sB_{c,k},\qquad
-B_{d,k}=T_sE_{c,k}.
+B_{d,k}=T_sB_{d,c,k}.
 $$
 
-This assumes the coefficients and known input are held over the sample
-interval. Discretize the state, control, and known-input terms consistently.
 Other discretization methods can be used when appropriate to the plant and
 sampling assumptions.
 
-## Map the model to CHRONOS
+## Next steps
 
-Use [`init_mpc_dynamics`](../api/init/init_mpc_dynamics.md) to define the
-discrete $A$, $B$, and optional $B_d$ matrices. The known input $d_k$ is
-supplied when building and solving the controller. For changing coefficients,
-[`update_mpc_dynamics`](../api/online/update_mpc_dynamics.md) accepts new
-constant or stage-varying matrices without changing their initialized
-dimensions.
-
-For a nonlinear output $y=g(x,u,d)$, first factor or approximate it in the
-form $Cx+Du+D_dd$, then use [`init_mpc_output`](../api/init/init_mpc_output.md).
-After building, update staged output coefficients with
-[`update_mpc_output_vector`](../api/online/update_mpc_output_vector.md). The
-resulting output can be tracked or bounded. A custom performance signal $z$
-can be penalized by a quadratic or linear custom cost, and a custom signal $h$
-can be bounded with a custom constraint; see
-[`init_mpc_Custom_cost`](../api/init/init_mpc_Custom_cost.md) and
-[`init_mpc_custom_cnstr`](../api/init/init_mpc_custom_cnstr.md).
-
-CHRONOS supports quadratic tracking, control, control-rate, custom, and
-terminal costs, along with linear bounds on state, control, control rate,
-output, and custom signals. An arbitrary nonlinear cost or constraint
-function is not passed directly to the solver: express it using these
-supported signals and terms, and use an exact representation or a stated
-approximation for any nonlinear mapping. See the API pages for
-[tracking](../api/init/init_mpc_Tracking_cost.md),
-[control](../api/init/init_mpc_Control_cost.md),
-[control-rate](../api/init/init_mpc_ControlRate_cost.md),
-[state bounds](../api/init/init_mpc_state_cnstr.md),
-[control bounds](../api/init/init_mpc_control_cnstr.md),
-[control-rate bounds](../api/init/init_mpc_control_rate_cnstr.md), and
-[output bounds](../api/init/init_mpc_output_cnstr.md).
-
-Return to the [User Guide index](index.md).
+In this guide, you learned how to represent your nonlinear model in an LPV
+form compatible with CHRONOS. Continue to
+[Defining the MPC problem](defining-the-mpc-problem.md) to learn how to use
+your LPV model to set up an MPC problem in CHRONOS.
