@@ -14,7 +14,7 @@ At instant $k$:
 
 <!-- [FIGURE PLACEHOLDER] -->
 <p align="center">
-  <img src="./figures/02_lpv_rti_diagram.png" alt="LPV-RTI Warm-Start Trajectory Diagram" width="650"/>
+  <img src="../figures/02_lpv_rti_diagram.png" alt="LPV-RTI Warm-Start Trajectory Diagram" width="650"/>
   <br>
   <em>Figure 1: Mapping the previous optimal state trajectory (warm-start) through the nonlinear scheduling proxy to form the LPV-RTI horizon estimate.</em>
 </p>

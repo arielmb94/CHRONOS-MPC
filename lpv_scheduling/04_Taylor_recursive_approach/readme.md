@@ -13,7 +13,7 @@ Assuming the scheduling proxy $f_\rho(x)$ is continuously differentiable ($\math
 
 <!-- [FIGURE PLACEHOLDER] -->
 <p align="center">
-  <img src="./figures/04_taylor_recursive_diagram.png" alt="Taylor Recursive Extrapolation Diagram" width="650"/>
+  <img src="../figures/04_taylor_recursive_diagram.png" alt="Taylor Recursive Extrapolation Diagram" width="650"/>
   <br>
   <em>Figure 1: First-order Taylor tangent correction and component-wise saturation between physical bounds.</em>
 </p>

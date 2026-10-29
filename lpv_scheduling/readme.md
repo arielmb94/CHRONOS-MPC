@@ -22,7 +22,7 @@ In CHRONOS, the scheduling trajectory estimation is completely decoupled from th
 ## The 4 Available Methods
 
 ### 1) The Frozen Approach (`01_Frozen_Approach.mlx`)
-**[Read Detailed Documentation](./01_Frozen_README.md)**
+**[Read Detailed Documentation](./01_frozen_approach/readme.md)**
 
 The simplest approach evaluates the exact nonlinear scheduling function $f_\rho(x)$ only once at the current measured state $x(k)$ and freezes (repeats) this vector across the entire prediction horizon $N_p$. Despite its lower prediction accuracy during fast nonlinear transients, it is widely used in practical applications due to its minimal computational cost and implementation simplicity.
 
@@ -39,7 +39,7 @@ mpc   = update_mpc_dynamics(mpc, A_lpv, B_lpv, []);
 ---
 
 ### 2) The LPV-RTI / Warm-Start Approach (`02_LPV_RTI_Approach.mlx`)
-**[Read Detailed Documentation](./02_LPV_RTI_README.md)**
+**[Read Detailed Documentation](./02_LPV_RTI_approach/readme.md)**
 
 Inspired by the Real-Time Iteration (RTI) paradigm, this approach achieves a highly accurate approximation with low computational overhead by exploiting the predicted state trajectory stored from the previous MPC solution (the warm-start vector). Instead of freezing the current state, each future state prediction is passed through $f_\rho(x)$ to populate $\hat{P}_k$.
 
@@ -58,7 +58,7 @@ mpc   = update_mpc_dynamics(mpc, A_lpv, B_lpv, []);
 ---
 
 ### 3) The LPV-SQP / Iterative Approach (`03_LPV_SQP_Approach.mlx`)
-**[Read Detailed Documentation](./03_LPV_SQP_README.md)**
+**[Read Detailed Documentation](./03_LPV_SQP_approach/readme.md)**
 
 Also known as the iterative qLPV method, this approach implements a successive fixed-point refinement loop within the same sampling interval. It initializes a base trajectory, solves the MPC, extracts the newly predicted state trajectory to re-evaluate $\hat{P}_k^l$, and resolves the QP repeatedly until convergence ($\Vert \hat{P}_k^{l} - \hat{P}_k^{l-1} \Vert_\infty < \epsilon_{\text{cis}}$) or a maximum iteration budget $l_{\max}$ is reached.
 
@@ -76,7 +76,7 @@ mpc   = update_mpc_dynamics(mpc, A_lpv, B_lpv, []);
 ---
 
 ### 4) The Taylor Recursive Approach (`04_Taylor_Approach.mlx`)
-**[Read Detailed Documentation](./04_Taylor_Recursive_README.md)**
+**[Read Detailed Documentation](./04_Taylor_recursive_approach/readme.md)**
 
 Based on a first-order Taylor series expansion of the scheduling function, this method extracts the base $\rho$ values from the time-shifted trajectory of the previous sampling instant and corrects them using the analytical Jacobian $\sigma_k = \frac{\partial f_\rho}{\partial x}$ multiplied by the state deviation $\Delta x$. To prevent numerical divergence under sharp nonlinearities, every extrapolated parameter is strictly clipped between physical bounds $[\underline{\rho}, \overline{\rho}]$.
 

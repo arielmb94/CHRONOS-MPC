@@ -14,7 +14,7 @@ At a single sampling instant $k$:
 
 <!-- [FIGURE PLACEHOLDER] -->
 <p align="center">
-  <img src="./figures/03_lpv_sqp_diagram.png" alt="LPV-SQP Iterative Refinement Diagram" width="650"/>
+  <img src="../figures/03_lpv_sqp_diagram.png" alt="LPV-SQP Iterative Refinement Diagram" width="650"/>
   <br>
   <em>Figure 1: Fixed-point iterative refinement loop of the LPV-SQP approach within a single sampling period.</em>
 </p>

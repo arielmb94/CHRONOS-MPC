@@ -12,7 +12,7 @@ $$\hat{\rho}(k+j \mid k) = \rho(k), \quad \forall j \in \{0, 1, \dots, N_p-1\}.$
 
 <!-- [FIGURE PLACEHOLDER] -->
 <p align="center">
-  <img src="./figures/01_frozen_diagram.png" alt="Frozen Scheduling Trajectory Diagram" width="650"/>
+  <img src="../figures/01_frozen_diagram.png" alt="Frozen Scheduling Trajectory Diagram" width="650"/>
   <br>
   <em>Figure 1: Conceptual illustration of the Frozen approach keeping the scheduling parameter constant over the prediction horizon.</em>
 </p>
