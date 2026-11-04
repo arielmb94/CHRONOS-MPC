@@ -1,7 +1,7 @@
 # API reference
 
 ```{toctree}
-:maxdepth: 2
+:maxdepth: 3
 
 init/index
 online/index

@@ -2,7 +2,7 @@
 
 **Prediction models, control objectives, and operating constraints in one formulation.**
 
-CHRONOS solves Model Predictive Control (MPC) problems using Linear Parameter Varying / Linear Time Varying (LPV/LTV)
+CHRONOS solves Model Predictive Control (MPC) problems using linear parameter-varying / linear time-varying (LPV/LTV)
 prediction models. Given a model, objectives, and operating limits, CHRONOS
 computes a sequence of control actions over a prediction horizon of $N$
 steps. In receding-horizon operation, the first action is applied and the
@@ -13,7 +13,7 @@ problem is updated and solved again at the next control sample.
 The objective combines the cost terms selected for the controller:
 
 $$
-\min_{x,u,v}\; J = J_{\mathrm{tracking}} + J_{\mathrm{effort}}
+\min_{x,u}\; J = J_{\mathrm{tracking}} + J_{\mathrm{effort}}
 + J_{\mathrm{rate}} + J_{\mathrm{custom}} + J_{\mathrm{terminal}}
 $$
 
@@ -23,7 +23,7 @@ $$
 | Control effort | Add quadratic and/or linear costs on the control inputs $u_k$. |
 | Control rate | Penalize input changes $\Delta u_k=u_k-u_{k-1}$. At the first step, use the previous applied input. |
 | Custom objectives | Add linear and/or quadratic costs on user-defined affine signals. |
-| Terminal objective | Penalize the final predicted state's deviation from its reference. 
+| Terminal objective | Penalize the final predicted state's deviation from its reference. |
 
 
 ## Prediction model
@@ -37,13 +37,14 @@ $$
 
 Here $x_k$ is the state, $u_k$ the control input, and $d_k$ a known
 disturbance or input. The current state $x_0$ is supplied to each solve.
-Model matrices may vary along the horizon, but their values are fixed during that solve. This allows to consider changing operating conditions while preserving a convex optimization problem.
+Model matrices may vary along the horizon, but their values are fixed during that solve. This accounts for changing operating conditions while preserving a convex optimization problem.
 
-Outputs signals are also represented in an affine LPV/LTV model,
+Output signals are also represented in an affine LPV/LTV model,
+
 $$
 y_k=C_kx_k+D_ku_k+D_{d,k}d_k
 $$
-Similar structure applies for custom cost and constraint signals which can combine the state, control input and known inputs, as well as being able to consider the previous step control inputs.
+A similar structure applies to custom cost and constraint signals, which can combine the state, current and previous control inputs, and known inputs.
 
 ## Constraints
 
@@ -67,6 +68,8 @@ Model and signal matrices, stage cost weights, bounds, and slack penalties
 can vary across the prediction horizon. For example, a controller can account
 for upcoming operating limits, adjust the balance between tracking and
 effort, or use different slack penalties at different prediction steps.
+
+## Next step
 
 The next chapter, [From nonlinear to LPV models](from-nonlinear-problems-to-lpv-mpc.md),
 describes how to prepare a prediction model. The

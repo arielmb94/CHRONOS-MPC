@@ -1,6 +1,10 @@
 # From nonlinear to LPV models
 
-CHRONOS does not attempt to work directly with nonlinear systems. Instead, it relies on the user providing the MPC problem ingredients (dynamics, costs, constraints, etc.) using Linear Parameter Varying (LPV) or Linear Time Varying (LTV) formulations. In exchange for this effort, the tradeoff for users can be summarized in the following *contract*:
+The [CHRONOS overview](chronos-overview.md) introduced the prediction models,
+objectives, and constraints supported by the solver. This chapter explains
+how to prepare the dynamics and cost/constraint signals of a nonlinear
+system in the linear parameter-varying (LPV) or linear time-varying (LTV)
+forms those ingredients require. The modeling task can be summarized as follows:
 
 ```{note}
 Give CHRONOS your dynamics and cost/constraint signals in its supported
@@ -10,9 +14,9 @@ problem using implementations designed for maximum computational efficiency.
 For a fixed LPV/LTV schedule, every optimum is global. Stage-varying models and custom cost/constraint signals still let you capture rich model and performance behavior.
 ```
 
-This guide explains how to represent nonlinear models and signals in LPV
-form. Subsequent guide pages show how to use these representations to
-define an MPC problem with the CHRONOS API.
+After preparing these models, continue to
+[Configuring the MPC controller](configuring-the-mpc-controller.md) to register
+them through the CHRONOS API.
 
 ```{contents}
 :local:
@@ -75,7 +79,7 @@ The following section shows three ways to derive LPV formulations from nonlinear
 (lpv-direct-factorization)=
 ### 1. Direct factorization
 
-The most straightforward method is to directly factorize our model with respect to the states $x$, control inputs $u$, and known inputs $d$ whenever the model allows it. Factorizing the nonlinear model gives:
+The most straightforward approach is known as the **quasi-LPV direct embeddings**, when we can directly factorize our model with respect to the states $x$, control inputs $u$, and known inputs $d$ whenever the model allows it. Factorizing the nonlinear model gives:
 
 $$
 \dot{x}=A(\rho)x+B(\rho)u+B_d(\rho)d,
@@ -85,7 +89,7 @@ where the nonlinearity is in the coefficients as
 functions of the schedule $\rho$, rather than in products among the modeled
 state and control variables after the schedule is fixed.
 
-#### Scalar Example 1
+#### Scalar example 1
 
 Let's assume the following scalar model:
 
@@ -103,7 +107,7 @@ Note that if we expand the LPV representation by multiplying the resulting $A(\r
 
 
 
-#### Scalar Example 2
+#### Scalar example 2
 
 Let's assume the following scalar model:
 
@@ -179,6 +183,7 @@ $$
 When translating the dynamics from a nonlinear model to an LPV one, always check the controllability conditions of the LPV model you obtained. You can do the check analytically or by replacing the terms of your $A(\rho)$ and $B(\rho)$ matrices with appropriate values.
 ```
 
+(squared-distance-to-a-reference-point)=
 #### Squared distance to a reference point
 
 The LPV modeling technique also applies to system signals. Suppose an MPC controller uses the distance from a planar position $(x,y)$ to a fixed reference point $(x_0,y_0)$. To expose the states, we can square the distance signal and expand the resulting expression.
@@ -215,7 +220,7 @@ $$
 
 The nonlinear model is not always directly factorizable with respect to the states and/or control inputs. However, an exact algebraic identity may expose the state or input factor needed for a matrix representation.
 
-#### Scalar Example
+#### Scalar example
 
 Let's assume the following scalar model:
 
@@ -223,7 +228,7 @@ $$
 \dot x = -\sin(x) + u
 $$
 
-Here we cannot factorize the model on the states at it is contained within the $\sin(x)$ term.Instead we can manipulate the model by multipliying and dividing the term $\sin(x)$ by the state value: 
+Here the state is contained within the $\sin(x)$ term. To expose a state factor, we can multiply and divide $\sin(x)$ by the state value:
 
 $$
 \sin(x)= \frac{\sin(x)\cdot x}{x}
@@ -235,9 +240,9 @@ $$
 \dot x = \left[-\frac{\sin(x)}{x} \right]x + \left[1\right]u,\qquad \rho=\frac{\sin(x)}{x},\quad A(\rho)=-\rho,\quad B=1.
 $$
 
-Note that if we expand the LPV representation by multiplying the resulting $A(\rho)$ and $B(\rho)$ matrices by the state and control input, respectively, we get back the original nonlinear model. However this model ill-defined for $x=0$, for this reason, this approach is only recommended in an scenario where $x>0$, and 0 is not part of the set.
+Note that if we expand the LPV representation by multiplying the resulting $A(\rho)$ and $B(\rho)$ matrices by the state and control input, respectively, we get back the original nonlinear model. However, this model is ill-defined for $x=0$. For this reason, this approach is only recommended in a scenario where $x>0$ and zero is excluded.
 
-#### Two-Tank Water-Level Example
+#### Two-tank water-level example
 
 Let's look now at a slightly more complex problem, the nonlinear water-level ODE from the [two-tank example](https://github.com/arielmb94/CHRONOS-MPC/blob/docs/examples/Two%20Tank/readme.md):
 
@@ -333,7 +338,7 @@ $$
 
 Note that, in practice, a scheduling parameter $x^*$ coming from the Taylor expansion will be treated in the same way as a state $x$ from the direct factorization of the nonlinear model.
 
-#### Stirring-Tank Example
+#### Stirring-tank example
 
 Let's consider the nonlinear dynamics of the end-product concentration and temperature used in the [stirring-tank example](https://github.com/arielmb94/CHRONOS-MPC/blob/docs/examples/Stirring%20Tank%20Reactor/readme.md).
 
@@ -393,7 +398,7 @@ The temperature-to-concentration coefficient now connects the state affected
 by the control to the concentration equation. Only the term needed to expose
 this path is approximated; the other terms retain their factorized form.
 
-#### Full Taylor Expansion
+#### Full Taylor expansion
 
 More generally, a first-order expansion of the full vector field at
 $(x^o,u^o)$ gives
@@ -418,7 +423,7 @@ approximations whose accuracy is expected near the chosen operating point.
 
 ## Discretize the model
 
-So far, we have been using continuous-time models in this guide. However, CHRONOS, like any other MPC solver, assumes discrete prediction models. Thus, the LPV representation we obtain for the dynamics needs to be discretized.
+So far, we have been using continuous-time models in this chapter. However, CHRONOS, like any other MPC solver, assumes discrete prediction models. Thus, the LPV representation we obtain for the dynamics needs to be discretized.
 
 For a continuous LPV model
 
@@ -444,9 +449,9 @@ $$
 Other discretization methods can be used when appropriate to the plant and
 sampling assumptions.
 
-## Next steps
+## Next step
 
-In this guide, you learned how to represent your nonlinear model in an LPV
+In this chapter, you learned how to represent your nonlinear model in an LPV
 form compatible with CHRONOS. Continue to
-[Defining the MPC problem](defining-the-mpc-problem.md) to learn how to use
+[Configuring the MPC controller](configuring-the-mpc-controller.md) to learn how to use
 your LPV model to set up an MPC problem in CHRONOS.
