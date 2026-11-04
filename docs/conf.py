@@ -30,7 +30,7 @@ _repository_root = Path(__file__).resolve().parent.parent
 _matlab_sources = TemporaryDirectory(prefix="chronos-api-")
 atexit.register(_matlab_sources.cleanup)
 _api_source_paths = (
-    "mpc_definition_api/init_func/init_mpc.m",
+    "mpc_definition_api/init_func/init_chronos_mpc.m",
     "mpc_definition_api/init_func/init_mpc_dynamics.m",
     "mpc_definition_api/init_func/init_mpc_output.m",
     "mpc_definition_api/init_func/init_mpc_Tracking_cost.m",

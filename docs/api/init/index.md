@@ -3,7 +3,7 @@
 ```{toctree}
 :maxdepth: 1
 
-init_mpc
+init_chronos_mpc
 init_mpc_dynamics
 init_mpc_output
 init_mpc_Tracking_cost

@@ -60,7 +60,7 @@ The snippet below illustrates the API workflow.
 
 ```matlab
 % Define once: prediction model, constraints, and tracking objective
-mpc = init_mpc(N);
+mpc = init_chronos_mpc(N);
 mpc = init_mpc_dynamics(mpc, A, B, []);
 mpc = init_mpc_output(mpc, C, D, []);
 mpc = init_mpc_control_rate_cnstr(mpc, du_min, du_max);

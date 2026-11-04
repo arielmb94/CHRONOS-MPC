@@ -1,10 +1,10 @@
-function mpc = init_mpc(N)
-% INIT_MPC Create the CHRONOS MPC structure.
+function mpc = init_chronos_mpc(N)
+% INIT_CHRONOS_MPC Create the CHRONOS MPC structure.
 %
-%   mpc = INIT_MPC(N) creates an empty MPC structure with prediction
+%   mpc = INIT_CHRONOS_MPC(N) creates an empty MPC structure with prediction
 %   horizon N.
 %
-%   mpc = INIT_MPC() uses the default horizon N = 10.
+%   mpc = INIT_CHRONOS_MPC() uses the default horizon N = 10.
 %
 %   Call this function first. Then define the dynamics, optionally replace
 %   the default tracking output, add costs and constraints, and finish with
@@ -19,7 +19,7 @@ function mpc = init_mpc(N)
 %
 %   Example:
 %
-%       mpc = init_mpc(20);
+%       mpc = init_chronos_mpc(20);
 %       mpc = init_mpc_dynamics(mpc, A, B, []);
 %       mpc = init_mpc_output(mpc, C, [], []);
 

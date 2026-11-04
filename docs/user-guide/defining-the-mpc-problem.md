@@ -11,8 +11,7 @@ and how to configure them through the initialization API. The
 
 ## MPC formulation
 
-For a supplied LPV/LTV model sequence, CHRONOS selects predicted states and
-control inputs to balance the configured objectives. The controller cost is
+For a supplied LPV/LTV model sequence, CHRONOS solves the following MPC problem
 
 $$
 \begin{aligned}
@@ -25,12 +24,11 @@ $$
 \end{aligned}
 $$
 
-The prediction dynamics and desired operating bounds are
+where prediction dynamics and desired operating bounds are
 
 $$
 \begin{aligned}
 x_{k+1}&=A_kx_k+B_ku_k+B_{d,k}d_k, && k=0,\ldots,N-1,\\
-\Delta u_k&=u_k-u_{k-1}, && u_{-1}=u_{\mathrm{prev}},\\
 u_{\min,k}&\le u_k\le u_{\max,k}, && k=0,\ldots,N-1,\\
 \Delta u_{\min,k}&\le\Delta u_k\le\Delta u_{\max,k}, && k=0,\ldots,N-1,\\
 x_{\min,k}&\le x_k\le x_{\max,k}, && k=1,\ldots,N,\\
@@ -42,35 +40,27 @@ $$
 | Symbol | Meaning |
 | --- | --- |
 | $N$ | Number of prediction steps |
-| $x_k\in\mathbb R^{n_x}$ | Predicted state; $x_0$ is the supplied current state |
+| $x_k\in\mathbb R^{n_x}$ | Predicted state|
 | $u_k\in\mathbb R^{n_u}$ | Predicted control input |
 | $d_k\in\mathbb R^{n_d}$ | Known input shared by dynamics and outputs |
-| $y_k\in\mathbb R^{n_y}$, $r_k$ | Output signal and its tracking reference |
+| $y_k\in\mathbb R^{n_y}$ | Output signal and its tracking reference |
+| $r_k\in\mathbb R^{n_y}$ | Tracking reference |
 | $z_k\in\mathbb R^{n_z}$ | Custom cost signal |
 | $h_k\in\mathbb R^{n_h}$ | Custom constraint signal |
 
-The matrices and vectors defining each signal are described below.
-$\mathcal K_y$, $\mathcal K_z$, and $\mathcal K_h$ denote the stages where
-each signal contributes, as described in the ingredient sections. Only
-configured costs and bounds are included; each lower or upper bound can be
-omitted independently. The treatment of operating bounds is explained in
-{ref}`the constraints section <defining-mpc-constraints>`.
+The model and signal coefficients are fixed during a solve, however, they can change between prediction stages. Allowing to account for nonlinear behaviour in the form of time varying models. With valid convex weights, the problem has linear dynamics, affine constraints, and a convex quadratic/linear objective.
 
-The model and signal coefficients are fixed during a solve, although they can
-differ between prediction stages. With valid convex weights, the problem has
-linear dynamics, affine constraints, and a convex quadratic/linear objective.
-
-## Initialization workflow
+### CHRONOS MPC definition workflow
 
 **Create the MPC structure → Configure the ingredients → Build the controller**
 
 Always start by initializing a CHRONOS MPC structure:
 
 ```matlab
-mpc = init_mpc(N);
+mpc = init_chronos_mpc(N);
 ```
 
-[`init_mpc(N)`](../api/init/init_mpc.md) selects the horizon and creates the
+[`init_chronos_mpc(N)`](../api/init/init_chronos_mpc.md) selects the horizon and creates the
 structure to be populated by subsequent calls. The supported horizon is an
 integer $N\ge1$; omitting the argument selects $N=10$. For a model sampled
 every $T_s$ seconds, $N$ prediction steps cover $NT_s$ seconds. The model
@@ -155,6 +145,10 @@ solves**, for example when a new model schedule or forecast is available.
 Updates preserve the built dimensions and enabled ingredients. Use these
 functions rather than editing coefficient fields directly, so dependent
 cost data is refreshed.
+
+
+
+
 
 ## Prediction model
 

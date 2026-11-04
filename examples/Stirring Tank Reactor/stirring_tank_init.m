@@ -22,7 +22,7 @@ Ts = 0.1;
 N = 15;         % Prediction horizon: N*Ts = 1.5 s
 
 % Create mpc struct
-mpc = init_mpc(N);
+mpc = init_chronos_mpc(N);
 
 %% Nominal prediction model
 

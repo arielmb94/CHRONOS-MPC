@@ -16,7 +16,7 @@ Ts = 0.01;
 N = 10;         % Prediction horizon: N*Ts = 0.1 s
 
 % Create mpc struct
-mpc = init_mpc(N);
+mpc = init_chronos_mpc(N);
 
 % Limit optimization iterations per control sample
 mpc.max_iter = 3;

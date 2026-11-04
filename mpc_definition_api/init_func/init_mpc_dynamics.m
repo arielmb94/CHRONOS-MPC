@@ -22,11 +22,11 @@ function mpc = init_mpc_dynamics(mpc,A,B,Bd)
 %   initialization is needed. Call INIT_MPC_OUTPUT after this function only
 %   when a different tracking or constrained output is required.
 %
-%   Call this function after INIT_MPC and before adding costs or
+%   Call this function after INIT_CHRONOS_MPC and before adding costs or
 %   constraints.
 %
 %   Inputs:
-%     mpc     - CHRONOS MPC structure created by INIT_MPC.
+%     mpc     - CHRONOS MPC structure created by INIT_CHRONOS_MPC.
 %     A       - State matrix, size nx-by-nx or nx-by-nx-by-L.
 %     B       - Control matrix, size nx-by-nu or nx-by-nu-by-L.
 %     Bd      - Optional fixed-known-input matrix, size nx-by-nd or
@@ -37,7 +37,7 @@ function mpc = init_mpc_dynamics(mpc,A,B,Bd)
 %
 %   Example - define a time-invariant model without a known input:
 %
-%       mpc = init_mpc(20);
+%       mpc = init_chronos_mpc(20);
 %       mpc = init_mpc_dynamics(mpc, A, B, []);
 
 arguments

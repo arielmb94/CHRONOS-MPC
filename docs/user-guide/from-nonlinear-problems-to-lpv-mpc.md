@@ -179,6 +179,37 @@ $$
 When translating the dynamics from a nonlinear model to an LPV one, always check the controllability conditions of the LPV model you obtained. You can do the check analytically or by replacing the terms of your $A(\rho)$ and $B(\rho)$ matrices with appropriate values.
 ```
 
+#### Squared distance to a reference point
+
+The LPV modeling technique also applies to system signals. Suppose an MPC controller uses the distance from a planar position $(x,y)$ to a fixed reference point $(x_0,y_0)$. To expose the states, we can square the distance signal and expand the resulting expression.
+
+$$
+\begin{aligned}
+r &= \sqrt{(x-x_0)^2+(y-y_0)^2},\\
+s=r^2 &= x^2-2x_0x+x_0^2+y^2-2y_0y+y_0^2.
+\end{aligned}
+$$
+
+Now factor the terms involving $x$ and $y$ and use the scheduled position $\rho=[\hat x(k)\; \hat y(k)]^T$ in the coefficients. The scheduled coordinates $[\hat x(k)\; \hat y(k)]^T$ are position estimates for each stage $k$ along the prediction horizon, while $x$ and $y$ are the position variables being optimized at that stage. The resulting LPV signal is
+
+$$
+s_{\mathrm{LPV}}=
+\begin{bmatrix}\hat x(k)-2x_0 & \hat y(k)-2y_0\end{bmatrix}
+\begin{bmatrix}x\\y\end{bmatrix}
++0u+[x_0^2+y_0^2]d,\qquad d=1.
+$$
+
+We can use the previous MPC state predictions for these scheduled positions. This gives an accurate estimate of the squared distance to the reference point along the prediction horizon.
+
+The same formulation can be applied to a changing reference point, such as a moving obstacle. The offset term can instead be represented by setting $D_d=1$ and $d=x_0(k)^2+y_0(k)^2$, where $x_0(k)$ and $y_0(k)$ are the forecast coordinates of the reference point along the prediction horizon. Both the scheduled position and the reference position can now vary across the horizon.
+
+$$
+s_{\mathrm{LPV}}=
+\begin{bmatrix}\hat x(k)-2x_0(k) & \hat y(k)-2y_0(k)\end{bmatrix}
+\begin{bmatrix}x\\y\end{bmatrix}
++0u+[1]d,\qquad d=x_0^2(k)+y_0^2(k).
+$$
+
 (lpv-algebraic-manipulation)=
 ### 2. Algebraic manipulation
 

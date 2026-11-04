@@ -104,7 +104,7 @@ In the code, `B_discrete` denotes the discrete control matrix; it is not
 CHRONOS's optional disturbance matrix `Bd`.
 
 ```matlab
-mpc = init_mpc(N);
+mpc = init_chronos_mpc(N);
 mpc.max_iter = 3;
 
 alpha1 = sqrt(2*g*h1)/(Ab*h1);
@@ -127,7 +127,7 @@ The three-iteration limit follows the example's small computational budget.
 It caps Newton iterations, not elapsed time, and does not guarantee convergence
 within each sample. Keep that distinction in mind when inspecting results.
 
-References: [`init_mpc`](../api/init/init_mpc.md) and
+References: [`init_chronos_mpc`](../api/init/init_chronos_mpc.md) and
 [`init_mpc_dynamics`](../api/init/init_mpc_dynamics.md).
 
 ## 4. Choose operating limits offline
