@@ -9,7 +9,7 @@ and configure, solve, and update the controller.
 
 CHRONOS overview <chronos-overview>
 from-nonlinear-problems-to-lpv-mpc
-Defining the MPC problem <defining-the-mpc-problem>
-Solving and updating online <online-updates>
+Configuring the MPC controller <configuring-the-mpc-controller>
+Solving and updating online <solving-and-updating-online>
 Your first controller <your-first-controller>
 ```

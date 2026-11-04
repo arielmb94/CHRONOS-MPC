@@ -179,6 +179,7 @@ $$
 When translating the dynamics from a nonlinear model to an LPV one, always check the controllability conditions of the LPV model you obtained. You can do the check analytically or by replacing the terms of your $A(\rho)$ and $B(\rho)$ matrices with appropriate values.
 ```
 
+(squared-distance-to-a-reference-point)=
 #### Squared distance to a reference point
 
 The LPV modeling technique also applies to system signals. Suppose an MPC controller uses the distance from a planar position $(x,y)$ to a fixed reference point $(x_0,y_0)$. To expose the states, we can square the distance signal and expand the resulting expression.
@@ -448,5 +449,5 @@ sampling assumptions.
 
 In this guide, you learned how to represent your nonlinear model in an LPV
 form compatible with CHRONOS. Continue to
-[Defining the MPC problem](defining-the-mpc-problem.md) to learn how to use
+[Configuring the MPC controller](configuring-the-mpc-controller.md) to learn how to use
 your LPV model to set up an MPC problem in CHRONOS.

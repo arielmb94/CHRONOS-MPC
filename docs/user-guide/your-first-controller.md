@@ -383,8 +383,8 @@ at every sample.
 
 You now have the complete controller lifecycle: define the model and
 preferences once, build its workspace, and repeatedly update the model,
-solve, and apply one action. The [definition guide](defining-the-mpc-problem.md)
-explains additional ingredients, and [Solving and updating online](online-updates.md)
+solve, and apply one action. The [controller configuration guide](configuring-the-mpc-controller.md)
+explains additional ingredients, and [Solving and updating online](solving-and-updating-online.md)
 shows how to change weights, limits, and other signals between solves.
 
 The original example tracks only tank 2, uses a stage-varying LPV

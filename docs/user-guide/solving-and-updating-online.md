@@ -1,45 +1,47 @@
 # Solving and updating online
 
-After [defining and building the MPC problem](defining-the-mpc-problem.md),
-reuse the controller at each sampling instant: update the ingredients that
-have changed, solve with the latest state and forecasts, and apply the first
-control action. This chapter explains which data to supply for each ingredient;
-the [online API reference](../api/online/index.md) gives full argument details.
+[Configuring the MPC controller](configuring-the-mpc-controller.md) prepares
+an `mpc` structure with your prediction model, costs, and constraints. This
+chapter shows how to reuse that controller at each sampling instant: update
+its data, solve with the current state and references, and apply the
+control action. The [online API reference](../api/online/index.md) provides
+the full argument descriptions.
+
+The following sections explain each ingredient's online interface. Continue
+to [Your first controller](your-first-controller.md) for a plant-based
+walkthrough that brings configuration and online operation together.
 
 ```{contents}
 :local:
 :depth: 2
 ```
 
+## CHRONOS online control workflow
+
+At each sampling instant:
+
+1. Obtain the current state estimate and the input applied at the previous sample.
+2. Prepare the current references, known-input forecasts, and any new LPV schedule.
+3. Update the configured models, weights, or limits that have changed using the update API functions.
+4. Solve with `mpc_solve`, apply the first control action, and retain the returned `mpc`.
+
 ## Solving the MPC problem
 
-At each sample, pass the current measured or estimated state as `x_prev` and
-the input actually applied at the preceding sample as `u_prev`:
+At each sample, we solve the MPC problem calling [`mpc_solve`](../api/online/mpc_solve.md).
 
-```matlab
-% First call any model, cost, or limit updaters needed for this sample.
-[u0, mpc, iter] = mpc_solve(mpc, x_prev, u_prev, r_in, xN_ref_in, ...
-                           d_in, dz_in, dh_in);
-% Apply u0 to the plant; retain mpc for the next sample.
-```
+We always pass to `mpc_solve` the `mpc` structure. This structure contains contains the latest predictions and solver state, constraint info, as well as all gradient and hessian data required to solve the optimization problem. After CHRONOS finishes solving the current MPC problem, it will return an updated version of the `mpc`, with updated predictions for all used signals and data.
 
-`u0` is the next control action, equal to `mpc.u(:,1)`. Always retain the
-returned `mpc`: it contains the latest predictions and solver state, which
-provide the starting point for the next solve. CHRONOS does not automatically
-shift that state or your supplied profiles forward by one sample. Prepare
-new forecasts relative to the current sample whenever needed.
+When calling `mpc_solve` supply the following signals
 
-### Signals supplied to the solve
-
-| Input | What to supply | Time variation |
-| --- | --- | --- |
-| `x_prev` | Current state, `nx`-by-1 | One measurement/estimate for this sample |
-| `u_prev` | Last applied control, `nu`-by-1 | One value for this sample; used by input-rate and previous-control terms |
-| `r_in` | Output tracking reference, `ny` rows | One column or a horizon profile, following the output convention below |
-| `xN_ref_in` | Terminal state reference, `nx`-by-1 | One target for stage `N` |
-| `d_in` | Known input shared by dynamics and output, `nd` rows | Columns for stages `0` through `N-1` |
-| `dz_in` | Known input for the custom cost, `ndz` rows | Columns for stages `0` through `N-1` |
-| `dh_in` | Known input for custom constraints, `ndh` rows | Columns for stages `0` through `N-1` |
+| Input | Meaning | What to supply | When to use |
+| --- | --- | --- | --- |
+| `x_prev` | State at the start of the current sample; initializes the prediction | Current state vector, `nx`-by-1 | Every solve |
+| `u_prev` | Control action applied during the previous sample | Last applied control vector, `nu`-by-1 | Every solve; use the value actually applied by the plant or actuator |
+| `r_in` | Reference for the configured output tracking cost | Reference matrix with `ny` rows and `L` columns; one column may be reused across the horizon | When tracking is configured and its reference needs updating; pass `[]` to retain the stored reference |
+| `xN_ref_in` | Target for the terminal predicted state | Terminal state reference vector, `nx`-by-1 | When terminal ingredients are configured; required each solve unless `xN_ref_is_y` reuses the terminal tracking reference |
+| `d_in` | Known input shared by the dynamics and output models | Forecast matrix with `nd` rows and `L` columns for stages `0` through `N-1` | When a configured dynamics or output model uses this input and its forecast needs updating; pass `[]` to retain the stored forecast |
+| `dz_in` | Known input to the configured custom-cost signal | Forecast matrix with `ndz` rows and `L` columns for stages `0` through `N-1` | When the custom-cost signal uses this input and its forecast needs updating; pass `[]` to retain the stored forecast |
+| `dh_in` | Known input to the configured custom-constraint signal | Forecast matrix with `ndh` rows and `L` columns for stages `0` through `N-1` | When the custom-constraint signal uses this input and its forecast needs updating; pass `[]` to retain the stored forecast |
 
 Pass all argument positions, using `[]` for unused signals. For `r_in`,
 `d_in`, `dz_in`, and `dh_in`, `[]` retains the stored values; it does not
@@ -52,25 +54,32 @@ configured `xN_ref_is_y=true`, `[]` instead reuses the terminal tracking
 reference; this requires the tracking output to be the full state in the
 same order. An explicit terminal state reference takes precedence.
 
-### What CHRONOS does during a solve
+`mpc_solve`returns the following data
 
-CHRONOS loads the references and forecasts, refreshes cost gradients and
-Hessians requested by the update functions, and updates the dynamics data
-using the current state. It then iterates on the predicted states, controls,
-and constraint slacks. Model matrices and forecasts remain fixed throughout
-that solve; CHRONOS does not recompute an LPV schedule from the new predictions.
+| Output | Meaning |
+| --- | --- |
+| `u0` | First control action in the solution; apply it to the plant. |
+| `mpc` | Updated controller structure with the latest predictions and solver state; retain it for the next solve. |
+| `iter` | Number of Newton iterations used. |
 
-The returned `mpc.x` contains states at stages `1` through `N`, and `mpc.u`
-contains controls at stages `0` through `N-1`. Configured derived signals,
-such as output, custom signals, and input increments, are recomputed from
-the iterate. Output/custom interior fields cover stages `1` through `N-1`;
-active endpoints use separate `_0` and `_ter` fields.
 
-`iter` reports the number of Newton iterations, not a success status. The
-solve can stop at its tolerance, iteration limit, or a sufficiently small
-accepted step. See [`mpc_solve`](../api/online/mpc_solve.md) for its interface.
+### Choose what to update
 
-### Time-varying updates and fixed structure
+| What changed? | What to supply |
+| --- | --- |
+| Current state or last applied input | `x_prev` or `u_prev` to `mpc_solve` |
+| Tracking or terminal target | `r_in` or `xN_ref_in` to `mpc_solve` |
+| Known-input forecast | `d_in`, `dz_in`, or `dh_in` to `mpc_solve` |
+| Dynamics or signal coefficients | The corresponding model updater |
+| Importance of an objective or soft-bound violation | The corresponding weight or slack-penalty updater |
+| Allowed range of a configured signal | The corresponding limit updater |
+
+Only changed ingredients need updater calls. The solver still needs the
+current state and last applied input at every sample.
+
+
+
+## Supplying time-varying updates
 
 There are two independent kinds of variation: a profile describes changes
 **along the prediction horizon**, and an online call replaces that profile
@@ -101,6 +110,8 @@ interior output at stage 1 uses `C(:,:,1)` and `d_in(:,2)` when those
 entries are supplied. These are `N`-entry conventions, not independent
 `N+1`-entry profiles.
 
+### Preserve the configured structure
+
 Online updates preserve the horizon, dimensions, enabled terms, bound sides,
 and endpoint row selections established during building. In particular,
 changing coefficients does not reselect which output/custom rows contribute
@@ -114,13 +125,17 @@ tracking, control-rate, and terminal updaters, supply a weight when calling
 and skip the call when no update is needed. Use the public update functions
 so dependent solver data is refreshed automatically.
 
-## Updating the model
+## Prediction and signal models
 
 Update a model when its coefficients change, for example after computing a
 new LPV schedule. Update a known-input forecast through `mpc_solve` even when
 the matrices multiplying it remain unchanged.
 
-### Dynamics
+### Update the prediction dynamics
+
+Use the dynamics updater after evaluating a new LPV schedule or replacing
+a prediction-model coefficient. Supply discrete-time matrices at the same
+sample time used to configure the controller.
 
 $$x_{k+1}=A_kx_k+B_ku_k+B_{d,k}d_k.$$
 
@@ -139,10 +154,25 @@ CHRONOS uses the new matrices and refreshes the dynamics right-hand side
 at the next solve. A dynamics update does not recompute a terminal weight
 previously obtained from DLQR.
 
+#### Example: Replace only the state matrix
+
+If the current LPV schedule changes `A` while `B` and `Bd` stay unchanged:
+
+```matlab
+mpc = update_mpc_dynamics(mpc, A, [], []);
+```
+
+Evaluate and discretize the model before this call, using the approach in
+[From nonlinear to LPV models](from-nonlinear-problems-to-lpv-mpc.md).
+A new disturbance forecast alone goes through `d_in` at solve time.
+
 Reference: [`update_mpc_dynamics`](../api/online/update_mpc_dynamics.md).
 
 (online-output-model)=
-### Output model
+### Update the output model
+
+Use the output updater when the combination of states, controls, or known
+inputs defining the tracked or constrained quantity changes.
 
 $$y_k=C_kx_k+D_ku_k+D_{d,k}d_k.$$
 
@@ -164,7 +194,10 @@ to change output limits, use the {ref}`output-limit updater <online-output-limit
 Reference: [`update_mpc_output_vector`](../api/online/update_mpc_output_vector.md).
 
 (online-custom-cost-model)=
-### Custom-cost model
+### Update the custom-cost signal
+
+Change the custom signal model when the quantity you want to penalize
+changes. Its existing weights continue to apply to the updated signal.
 
 $$z_k=C_{z,k}x_k+D_{z,k}u_k+D_{xu,z,k}xu_k+D_{dz,k}d_{z,k}.$$
 
@@ -193,7 +226,10 @@ signal. Change them separately under {ref}`custom-cost weights <online-custom-co
 Reference: [`update_mpc_Custom_cost_vector`](../api/online/update_mpc_Custom_cost_vector.md).
 
 (online-custom-constraint-model)=
-### Custom-constraint model
+### Update the custom-constraint signal
+
+Change the custom signal model when the combination being constrained
+changes. Its existing bounds and violation penalties continue to apply.
 
 $$h_k=C_{h,k}x_k+D_{h,k}u_k+D_{xu,h,k}xu_k+D_{dh,k}d_{h,k}.$$
 
@@ -222,13 +258,23 @@ continue to apply.
 
 Reference: [`update_mpc_custom_cnstr_vector`](../api/online/update_mpc_custom_cnstr_vector.md).
 
-## Updating the costs
+## Cost terms
 
 Weights change the importance of an objective; references and known inputs
 change its target or offset. Supply symmetric positive-semidefinite stage
 quadratic weights and a symmetric positive-definite terminal `P`.
 
-### Reference tracking
+| Cost type | When to update it |
+| --- | --- |
+| {ref}`Tracking <online-tracking>` | Change the target or the importance of output errors. |
+| {ref}`Control effort <online-control-effort>` | Change the penalty on input magnitude or its linear cost. |
+| {ref}`Control rate <online-control-rate>` | Change how strongly the controller discourages input increments. |
+| {ref}`Terminal state <online-terminal-cost>` | Change the final-state target or weight. |
+| {ref}`Custom cost <online-custom-cost-weights>` | Change the weights on a configured custom signal. |
+| {ref}`Slack penalties <online-slack-penalties>` | Change the cost of violating soft bounds. |
+
+(online-tracking)=
+### Track a changing reference
 
 Tracking penalizes $\tfrac12(r_k-y_k)^TQ_{e,k}(r_k-y_k)$.
 Supply a new `r_in` directly to `mpc_solve`. To change the tracking weight:
@@ -246,7 +292,8 @@ weight update; a reference change enters the tracking error at the next solve.
 
 Reference: [`update_mpc_Tracking_cost`](../api/online/update_mpc_Tracking_cost.md).
 
-### Control effort
+(online-control-effort)=
+### Adjust the control-effort penalty
 
 Control effort penalizes $\tfrac12u_k^TR_{u,k}u_k+r_{u,k}^Tu_k$.
 
@@ -263,7 +310,8 @@ separate reference signal in this cost. CHRONOS refreshes the Hessian when
 
 Reference: [`update_mpc_Control_cost`](../api/online/update_mpc_Control_cost.md).
 
-### Control rate
+(online-control-rate)=
+### Adjust control smoothing
 
 The rate cost penalizes $\tfrac12\Delta u_k^TR_{du,k}\Delta u_k$, where
 $\Delta u_k=u_k-u_{k-1}$ and $\Delta u_0=u_0-u_{\mathrm{prev}}$.
@@ -280,7 +328,7 @@ division by the sampling period. The updater requests a cost Hessian refresh.
 Reference: [`update_mpc_Control_Rate_cost`](../api/online/update_mpc_Control_Rate_cost.md).
 
 (online-custom-cost-weights)=
-### Custom-cost weights
+### Adjust a custom objective
 
 The custom cost penalizes $\tfrac12z_k^TQ_{z,k}z_k+q_{z,k}^Tz_k$.
 
@@ -300,7 +348,8 @@ target when the configured model expresses `z` as a deviation from that target.
 
 Reference: [`update_mpc_Custom_cost`](../api/online/update_mpc_Custom_cost.md).
 
-### Terminal cost
+(online-terminal-cost)=
+### Update the terminal state objective
 
 The terminal cost is $(x_{N,\mathrm{ref}}-x_N)^TP(x_{N,\mathrm{ref}}-x_N)$.
 
@@ -318,7 +367,8 @@ update the initialization rollout gain.
 
 Reference: [`update_mpc_ter_ingredients`](../api/online/update_mpc_ter_ingredients.md).
 
-### Soft-constraint penalties
+(online-slack-penalties)=
+### Adjust the cost of constraint violations
 
 State, output, and custom constraints allow violations with a linear penalty
 on each bound's relaxation. To change that tradeoff, select the configured
@@ -341,7 +391,15 @@ resolved during building; call this updater when those penalties should change.
 
 Reference: [`update_mpc_slack_cost`](../api/online/update_mpc_slack_cost.md).
 
-## Updating the constraint limits
+## Constraint limits
+
+| Constraint type | When to update it | Enforcement |
+| --- | --- | --- |
+| {ref}`State <online-state-limits>` | Change the predicted state operating range. | Soft |
+| {ref}`Control input <online-control-limits>` | Change actuator limits. | Hard |
+| {ref}`Control rate <online-rate-limits>` | Change the permitted input increment per sample. | Hard |
+| {ref}`Output <online-output-limits>` | Change limits on the configured output. | Soft |
+| {ref}`Custom signal <online-custom-constraint-limits>` | Change limits on a configured custom quantity. | Soft |
 
 Limit updates change the allowed range of an existing signal. They do not
 change its model, add a bound side, or change whether it is hard or soft.
@@ -349,7 +407,8 @@ Use `[]` to leave one side unchanged. Each limit accepts a scalar for all
 components, a constant component column, or a component-by-`L` profile;
 short profiles hold their last column through the remaining horizon.
 
-### State limits
+(online-state-limits)=
+### Limit the predicted states
 
 ```matlab
 mpc = update_mpc_state_cnstr_limits(mpc, x_min, x_max);
@@ -363,7 +422,8 @@ penalties with `mpc.x_cnstr` in the slack-cost updater.
 
 Reference: [`update_mpc_state_cnstr_limits`](../api/online/update_mpc_state_cnstr_limits.md).
 
-### Control limits
+(online-control-limits)=
+### Limit the control input
 
 ```matlab
 mpc = update_mpc_control_cnstr_limits(mpc, u_min, u_max);
@@ -376,7 +436,8 @@ with any control-rate limits and the previously applied input.
 
 Reference: [`update_mpc_control_cnstr_limits`](../api/online/update_mpc_control_cnstr_limits.md).
 
-### Control-rate limits
+(online-rate-limits)=
+### Limit changes in control
 
 ```matlab
 mpc = update_mpc_control_rate_cnstr_limits(mpc, du_min, du_max);
@@ -391,7 +452,7 @@ or rate forecast is supplied.
 Reference: [`update_mpc_control_rate_cnstr_limits`](../api/online/update_mpc_control_rate_cnstr_limits.md).
 
 (online-output-limits)=
-### Output limits
+### Bound the predicted output
 
 ```matlab
 mpc = update_mpc_output_cnstr_limits(mpc, y_min, y_max);
@@ -408,7 +469,7 @@ and supply the known input through `d_in`. Adjust violation penalties with
 Reference: [`update_mpc_output_cnstr_limits`](../api/online/update_mpc_output_cnstr_limits.md).
 
 (online-custom-constraint-limits)=
-### Custom-constraint limits
+### Constrain a custom quantity
 
 ```matlab
 mpc = update_mpc_custom_cnstr_limits(mpc, h_min, h_max);
@@ -426,4 +487,32 @@ which combination of states is constrained requires updating `Ch` as well.
 Adjust violation penalties with `mpc.h_cnstr` in the slack-cost updater.
 The next solve uses the updated signal and limits automatically.
 
+#### Example: Change the allowed difference between two states
+
+Suppose you configured $h=x_1-x_2$, with both bound sides enabled. To allow
+a difference of at most 0.1 in either direction:
+
+```matlab
+mpc = update_mpc_custom_cnstr_limits(mpc, -0.1, 0.1);
+```
+
+The signal coefficients stay unchanged. These bounds remain soft; change
+`qv_min` and `qv_max` separately if their violation penalties should change.
+
 Reference: [`update_mpc_custom_cnstr_limits`](../api/online/update_mpc_custom_cnstr_limits.md).
+
+
+## Next step
+
+You now have the calls needed to reuse a built controller: update changed
+ingredients, supply the current state and forecasts, solve, and apply the
+first action. Keep the returned `mpc` for the next sample.
+
+Continue with [Your first controller](your-first-controller.md) to connect
+these operations to a plant model and a closed-loop simulation. Return to
+[Configuring the MPC controller](configuring-the-mpc-controller.md) when
+you need to add ingredients or change the controller's structure.
+
+Choose `L` from 1 through `N` for the number of columns in a supplied
+horizon profile. If a profile has fewer columns than the horizon, CHRONOS
+repeats its last column; columns beyond the horizon are ignored.
