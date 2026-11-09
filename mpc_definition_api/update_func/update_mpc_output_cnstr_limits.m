@@ -1,3 +1,4 @@
+function mpc = update_mpc_output_cnstr_limits(mpc, min, max)
 % UPDATE_MPC_OUTPUT_CNSTR_LIMITS Update output bounds.
 %
 %   mpc = UPDATE_MPC_OUTPUT_CNSTR_LIMITS(mpc, y_min, y_max) updates
@@ -23,7 +24,7 @@
 %   Example - update only the upper output bound:
 %
 %       mpc = update_mpc_output_cnstr_limits(mpc, [], y_max);
-function mpc = update_mpc_output_cnstr_limits(mpc, min, max)
+
 
 if ~isempty(min) && ~isempty(mpc.y_cnstr.min_limit)
 

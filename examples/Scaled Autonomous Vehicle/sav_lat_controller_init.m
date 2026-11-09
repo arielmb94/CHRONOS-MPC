@@ -10,7 +10,7 @@ l_f = L-l_r;    % Distance from center of mass to front axle (m)
 N = 50; % Prediction horizon: N*Ts = 1 s
 
 % This template initializes the persistent MPC state used online
-mpc_initial = init_mpc(N);
+mpc_initial = init_chronos_mpc(N);
 mpc_initial.max_iter = 3;
 %% Initial LPV prediction model
 

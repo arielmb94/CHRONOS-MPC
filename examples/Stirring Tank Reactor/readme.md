@@ -21,10 +21,10 @@ reactor parameters. The controller regulates $c$ while tracking the
 corresponding temperature $v$, so the tracking objective is the full state:
 
 ```math
-s=\begin{bmatrix}c\\v\end{bmatrix}.
+x=\begin{bmatrix}c\\v\end{bmatrix}.
 ```
 
-CHRONOS uses $y=s$ by default. Because this example tracks the full state,
+CHRONOS uses $y=x$ by default. Because this example tracks the full state,
 `stirring_tank_init.m` does not need to define a separate output model.
 
 ### From nonlinear to LPV dynamics
@@ -99,10 +99,10 @@ updated online.
 
 ### MPC Definition
 
-The controller tracks the full reactor state using the default output $y=s$:
+The controller tracks the full reactor state using the default output $y=x$:
 
 ```math
-s_k=\begin{bmatrix}c_k\\v_k\end{bmatrix},\qquad
+x_k=\begin{bmatrix}c_k\\v_k\end{bmatrix},\qquad
 r_k=\begin{bmatrix}c_{ref,k}\\v_{ref,k}\end{bmatrix}
 ```
 
@@ -110,12 +110,12 @@ over a horizon of $N=15$ samples:
 
 ```math
 \begin{aligned}
-\min_{s,u}\quad
-&\frac{1}{2}\sum_{k=1}^{N}(r_k-s_k)^TQ_e(r_k-s_k)\\
+\min_{x,u}\quad
+&\frac{1}{2}\sum_{k=1}^{N}(r_k-x_k)^TQ_e(r_k-x_k)\\
 \text{subject to}\quad
-&s_{k+1}=A_{d,k}s_k+B_k u_k+B_{d,k}d_k,
+&x_{k+1}=A_{d,k}x_k+B_k u_k+B_{d,k}d_k,
 &&k=0,\ldots,N-1,\\
-&0\le s_k\le1, &&k=1,\ldots,N,\\
+&0\le x_k\le1, &&k=1,\ldots,N,\\
 &0\le u_k\le1, &&k=0,\ldots,N-1,\\
 &-0.1\le\Delta u_k\le0.1, &&k=0,\ldots,N-1.
 \end{aligned}

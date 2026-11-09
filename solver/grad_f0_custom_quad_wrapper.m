@@ -1,44 +1,44 @@
 function mpc=grad_f0_custom_quad_wrapper(mpc)
-[mpc.grad_u_f0_0,mpc.grad_se_f0_k,mpc.grad_u_f0_k,mpc.grad_se_f0_ter]=grad_f0_custom_quad_local(mpc.grad_u_f0_0,mpc.grad_se_f0_k,mpc.grad_u_f0_k,mpc.grad_se_f0_ter,mpc.z_use_k0,mpc.z_use_ter,mpc.z_use_s,mpc.z_use_su,mpc.z_use_u,mpc.grad_u_Z_0,mpc.grad_s_Z,mpc.grad_su_Z,mpc.grad_u_Z,mpc.grad_s_Z_ter,mpc.z_0,mpc.z,mpc.z_ter,mpc.N,mpc.s_col,mpc.su_col);
+[mpc.grad_u_f0_0,mpc.grad_xe_f0_k,mpc.grad_u_f0_k,mpc.grad_xe_f0_ter]=grad_f0_custom_quad_local(mpc.grad_u_f0_0,mpc.grad_xe_f0_k,mpc.grad_u_f0_k,mpc.grad_xe_f0_ter,mpc.z_use_k0,mpc.z_use_ter,mpc.z_use_x,mpc.z_use_xu,mpc.z_use_u,mpc.grad_u_Z_0,mpc.grad_x_Z,mpc.grad_xu_Z,mpc.grad_u_Z,mpc.grad_x_Z_ter,mpc.z_0,mpc.z,mpc.z_ter,mpc.N,mpc.x_col,mpc.xu_col);
 end
-function [grad_u_f0_0,grad_se_f0_k,grad_u_f0_k,grad_se_f0_ter] = grad_f0_custom_quad_local(...
-                    grad_u_f0_0,grad_se_f0_k,grad_u_f0_k,grad_se_f0_ter,...
-                    z_use_k0,z_use_ter,z_use_s,z_use_su,z_use_u,...
-                    grad_u_Z_0,grad_s_Z,grad_su_Z,grad_u_Z,grad_s_Z_ter,...
-                    z_0,z,z_ter,N,s_idx,su_idx)
+function [grad_u_f0_0,grad_xe_f0_k,grad_u_f0_k,grad_xe_f0_ter] = grad_f0_custom_quad_local(...
+                    grad_u_f0_0,grad_xe_f0_k,grad_u_f0_k,grad_xe_f0_ter,...
+                    z_use_k0,z_use_ter,z_use_x,z_use_xu,z_use_u,...
+                    grad_u_Z_0,grad_x_Z,grad_xu_Z,grad_u_Z,grad_x_Z_ter,...
+                    z_0,z,z_ter,N,x_idx,xu_idx)
 
     if ~isempty(z_use_k0)
         grad_u_f0_0 = grad_u_f0_0 + grad_u_Z_0*z_0;
     end
 
     for k = 1:N-1
-        if ~isempty(z_use_s) && ~isempty(z_use_su) && ~isempty(z_use_u)
+        if ~isempty(z_use_x) && ~isempty(z_use_xu) && ~isempty(z_use_u)
 
             z_k = z(:,k);
-            grad_se_f0_k(s_idx,k) = grad_se_f0_k(s_idx,k) + grad_s_Z(:,:,k)*z_k;
-            grad_se_f0_k(su_idx,k) = grad_se_f0_k(su_idx,k) + grad_su_Z(:,:,k)*z_k;
+            grad_xe_f0_k(x_idx,k) = grad_xe_f0_k(x_idx,k) + grad_x_Z(:,:,k)*z_k;
+            grad_xe_f0_k(xu_idx,k) = grad_xe_f0_k(xu_idx,k) + grad_xu_Z(:,:,k)*z_k;
             grad_u_f0_k(:,k) = grad_u_f0_k(:,k) + grad_u_Z(:,:,k)*z_k;
-        elseif ~isempty(z_use_s) && ~isempty(z_use_su)
+        elseif ~isempty(z_use_x) && ~isempty(z_use_xu)
 
             z_k = z(:,k);
-            grad_se_f0_k(s_idx,k) = grad_se_f0_k(s_idx,k) + grad_s_Z(:,:,k)*z_k;
-            grad_se_f0_k(su_idx,k) = grad_se_f0_k(su_idx,k) + grad_su_Z(:,:,k)*z_k;
-        elseif ~isempty(z_use_s) && ~isempty(z_use_u)
+            grad_xe_f0_k(x_idx,k) = grad_xe_f0_k(x_idx,k) + grad_x_Z(:,:,k)*z_k;
+            grad_xe_f0_k(xu_idx,k) = grad_xe_f0_k(xu_idx,k) + grad_xu_Z(:,:,k)*z_k;
+        elseif ~isempty(z_use_x) && ~isempty(z_use_u)
 
             z_k = z(:,k);
-            grad_se_f0_k(s_idx,k) = grad_se_f0_k(s_idx,k) + grad_s_Z(:,:,k)*z_k;
+            grad_xe_f0_k(x_idx,k) = grad_xe_f0_k(x_idx,k) + grad_x_Z(:,:,k)*z_k;
             grad_u_f0_k(:,k) = grad_u_f0_k(:,k) + grad_u_Z(:,:,k)*z_k;
-        elseif ~isempty(z_use_su) && ~isempty(z_use_u)
+        elseif ~isempty(z_use_xu) && ~isempty(z_use_u)
 
             z_k = z(:,k);
-            grad_se_f0_k(su_idx,k) = grad_se_f0_k(su_idx,k) + grad_su_Z(:,:,k)*z_k;
+            grad_xe_f0_k(xu_idx,k) = grad_xe_f0_k(xu_idx,k) + grad_xu_Z(:,:,k)*z_k;
             grad_u_f0_k(:,k) = grad_u_f0_k(:,k) + grad_u_Z(:,:,k)*z_k;
-        elseif ~isempty(z_use_s)
+        elseif ~isempty(z_use_x)
 
-            grad_se_f0_k(s_idx,k) = grad_se_f0_k(s_idx,k) + grad_s_Z(:,:,k)*z(:,k);
-elseif ~isempty(z_use_su)
+            grad_xe_f0_k(x_idx,k) = grad_xe_f0_k(x_idx,k) + grad_x_Z(:,:,k)*z(:,k);
+elseif ~isempty(z_use_xu)
 
-            grad_se_f0_k(su_idx,k) = grad_se_f0_k(su_idx,k) + grad_su_Z(:,:,k)*z(:,k);
+            grad_xe_f0_k(xu_idx,k) = grad_xe_f0_k(xu_idx,k) + grad_xu_Z(:,:,k)*z(:,k);
         elseif ~isempty(z_use_u)
 
             grad_u_f0_k(:,k) = grad_u_f0_k(:,k) + grad_u_Z(:,:,k)*z(:,k);
@@ -46,6 +46,6 @@ elseif ~isempty(z_use_su)
     end
 
     if ~isempty(z_use_ter)
-        grad_se_f0_ter(s_idx) = grad_se_f0_ter(s_idx) + grad_s_Z_ter*z_ter;
+        grad_xe_f0_ter(x_idx) = grad_xe_f0_ter(x_idx) + grad_x_Z_ter*z_ter;
     end
 end

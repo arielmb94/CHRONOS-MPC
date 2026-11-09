@@ -1,3 +1,4 @@
+function mpc = update_mpc_control_cnstr_limits(mpc,min,max)
 % UPDATE_MPC_CONTROL_CNSTR_LIMITS Update control-action bounds.
 %
 %   mpc = UPDATE_MPC_CONTROL_CNSTR_LIMITS(mpc, u_min, u_max) updates
@@ -22,7 +23,7 @@
 %   Example - update both bounds:
 %
 %       mpc = update_mpc_control_cnstr_limits(mpc, u_min, u_max);
-function mpc = update_mpc_control_cnstr_limits(mpc,min,max)
+
 
 if ~isempty(min) && ~isempty(mpc.u_cnstr.min_limit)
 

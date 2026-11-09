@@ -1,3 +1,4 @@
+function mpc = update_mpc_Custom_cost(mpc,Qz,qz)
 % UPDATE_MPC_CUSTOM_COST Update custom-cost weights.
 %
 %   mpc = UPDATE_MPC_CUSTOM_COST(mpc, Qz, qz) replaces the quadratic
@@ -25,7 +26,7 @@
 %   Example - update only the quadratic weight:
 %
 %       mpc = update_mpc_Custom_cost(mpc, Qz, []);
-function mpc = update_mpc_Custom_cost(mpc,Qz,qz)
+
 
 if ~isempty(Qz) && ~isempty(mpc.quad_custom_cost)
     mpc.update_customcost_quad = true;

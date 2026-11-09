@@ -1,3 +1,4 @@
+function mpc = update_mpc_Control_cost(mpc,Ru,ru)
 % UPDATE_MPC_CONTROL_COST Update control-action cost weights.
 %
 %   mpc = UPDATE_MPC_CONTROL_COST(mpc, Ru, ru) replaces the quadratic
@@ -24,7 +25,7 @@
 %   Example - update only the linear weight:
 %
 %       mpc = update_mpc_Control_cost(mpc, [], ru);
-function mpc = update_mpc_Control_cost(mpc,Ru,ru)
+
 
 if ~isempty(Ru) && ~isempty(mpc.quad_control_cost)
     mpc.recompute_cost_hess = 1;

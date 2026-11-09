@@ -1,12 +1,13 @@
+function mpc = init_mpc_dynamics(mpc,A,B,Bd)
 % INIT_MPC_DYNAMICS Define the prediction model.
 %
 %   mpc = INIT_MPC_DYNAMICS(mpc, A, B) defines
 %
-%       s_(k+1) = A_k*s_k + B_k*u_k.
+%       x_(k+1) = A_k*x_k + B_k*u_k.
 %
 %   mpc = INIT_MPC_DYNAMICS(mpc, A, B, Bd) adds the fixed known input d_k
 %
-%       s_(k+1) = A_k*s_k + B_k*u_k + Bd_k*d_k.
+%       x_(k+1) = A_k*x_k + B_k*u_k + Bd_k*d_k.
 % 
 %   Pass d_k as the d_in argument when building and solving the
 %   MPC. Use [] for Bd when the model has no such input.
@@ -17,15 +18,15 @@
 %   stages are used.
 %
 %   INIT_MPC_DYNAMICS automatically sets the tracking output to the full state,
-%   y_k = I*s_k = s_k. If this is the desired output, no separate output
+%   y_k = I*x_k = x_k. If this is the desired output, no separate output
 %   initialization is needed. Call INIT_MPC_OUTPUT after this function only
 %   when a different tracking or constrained output is required.
 %
-%   Call this function after INIT_MPC and before adding costs or
+%   Call this function after INIT_CHRONOS_MPC and before adding costs or
 %   constraints.
 %
 %   Inputs:
-%     mpc     - CHRONOS MPC structure created by INIT_MPC.
+%     mpc     - CHRONOS MPC structure created by INIT_CHRONOS_MPC.
 %     A       - State matrix, size nx-by-nx or nx-by-nx-by-L.
 %     B       - Control matrix, size nx-by-nu or nx-by-nu-by-L.
 %     Bd      - Optional fixed-known-input matrix, size nx-by-nd or
@@ -36,9 +37,9 @@
 %
 %   Example - define a time-invariant model without a known input:
 %
-%       mpc = init_mpc(20);
+%       mpc = init_chronos_mpc(20);
 %       mpc = init_mpc_dynamics(mpc, A, B, []);
-function mpc = init_mpc_dynamics(mpc,A,B,Bd)
+
 arguments
     mpc
     A = []
@@ -81,9 +82,9 @@ if ~isempty(Bd)
     mpc.Bd = fill_mat(mpc.Bd, Bd, 1);
 end
 
-mpc.s = zeros(mpc.nx,mpc.N);
-mpc.s_ter = zeros(mpc.nx,1);
-mpc.su = zeros(mpc.nu,mpc.N);
+mpc.x = zeros(mpc.nx,mpc.N);
+mpc.x_ter = zeros(mpc.nx,1);
+mpc.xu = zeros(mpc.nu,mpc.N);
 mpc.u = zeros(mpc.nu,mpc.N);
 mpc.du = zeros(mpc.nu,mpc.N);
 
@@ -112,7 +113,7 @@ mpc.y_rows_k0 = [];
 mpc.y_use_ter = 1;
 mpc.y_rows_ter = 1:mpc.nx; 
 
-mpc.y_use_s = 1;
+mpc.y_use_x = 1;
 mpc.y_use_u = [];
 mpc.y_use_d = [];
 

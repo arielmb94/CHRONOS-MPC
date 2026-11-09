@@ -151,11 +151,11 @@ Cz = [-1 0 0  0 0 0;
 Dz = [0 0 1 0;
       0 0 0 1];
 
-Dsuz = [];
+Dxuz = [];
 Ddz  = [];
 Qz   = diag([100 100]);
 
-mpc = init_mpc_Custom_cost(mpc,Cz,Dz,Dsuz,Ddz,Qz);
+mpc = init_mpc_Custom_cost(mpc,Cz,Dz,Dxuz,Ddz,Qz);
 ```
 
 The first row of `Cz` selects $-\omega_h$ and the first row of `Dz` selects

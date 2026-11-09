@@ -1,3 +1,5 @@
+function mpc = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,...
+                                             xN_ref_is_y)
 % INIT_MPC_TER_INGREDIENTS_DLQR Add a DLQR terminal-state cost.
 %
 %   mpc = INIT_MPC_TER_INGREDIENTS_DLQR(mpc, Qx, Ru) computes
@@ -6,7 +8,7 @@
 %
 %   from the final horizon dynamics and adds the terminal penalty
 %
-%       J_terminal = (xN_ref - s_N)' * P * (xN_ref - s_N)
+%       J_terminal = (xN_ref - x_N)' * P * (xN_ref - x_N)
 %
 %   Store representative dynamics with INIT_MPC_DYNAMICS before calling
 %   this function. The calculation uses terminal mpc.A(:,:,mpc.N) and
@@ -15,7 +17,7 @@
 %   mpc = INIT_MPC_TER_INGREDIENTS_DLQR(mpc, Qx, Ru, true) enables the
 %   tracking-reference shortcut. When xN_ref_in is empty, CHRONOS reuses
 %   the tracking reference as the terminal-state reference. Use this option
-%   only when the tracking output is the full state, y = s, with the same
+%   only when the tracking output is the full state, y = x, with the same
 %   component order. An explicitly supplied xN_ref_in always takes
 %   precedence.
 %
@@ -42,8 +44,7 @@
 %       Ru = 0.1 * eye(nu);
 %       mpc = init_mpc_ter_ingredients_dlqr(mpc, Qx, Ru);
 %       % Pass xN_ref as xN_ref_in when calling MPC_SOLVE.
-function mpc = init_mpc_ter_ingredients_dlqr(mpc,Qx,Ru,...
-                                             xN_ref_is_y)
+
 arguments
     mpc
     Qx

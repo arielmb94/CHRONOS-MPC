@@ -1,3 +1,4 @@
+function mpc = update_mpc_Control_Rate_cost(mpc,Rdu)
 % UPDATE_MPC_CONTROL_RATE_COST Update the quadratic control-rate weight.
 %
 %   mpc = UPDATE_MPC_CONTROL_RATE_COST(mpc, Rdu) replaces the weight in
@@ -17,7 +18,7 @@
 %
 %   Output:
 %     mpc     - Updated CHRONOS MPC structure.
-function mpc = update_mpc_Control_Rate_cost(mpc,Rdu)
+
 
 if ~isempty(mpc.controlrate_cost)
     mpc.recompute_cost_hess = 1;

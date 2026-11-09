@@ -1,10 +1,10 @@
-function mpc = reduced_KKT_elements(mpc,has_u_cnstr,has_du_cnstr,has_s_cnstr,has_y_cnstr,has_h_cnstr,g_0,g_k,g_ter)
+function mpc = reduced_KKT_elements(mpc,has_u_cnstr,has_du_cnstr,has_x_cnstr,has_y_cnstr,has_h_cnstr,g_0,g_k,g_ter)
 
-[mpc.ru_0,mpc.rse_k,mpc.ru_k,mpc.rse_ter,mpc.R_0,mpc.Q_k,mpc.R_k,mpc.Y_k,mpc.Q_ter] = ...
+[mpc.ru_0,mpc.rxe_k,mpc.ru_k,mpc.rxe_ter,mpc.R_0,mpc.Q_k,mpc.R_k,mpc.Y_k,mpc.Q_ter] = ...
     reduced_kkt_objective_local(mpc.t,mpc.R_0,mpc.Q_k,mpc.R_k,mpc.Y_k,mpc.Q_ter,...
     mpc.R_f0_0,mpc.Q_f0_k,mpc.R_f0_k,mpc.Y_f0_k,mpc.Q_f0_ter,mpc.ru_0,...
-    mpc.rse_k,mpc.ru_k,mpc.rse_ter,mpc.grad_u_f0_0,mpc.grad_se_f0_k,...
-    mpc.grad_u_f0_k,mpc.grad_se_f0_ter);
+    mpc.rxe_k,mpc.ru_k,mpc.rxe_ter,mpc.grad_u_f0_0,mpc.grad_xe_f0_k,...
+    mpc.grad_u_f0_k,mpc.grad_xe_f0_ter);
 
 if ~isempty(g_0)
     [mpc.g2_0,mpc.v2_0,mpc.rv_v2_0,mpc.ri_0,mpc.iS_0,mpc.iS_ri_hat_0] = ...
@@ -26,19 +26,19 @@ if ~isempty(g_ter)
 end
 if ~isempty(has_u_cnstr), mpc = reduced_kkt_control_wrapper(mpc,mpc.u_cnstr); end
 if ~isempty(has_du_cnstr), mpc = reduced_kkt_control_rate_wrapper(mpc,mpc.du_cnstr); end
-if ~isempty(has_s_cnstr), mpc = reduced_kkt_state_wrapper(mpc,mpc.s_cnstr); end
+if ~isempty(has_x_cnstr), mpc = reduced_kkt_state_wrapper(mpc,mpc.x_cnstr); end
 if ~isempty(has_y_cnstr), mpc = reduced_kkt_output_wrapper(mpc,mpc.y_cnstr); end
 if ~isempty(has_h_cnstr), mpc = reduced_kkt_custom_wrapper(mpc,mpc.h_cnstr); end
 end
 
-function [ru_0,rse_k,ru_k,rse_ter,R_0,Q_k,R_k,Y_k,Q_ter] = ...
+function [ru_0,rxe_k,ru_k,rxe_ter,R_0,Q_k,R_k,Y_k,Q_ter] = ...
     reduced_kkt_objective_local(t,R_0,Q_k,R_k,Y_k,Q_ter,R_f0_0,Q_f0_k,...
-    R_f0_k,Y_f0_k,Q_f0_ter,ru_0,rse_k,ru_k,rse_ter,grad_u_f0_0,...
-    grad_se_f0_k,grad_u_f0_k,grad_se_f0_ter)
+    R_f0_k,Y_f0_k,Q_f0_ter,ru_0,rxe_k,ru_k,rxe_ter,grad_u_f0_0,...
+    grad_xe_f0_k,grad_u_f0_k,grad_xe_f0_ter)
 ru_0 = grad_u_f0_0;
-rse_k = grad_se_f0_k;
+rxe_k = grad_xe_f0_k;
 ru_k = grad_u_f0_k;
-rse_ter = grad_se_f0_ter;
+rxe_ter = grad_xe_f0_ter;
 
 R_0 = t * R_f0_0;
 Q_k = t * Q_f0_k;

@@ -1,3 +1,4 @@
+function mpc = update_mpc_Tracking_cost(mpc,Qe)
 % UPDATE_MPC_TRACKING_COST Update the tracking-error weight.
 %
 %   mpc = UPDATE_MPC_TRACKING_COST(mpc, Qe) replaces the weight in
@@ -14,7 +15,7 @@
 %
 %   Output:
 %     mpc     - Updated CHRONOS MPC structure.
-function mpc = update_mpc_Tracking_cost(mpc,Qe)
+
 
 if ~isempty(mpc.tracking_cost)
     mpc.update_tracking = true;

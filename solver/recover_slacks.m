@@ -1,7 +1,7 @@
-function mpc = recover_slacks(mpc,has_s_cnstr,has_u_cnstr,has_du_cnstr,...
+function mpc = recover_slacks(mpc,has_x_cnstr,has_u_cnstr,has_du_cnstr,...
     has_y_cnstr,has_h_cnstr)
-if ~isempty(has_s_cnstr)
-    mpc = recover_slacks_state_wrapper(mpc,mpc.s_cnstr);
+if ~isempty(has_x_cnstr)
+    mpc = recover_slacks_state_wrapper(mpc,mpc.x_cnstr);
 end
 if ~isempty(has_u_cnstr)
     mpc = recover_slacks_control_wrapper(mpc,mpc.u_cnstr);

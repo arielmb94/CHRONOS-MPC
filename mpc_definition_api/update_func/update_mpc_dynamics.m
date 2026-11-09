@@ -1,8 +1,9 @@
+function mpc = update_mpc_dynamics(mpc,A,B,Bd)
 % UPDATE_MPC_DYNAMICS Update the prediction-model matrices.
 %
 %   mpc = UPDATE_MPC_DYNAMICS(mpc, A, B, Bd) updates selected matrices in
 %
-%       s_(k+1) = A_k*s_k + B_k*u_k + Bd_k*d_k.
+%       x_(k+1) = A_k*x_k + B_k*u_k + Bd_k*d_k.
 %
 %   Use [] to leave a matrix unchanged. The dynamics must first be defined
 %   with INIT_MPC_DYNAMICS. Online updates cannot change the matrix dimensions
@@ -25,7 +26,7 @@
 %   Example - update only A and B:
 %
 %       mpc = update_mpc_dynamics(mpc, A, B, []);
-function mpc = update_mpc_dynamics(mpc,A,B,Bd)
+
 
 if ~isempty(A)
     mpc.A(:,:,:) = fill_mat(mpc.A, A, 1);

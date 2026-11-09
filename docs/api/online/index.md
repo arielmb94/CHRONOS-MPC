@@ -1,0 +1,45 @@
+# Online API
+
+## Solving the MPC problem
+
+```{toctree}
+:maxdepth: 1
+
+mpc_solve
+```
+
+## Updating models
+
+```{toctree}
+:maxdepth: 1
+
+update_mpc_dynamics
+update_mpc_output_vector
+update_mpc_Custom_cost_vector
+update_mpc_custom_cnstr_vector
+```
+
+## Updating cost terms
+
+```{toctree}
+:maxdepth: 1
+
+update_mpc_Tracking_cost
+update_mpc_Control_cost
+update_mpc_Control_Rate_cost
+update_mpc_Custom_cost
+update_mpc_ter_ingredients
+```
+
+## Updating constraint limits
+
+```{toctree}
+:maxdepth: 1
+
+update_mpc_state_cnstr_limits
+update_mpc_control_cnstr_limits
+update_mpc_control_rate_cnstr_limits
+update_mpc_output_cnstr_limits
+update_mpc_custom_cnstr_limits
+update_mpc_slack_cost
+```

@@ -1,3 +1,4 @@
+function mpc = update_mpc_custom_cnstr_limits(mpc, min, max)
 % UPDATE_MPC_CUSTOM_CNSTR_LIMITS Update custom-signal bounds.
 %
 %   mpc = UPDATE_MPC_CUSTOM_CNSTR_LIMITS(mpc, h_min, h_max) updates
@@ -23,7 +24,7 @@
 %   Example - update both custom bounds:
 %
 %       mpc = update_mpc_custom_cnstr_limits(mpc, h_min, h_max);
-function mpc = update_mpc_custom_cnstr_limits(mpc, min, max)
+
 
 if ~isempty(min) && ~isempty(mpc.h_cnstr.min_limit)
     if isscalar(min)

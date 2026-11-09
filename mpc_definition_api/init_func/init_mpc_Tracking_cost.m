@@ -1,3 +1,4 @@
+function mpc = init_mpc_Tracking_cost(mpc,Qe)
 % INIT_MPC_TRACKING_COST Add a quadratic tracking-error penalty.
 %
 %   mpc = INIT_MPC_TRACKING_COST(mpc, Qe) penalizes the error between the
@@ -30,7 +31,7 @@
 %
 %       Qe = diag([10, 1]);
 %       mpc = init_mpc_Tracking_cost(mpc, Qe);
-function mpc = init_mpc_Tracking_cost(mpc,Qe)
+
 
 if isempty(Qe) || ~any(Qe(:))
     return;

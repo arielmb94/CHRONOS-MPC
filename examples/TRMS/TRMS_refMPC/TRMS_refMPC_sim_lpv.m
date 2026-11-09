@@ -96,9 +96,10 @@ for i = 1:Sim_samples
     du_mpc_dat(:,i) = u_mpc-u_prev;
     iter_dat(i) = iter;
 
-    % 5. Apply only the physical voltage actions to the nonlinear plant
-    dt_x = TRMS(Wh,Omh,Thth,Wv,Omv,Thtv,uh,uv);
-    x = x + Ts*dt_x;
+    % 5. Apply only the physical voltages as a zero-order hold for one sample
+    [~,x_ode] = ode45(@(t,x) TRMS(x(1),x(2),x(3),x(4),x(5),x(6),uh,uv), ...
+                      [0 Ts],x);
+    x = x_ode(end,:)';
     u_prev = u_mpc;
 
 end

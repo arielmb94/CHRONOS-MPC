@@ -22,13 +22,13 @@ Ts = 0.1;
 N = 15;         % Prediction horizon: N*Ts = 1.5 s
 
 % Outer MIMO MPC
-mpc = init_mpc(N);
+mpc = init_chronos_mpc(N);
 
 % Tail-rotor SISO MPC
-mpc_h = init_mpc(N);
+mpc_h = init_chronos_mpc(N);
 
 % Main-rotor SISO MPC
-mpc_v = init_mpc(N);
+mpc_v = init_chronos_mpc(N);
 
 % Limit the inner Newton iterations to control their online computation time
 inner_max_iter = 4;

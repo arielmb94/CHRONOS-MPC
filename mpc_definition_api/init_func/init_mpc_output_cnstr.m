@@ -1,7 +1,8 @@
+function mpc = init_mpc_output_cnstr(mpc,y_min,y_max,qv_min,qv_max)
 % INIT_MPC_OUTPUT_CNSTR Add bounds on the predicted output.
 %
 %   mpc = INIT_MPC_OUTPUT_CNSTR(mpc, y_min, y_max) constrains the output
-%   signal defined by INIT_MPC_DYNAMICS (default: y = s) or
+%   signal defined by INIT_MPC_DYNAMICS (default: y = x) or
 %   INIT_MPC_OUTPUT. Use [] for a bound that is not needed. Bounds may be
 %   scalars, ny-by-1 vectors, or time-varying ny-by-L matrices, where L is
 %   the number of supplied horizon stages. A scalar is applied to every
@@ -44,7 +45,7 @@
 %       D = zeros(1, mpc.nu);
 %       mpc = init_mpc_output(mpc, C, D);
 %       mpc = init_mpc_output_cnstr(mpc, -2, 2, 100, 100);
-function mpc = init_mpc_output_cnstr(mpc,y_min,y_max,qv_min,qv_max)
+
 arguments
     mpc
     y_min = []
@@ -74,7 +75,7 @@ y_cnstr.use_k0 = mpc.y_use_k0;
 y_cnstr.use_ter = mpc.y_use_ter;
 y_cnstr.rows_k0 = mpc.y_rows_k0;
 y_cnstr.rows_ter = mpc.y_rows_ter;
-y_cnstr.use_s = mpc.y_use_s;
+y_cnstr.use_x = mpc.y_use_x;
 y_cnstr.use_u = mpc.y_use_u;
 y_cnstr.use_d = mpc.y_use_d;
 

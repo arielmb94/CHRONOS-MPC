@@ -98,9 +98,11 @@ for i = 1:Sim_samples
     iter_h_dat(i) = iter_h;
     iter_v_dat(i) = iter_v;
 
-    % 6. Apply the inner MPC voltages to the nonlinear plant
-    dt_x = TRMS(Wh,Omh,Thth,Wv,Omv,Thtv,uh_k,uv_k);
-    x = x + Ts*dt_x;
+    % 6. Apply the inner MPC voltages as a zero-order hold for one sample
+    [~,x_ode] = ode45(@(t,x) TRMS(x(1),x(2),x(3),x(4),x(5),x(6), ...
+                                  uh_k,uv_k), ...
+                      [0 Ts],x);
+    x = x_ode(end,:)';
 
     omega_ref_prev = omega_ref_k;
     uh_prev = uh_k;
