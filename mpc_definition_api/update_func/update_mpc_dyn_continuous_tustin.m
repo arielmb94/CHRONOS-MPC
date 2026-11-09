@@ -81,6 +81,8 @@ end
 M_k = mpc.A(:,:,1);
 W = mpc.A(:,:,1);
 rhs_A = mpc.A(:,:,1);
+L = mpc.A(:,:,1);
+U = mpc.A(:,:,1);
 if ~has_M
     M_k(:,:) = 0;
     for j = 1:nx
@@ -89,21 +91,25 @@ if ~has_M
 end
 
 for k = 1:num_stages
-    Ac_k(:,:) = Ac(:,:,min(k,len_Ac));
-    Bc_k(:,:) = Bc(:,:,min(k,len_Bc));
-    if has_dist
+    first_stage = (k == 1);
+    factor_changed = first_stage || k <= len_Ac || (has_M && k <= len_M);
+    if factor_changed
+        Ac_k(:,:) = Ac(:,:,min(k,len_Ac));
+        if has_M
+            M_k(:,:) = M(:,:,min(k,len_M));
+        end
+        W(:,:) = M_k - (Ts/2) * Ac_k;
+        rhs_A(:,:) = M_k + (Ts/2) * Ac_k;
+        [L(:,:), U(:,:)] = factorizeLinearSystemLU(W);
+        Ac_k(:,:) = solveFactoredLinearSystemLU(L, U, rhs_A);
+    end
+    if factor_changed || k <= len_Bc
+        Bc_k(:,:) = Bc(:,:,min(k,len_Bc));
+        Bc_k(:,:) = solveFactoredLinearSystemLU(L, U, Ts * Bc_k);
+    end
+    if has_dist && (factor_changed || k <= len_Bdc)
         Bdc_k(:,:) = Bdc(:,:,min(k,len_Bdc));
-    end
-    if has_M
-        M_k(:,:) = M(:,:,min(k,len_M));
-    end
-
-    W(:,:) = M_k - (Ts/2) * Ac_k;
-    rhs_A(:,:) = M_k + (Ts/2) * Ac_k;
-    Ac_k(:,:) = solveLinearSystemLU(W, rhs_A);
-    Bc_k(:,:) = solveLinearSystemLU(W, Ts * Bc_k);
-    if has_dist
-        Bdc_k(:,:) = solveLinearSystemLU(W, Ts * Bdc_k);
+        Bdc_k(:,:) = solveFactoredLinearSystemLU(L, U, Ts * Bdc_k);
     end
 
     mpc.A(:,:,k) = Ac_k;

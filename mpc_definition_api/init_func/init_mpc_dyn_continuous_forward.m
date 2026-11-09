@@ -105,25 +105,52 @@ if has_dist
     Bdd = zeros(nx, nd, num_stages);
 end
 I = eye(nx);
+Ac_k = Ad(:,:,1);
+Bc_k = Bd(:,:,1);
+if has_dist
+    Bdc_k = Bdd(:,:,1);
+end
+M_k = I;
+L = Ad(:,:,1);
+U = Ad(:,:,1);
 
 for k = 1:num_stages
-    Ac_k = Ac(:,:,min(k,len_Ac));
-    Bc_k = Bc(:,:,min(k,len_Bc));
-    if has_M
-        M_k = M(:,:,min(k,len_M));
-        Ad(:,:,k) = I + Ts * solveLinearSystemLU(M_k, Ac_k);
-        Bd(:,:,k) = Ts * solveLinearSystemLU(M_k, Bc_k);
-        if has_dist
-            Bdc_k = Bdc(:,:,min(k,len_Bdc));
-            Bdd(:,:,k) = Ts * solveLinearSystemLU(M_k, Bdc_k);
+    first_stage = (k == 1);
+    factor_changed = has_M && (first_stage || k <= len_M);
+    if factor_changed
+        M_k(:,:) = M(:,:,min(k,len_M));
+        [L(:,:), U(:,:)] = factorizeLinearSystemLU(M_k);
+    end
+
+    if first_stage || k <= len_Ac || factor_changed
+        Ac_k(:,:) = Ac(:,:,min(k,len_Ac));
+        if has_M
+            Ac_k(:,:) = I + Ts * solveFactoredLinearSystemLU(L, U, Ac_k);
+        else
+            Ac_k(:,:) = I + Ts * Ac_k;
         end
-    else
-        Ad(:,:,k) = I + Ts * Ac_k;
-        Bd(:,:,k) = Ts * Bc_k;
-        if has_dist
-            Bdc_k = Bdc(:,:,min(k,len_Bdc));
-            Bdd(:,:,k) = Ts * Bdc_k;
+    end
+    if first_stage || k <= len_Bc || factor_changed
+        Bc_k(:,:) = Bc(:,:,min(k,len_Bc));
+        if has_M
+            Bc_k(:,:) = Ts * solveFactoredLinearSystemLU(L, U, Bc_k);
+        else
+            Bc_k(:,:) = Ts * Bc_k;
         end
+    end
+    if has_dist && (first_stage || k <= len_Bdc || factor_changed)
+        Bdc_k(:,:) = Bdc(:,:,min(k,len_Bdc));
+        if has_M
+            Bdc_k(:,:) = Ts * solveFactoredLinearSystemLU(L, U, Bdc_k);
+        else
+            Bdc_k(:,:) = Ts * Bdc_k;
+        end
+    end
+
+    Ad(:,:,k) = Ac_k;
+    Bd(:,:,k) = Bc_k;
+    if has_dist
+        Bdd(:,:,k) = Bdc_k;
     end
 end
 
