@@ -1,7 +1,7 @@
 # Configuring the MPC controller
 
 [From nonlinear to LPV models](from-nonlinear-problems-to-lpv-mpc.md) explains
-how to obtain a discrete prediction model and additional signal models in
+how to prepare prediction dynamics and additional signal models in
 CHRONOS's supported form. This chapter shows how to register those models,
 choose objectives and limits, and build the controller through the
 initialization API. The [API reference](../api/init/index.md) provides the
@@ -140,6 +140,7 @@ The following sections describe each of the ingredients that help you define you
 
 ## Prediction model
 
+(mpc-prediction-dynamics)=
 ### Set up the dynamics
 
 Pass the discrete-time model at your controller's sample time to
@@ -170,9 +171,38 @@ supply a constant or a profile with $L$ stages.
 | `mpc.u` | Optimized control input | $n_u\times N$ | $k=0,\ldots,N-1$ |
 | `mpc.d` | Known input supplied through `d_in` | $n_d\times N$ | $k=0,\ldots,N-1$ |
 
+#### Passing continuous-time models
+
+CHRONOS allows continuous-time models to be passed directly and handles
+their discretization. For the standard model
+
+$$
+\dot{x}=A_cx+B_cu+B_{dc}d,
+$$
+
+pass the continuous coefficients `Ac`, `Bc`, and `Bdc`, together with a
+positive scalar sampling interval `Ts`, to
+[`init_mpc_dyn_continuous_forward`](../api/init/init_mpc_dyn_continuous_forward.md),
+[`init_mpc_dyn_continuous_backward`](../api/init/init_mpc_dyn_continuous_backward.md),
+or [`init_mpc_dyn_continuous_tustin`](../api/init/init_mpc_dyn_continuous_tustin.md)
+for forward Euler, backward Euler, or Tustin, respectively. Pass `[]` for
+`Bdc` when the dynamics have no known input.
+
+Some models are naturally written with a mass or inertia matrix:
+
+$$
+M\dot{x}=A_cx+B_cu+B_{dc}d,
+$$
+
+You can pass `M` as the optional final argument; it must be invertible.
+CHRONOS handles the conversion, so you do not need to transform the
+continuous coefficients first. Omit `M` to use the standard model above.
+See {ref}`Discretize the model <lpv-discretization>` for the method overview.
+
 ### Choose a custom output model
 
-By default, the call to [`init_mpc_dynamics`](../api/init/init_mpc_dynamics.md) sets the full state as the output, $y=x$. To track a subset of states or a different quantity, define an output with
+By default, either dynamics initialization route sets the full state as the
+output, $y=x$. To track a subset of states or a different quantity, define an output with
 [`init_mpc_output`](../api/init/init_mpc_output.md).
 
 Supply at least one nonzero coefficient among `C` and `D`. Use `C` for state

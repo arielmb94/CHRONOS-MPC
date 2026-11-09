@@ -14,6 +14,9 @@ init_chronos_mpc
 :maxdepth: 1
 
 init_mpc_dynamics
+init_mpc_dyn_continuous_forward
+init_mpc_dyn_continuous_backward
+init_mpc_dyn_continuous_tustin
 init_mpc_output
 ```
 

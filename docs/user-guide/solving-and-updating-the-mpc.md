@@ -102,9 +102,11 @@ The model coefficients may change as your system moves to a new operating
 point or as you evaluate a new LPV schedule. Use the model update functions
 below to pass these new coefficients to CHRONOS before solving again.
 
-You only need to supply coefficients that have changed: pass `[]` for the
-others. Each updater keeps the dimensions, enabled terms, and stage
-selections established when the controller was built.
+For the discrete-time dynamics, output, custom-cost, and custom-constraint
+updaters, you only need to supply coefficients that have changed: pass `[]`
+for the others. The {ref}`continuous-time dynamics updaters <online-continuous-dynamics>`
+require the full model on every call. Each updater keeps the dimensions,
+enabled terms, and stage selections established when the controller was built.
 
 | Model type | When to update it |
 | --- | --- |
@@ -119,9 +121,9 @@ selections established when the controller was built.
 Supply `A`, `B`, and `Bd` to
 [`update_mpc_dynamics`](../api/online/update_mpc_dynamics.md).
 Use discrete-time matrices at the sample time used to configure the
-controller. For LPV models, evaluate and discretize the model before the
-update, as described in
-[From nonlinear to LPV models](from-nonlinear-problems-to-lpv-mpc.md).
+controller. For LPV models, evaluate and discretize the model before this
+discrete update, as described in
+{ref}`Discretize the model <lpv-discretization>`.
 
 **Model coefficients**
 
@@ -131,17 +133,43 @@ update, as described in
 | `B` | $n_x\times n_u\times L$ | Control-input matrix |
 | `Bd` | $n_x\times n_d\times L$ | Known-input matrix |
 
-Here, `L` is the number of supplied stages, from 1 to `N`. Use a single
-matrix (`L=1`) for a constant coefficient. If `L<N`, the last matrix is
-repeated over the remaining stages; any pages beyond `N` are ignored.
+Here, `L` is the number of supplied stages. Use a single matrix (`L=1`)
+for a constant coefficient. If `L<N`, the last matrix is repeated over the
+remaining stages; any pages beyond `N` are ignored.
 
 The first supplied matrix applies at stage 0. Each following page applies
 to the next stage, through stage `N-1`.
 
 If only the known-input forecast changes, pass the new values as `d_in`
 directly to [`mpc_solve`](../api/online/mpc_solve.md). The `Bd` matrix
-describes how the model uses that input, so it only needs updating when
-those coefficients change.
+describes how the model uses that input. A new forecast alone does not
+require a model update.
+
+(online-continuous-dynamics)=
+#### Updating continuous-time models
+
+CHRONOS accepts updated continuous coefficients and discretizes them before
+the next solve. Use
+[`update_mpc_dyn_continuous_forward`](../api/online/update_mpc_dyn_continuous_forward.md),
+[`update_mpc_dyn_continuous_backward`](../api/online/update_mpc_dyn_continuous_backward.md),
+or [`update_mpc_dyn_continuous_tustin`](../api/online/update_mpc_dyn_continuous_tustin.md)
+for forward Euler, backward Euler, or Tustin, respectively.
+
+All three functions require **full, nonempty `Ac` and `Bc` on every call**,
+even when a coefficient is constant. If the known-input matrix `Bd` was
+enabled at initialization, also supply full, nonempty `Bdc` on **every call**.
+Otherwise use `[]` for `Bdc`.
+
+Some models are naturally written with a mass or inertia matrix:
+
+$$
+M\dot{x}=A_cx+B_cu+B_{dc}d.
+$$
+
+You can pass `M` as the optional final argument; it must be invertible.
+CHRONOS handles the conversion, so you do not need to transform the
+continuous coefficients first. Omit `M` to use the standard model described
+in {ref}`Set up the dynamics <mpc-prediction-dynamics>`.
 
 (online-output-model)=
 ### Output model
