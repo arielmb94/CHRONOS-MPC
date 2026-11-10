@@ -18,9 +18,8 @@ mpc_initial.max_iter = 3;
 vx = 1; % m/s
 [A,B] = update_BM(vx);
 
-% Forward-Euler discretization:
-% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
-mpc_initial = init_mpc_dynamics(mpc_initial,eye(2)+Ts*A,Ts*B,[]);
+% CHRONOS discretizes the continuous model with forward Euler.
+mpc_initial = init_mpc_dyn_continuous_forward(mpc_initial,A,B,[],Ts);
 
 % Track yaw rate only: y = C*x = yaw_rate
 C_yaw_rate = [0 1];

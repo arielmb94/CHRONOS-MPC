@@ -62,8 +62,8 @@ for i = 1:Sim_samples
     tic
 
     % 3. Update the LPV prediction model at the measured state
-    sys = qLPV_TRMS_SS(Wh,Omh,Thth,Wv,Thtv);
-    mpc = update_mpc_dynamics(mpc,eye(6)+Ts*sys.A,Ts*sys.B,[]);
+    [A,B] = qLPV_TRMS_SS(Wh,Omh,Thth,Wv,Thtv);
+    mpc = update_mpc_dyn_continuous_forward(mpc,A,B,[],Ts);
 
     % 4. Solve for the two motor voltages
     x_mpc = [Wh;Omh;Thth;Wv;Omv;Thtv-Thtv0];

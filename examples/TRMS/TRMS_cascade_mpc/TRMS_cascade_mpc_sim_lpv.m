@@ -66,9 +66,9 @@ for i = 1:Sim_samples
 
     % 3. Update the outer and inner LPV models at the measured state
     [A,B,Bd,Ah,Bh,Av,Bv] = qLPV_TRMS_cascade_mpc_SS(Wh,Omh,Thth,Wv,Thtv);
-    mpc = update_mpc_dynamics(mpc,eye(4)+Ts*A,Ts*B,Ts*Bd);
-    mpc_h = update_mpc_dynamics(mpc_h,1+Ts*Ah,Ts*Bh,[]);
-    mpc_v = update_mpc_dynamics(mpc_v,1+Ts*Av,Ts*Bv,[]);
+    mpc = update_mpc_dyn_continuous_forward(mpc,A,B,Bd,Ts);
+    mpc_h = update_mpc_dyn_continuous_forward(mpc_h,Ah,Bh,[],Ts);
+    mpc_v = update_mpc_dyn_continuous_forward(mpc_v,Av,Bv,[],Ts);
 
     % 4. The outer MPC computes both rotor-reference sequences. The current
     % main-rotor voltage enters its model through the disturbance input.

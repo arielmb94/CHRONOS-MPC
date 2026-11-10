@@ -69,8 +69,8 @@ for i = 1:Sim_samples
     tic;
 
     % 3. Update the modified LPV model at the measured state
-    sys = qLPV_TRMS_refMPC_SS(Wh,Omh,Thth,Wv,Thtv);
-    mpc = update_mpc_dynamics(mpc,eye(6)+Ts*sys.A,Ts*sys.B,[]);
+    [A,B] = qLPV_TRMS_refMPC_SS(Wh,Omh,Thth,Wv,Thtv);
+    mpc = update_mpc_dyn_continuous_forward(mpc,A,B,[],Ts);
 
     % 4. Optimize two physical voltages and two virtual rotor references
     x_mpc = [Wh;Omh;Thth;Wv;Omv;Thtv-Thtv0];
