@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%   Pk_recursive = compute_schedul_taylor_recursive(mpc,x0_pred,x_curr,n_rho,sched_fun,jacob_fun,rho_min,rho_max)
+%   Pk_recursive = compute_scheduling_taylor_recursive(mpc,x0_pred,x_curr,n_rho,sched_fun,jacob_fun,rho_min,rho_max)
 %
 % Computes the recursive extrapolation of qLPV scheduling parameters along 
 % the prediction horizon. 
@@ -36,9 +36,9 @@
 %   [rho(k); rho(k+1); ... ; rho(k+N-1)].
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Pk_recursive = compute_schedul_taylor_recursive(mpc, x_curr, n_rho, sched_fun, jacob_fun, rho_min, rho_max)
+function Pk_recursive = compute_scheduling_taylor_recursive(mpc, x_curr, n_rho, sched_fun, jacob_fun, rho_min, rho_max)
     % previous optimal Pk
-    prev_Pk = compute_schedul_lpv_rti(mpc, x_curr, sched_fun, n_rho);
+    prev_Pk = compute_scheduling_lpv_rti(mpc, x_curr, sched_fun, n_rho);
     
     % Compute the derivative of scheduling traj. (Jacobian) sigma_k
     sigma_k = jacob_fun(x_curr); 

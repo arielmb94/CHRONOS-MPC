@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%   Pk_pred = compute_schedul_lpv_sqp(mpc, x_prev, u_prev, xref, x_ref_ter, d, sched_fun, ...
+%   Pk_pred = compute_scheduling_lpv_sqp(mpc, x_prev, u_prev, xref, x_ref_ter, d, sched_fun, ...
 %                                       compute_A_fun, compute_B_fun, compute_Bd_fun, n_rho, n_iter)
 %
 % Computes the scheduling parameters along the prediction horizon using 
@@ -26,7 +26,7 @@
 %   - Pk_pred: (N * n_rho) column vector, refined scheduling trajectory.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Pk_pred = compute_schedul_lpv_sqp(mpc, x_prev, u_prev, xref, x_ref_ter, d, sched_fun, ...
+function Pk_pred = compute_scheduling_lpv_sqp(mpc, x_prev, u_prev, xref, x_ref_ter, d, sched_fun, ...
                                              compute_A_fun, compute_B_fun, compute_Bd_fun, n_rho, n_iter)
     
     % Convergence tolerance for early stopping

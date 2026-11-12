@@ -13,7 +13,7 @@ Depending on your system's degree of nonlinearity and available computational bu
 ## Decoupled Pipeline Overview
 
 In CHRONOS, the scheduling trajectory estimation is completely decoupled from the QP solver:
-1. **Estimate $\hat{P}_k$:** Call one of the four `compute_schedul_*` functions.
+1. **Estimate $\hat{P}_k$:** Call one of the four `compute_scheduling_*` functions.
 2. **Build 3D Horizon Matrices:** Pass $\hat{P}_k$ to `project_matrix` using your affine matrix function handles (`compute_A`, `compute_B`, `compute_Bd`).
 3. **Update & Solve:** Call `update_mpc_dynamics` followed by `mpc_solve`.
 
@@ -28,7 +28,7 @@ The simplest approach evaluates the exact nonlinear scheduling function $f_\rho(
 
 ```matlab
 % 1. Estimate frozen scheduling trajectory (1 evaluation of f_rho)
-Pk = compute_schedul_frozen(mpc, x_k, my_sched_fun);
+Pk = compute_scheduling_frozen(mpc, x_k, my_sched_fun);
 
 % 2. Assemble 3D matrices across the horizon and solve QP once
 A_lpv = project_matrix(compute_A, Pk, n_rho, Np);
@@ -47,7 +47,7 @@ Inspired by the Real-Time Iteration (RTI) paradigm, this approach achieves a hig
 
 ```matlab
 % 1. Map previous predicted state trajectory (warm-start) through f_rho
-Pk = compute_schedul_lpv_rti(mpc, x_k, my_sched_fun, n_rho);
+Pk = compute_scheduling_lpv_rti(mpc, x_k, my_sched_fun, n_rho);
 
 % 2. Assemble 3D matrices across the horizon and solve QP once
 A_lpv = project_matrix(compute_A, Pk, n_rho, Np);
@@ -64,7 +64,7 @@ Also known as the iterative qLPV method, this approach implements a successive f
 
 ```matlab
 % 1. Iteratively refine Pk and re-solve the QP up to n_iter times
-Pk = compute_schedul_lpv_sqp(mpc, x_k, u_prev, y_ref, x_ter_ref, [], ...
+Pk = compute_scheduling_lpv_sqp(mpc, x_k, u_prev, y_ref, x_ter_ref, [], ...
                                my_sched_fun, compute_A, compute_B, [], n_rho, n_iter);
 
 % 2. Update dynamics with the converged trajectory and compute final control action
@@ -82,7 +82,7 @@ Based on a first-order Taylor series expansion of the scheduling function, this 
 
 ```matlab
 % 1. Extrapolate Pk via 1st-order Taylor expansion with saturation bounds
-Pk = compute_schedul_taylor_recursive(mpc, x_k, n_rho, my_sched_fun, my_jacob_fun, rho_min, rho_max);
+Pk = compute_scheduling_taylor_recursive(mpc, x_k, n_rho, my_sched_fun, my_jacob_fun, rho_min, rho_max);
 
 % 2. Assemble 3D matrices across the horizon and solve QP once
 A_lpv = project_matrix(compute_A, Pk, n_rho, Np);
@@ -96,10 +96,10 @@ mpc   = update_mpc_dynamics(mpc, A_lpv, B_lpv, []);
 
 | Method | Function Name | $f_\rho(x)$ Evals / Sample | QP Solves / Sample | Prediction Accuracy | Computational Burden |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| **1. Frozen** | `compute_schedul_frozen` | $1$ | $1$ | Low (in fast transients) | Minimal |
-| **2. LPV-RTI** | `compute_schedul_iterative_fast` | $N_p$ | $1$ | High | Low |
-| **3. LPV-SQP** | `compute_schedul_iterative` | $1 + l_{\max}(N_p - 1)$ | $l_{\max} + 1$ | Very High | High |
-| **4. Taylor** | `compute_schedul_recursive` | $1$ (+ $1$ Jacobian) | $1$ | Moderate to High | Very Low |
+| **1. Frozen** | `compute_scheduling_frozen` | $1$ | $1$ | Low (in fast transients) | Minimal |
+| **2. LPV-RTI** | `compute_scheduling_iterative_fast` | $N_p$ | $1$ | High | Low |
+| **3. LPV-SQP** | `compute_scheduling_iterative` | $1 + l_{\max}(N_p - 1)$ | $l_{\max} + 1$ | Very High | High |
+| **4. Taylor** | `compute_scheduling_recursive` | $1$ (+ $1$ Jacobian) | $1$ | Moderate to High | Very Low |
 
 ### Practical Recommendations
 * **Start with Frozen or LPV-RTI:** They offer an exceptional trade-off, providing high stability and accuracy for the computational price of a single QP solve per sample, with zero tuning overhead.

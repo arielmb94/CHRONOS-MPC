@@ -55,7 +55,7 @@ or when $l = l_{\max}$. In embedded real-time applications, bounding the loop by
 
 ### Function Signature
 ```matlab
-Pk = compute_schedul_iterative(mpc, x_k, u_prev, y_ref, x_ter_ref, d_k, ...
+Pk = compute_scheduling_iterative(mpc, x_k, u_prev, y_ref, x_ter_ref, d_k, ...
                                f_rho, compute_A, compute_B, compute_Bd, n_rho, n_iter)
 ```
 * **`mpc`**: Initialized CHRONOS structure.
@@ -70,7 +70,7 @@ Pk = compute_schedul_iterative(mpc, x_k, u_prev, y_ref, x_ter_ref, d_k, ...
 n_iter = 5; % Maximum number of inner refinement iterations
 
 % Inside the closed-loop control loop at instant k:
-Pk = compute_schedul_lpv_sqp(mpc, x_prev, u_prev, xf, x_ref, [], ...
+Pk = compute_scheduling_lpv_sqp(mpc, x_prev, u_prev, xf, x_ref, [], ...
                                my_sched_fun, compute_A, [], [], n_rho, n_iter);
 
 % Finalize dynamics with the converged trajectory and compute applied control

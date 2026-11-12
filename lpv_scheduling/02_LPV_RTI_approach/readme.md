@@ -1,6 +1,6 @@
 # 2. The LPV-RTI (Warm-Start Evaluation) Approach
 
-The **LPV-RTI Approach** (implemented via `compute_schedul_iterative_fast`) bridges the gap between the low complexity of the Frozen approach and the high accuracy of full nonlinear MPC. Inspired by the Real-Time Iteration (RTI) framework, it constructs a time-varying scheduling trajectory over the prediction horizon by evaluating the scheduling function along the optimal state trajectory predicted at the previous sampling instant.
+The **LPV-RTI Approach** (implemented via `compute_scheduling_iterative_fast`) bridges the gap between the low complexity of the Frozen approach and the high accuracy of full nonlinear MPC. Inspired by the Real-Time Iteration (RTI) framework, it constructs a time-varying scheduling trajectory over the prediction horizon by evaluating the scheduling function along the optimal state trajectory predicted at the previous sampling instant.
 
 ---
 
@@ -51,7 +51,7 @@ $$\hat{P}_k = \begin{bmatrix} f_\rho\big(x(k)\big) \\ f_\rho\big(x^\star(k+1 \mi
 
 ### Function Signature
 ```matlab
-Pk = compute_schedul_lpv_rti(mpc, x_k, f_rho, n_rho)
+Pk = compute_scheduling_lpv_rti(mpc, x_k, f_rho, n_rho)
 ```
 * **`mpc`**: CHRONOS structure containing the previous primal solution `mpc.x` and state index map `mpc.s_index_k`.
 * **`x_k`**: Current measured state vector ($n_x \times 1$).
@@ -69,7 +69,7 @@ compute_A = @(rho) eye(2) + Ts * [-k_tank * rho(1),  0;
                                    k_tank * rho(1), -k_tank * rho(2)];
 
 % Inside the closed-loop control loop at instant k:
-Pk    = compute_schedul_iterative_fast(mpc, x_prev, my_sched_fun, n_rho);
+Pk    = compute_scheduling_iterative_fast(mpc, x_prev, my_sched_fun, n_rho);
 A_lpv = project_matrix(compute_A, Pk, n_rho, mpc.N);
 mpc   = update_mpc_dynamics(mpc, A_lpv, [], []);
 

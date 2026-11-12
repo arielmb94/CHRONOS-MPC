@@ -53,7 +53,7 @@ $$\text{sat}_{\mathcal{P}}(v)_i = \min\Big(\overline{\rho}_i,\, \max\big(\underl
 
 ### Function Signature
 ```matlab
-Pk = compute_schedul_recursive(mpc, x_k, n_rho, f_rho, jacob_rho, rho_min, rho_max)
+Pk = compute_scheduling_recursive(mpc, x_k, n_rho, f_rho, jacob_rho, rho_min, rho_max)
 ```
 * **`mpc`**: CHRONOS structure (stores previous scheduling trajectory and states).
 * **`x_k`**: Current measured state vector ($n_x \times 1$).
@@ -75,7 +75,7 @@ rho_min = my_sched_fun([1.00; 1.00]); % Minimum rho (at max water height)
 rho_max = my_sched_fun([0.01; 0.01]); % Maximum rho (at min water height)
 
 % 2. Inside the closed-loop control loop at instant k:
-Pk    = compute_schedul_taylor_recursive(mpc, x_prev, n_rho, my_sched_fun, my_jacob_fun, rho_min, rho_max);
+Pk    = compute_scheduling_taylor_recursive(mpc, x_prev, n_rho, my_sched_fun, my_jacob_fun, rho_min, rho_max);
 A_lpv = project_matrix(compute_A, Pk, n_rho, mpc.N);
 mpc   = update_mpc_dynamics(mpc, A_lpv, [], []);
 

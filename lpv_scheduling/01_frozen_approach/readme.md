@@ -53,7 +53,7 @@ which can degrade performance during rapid nonlinear transients if the sampling 
 
 ### Function Signature
 ```matlab
-Pk = compute_schedul_frozen(mpc, x_k, f_rho)
+Pk = compute_scheduling_frozen(mpc, x_k, f_rho)
 ```
 * **`mpc`**: Initialized CHRONOS structure (uses `mpc.N` for the horizon length $N_p$).
 * **`x_k`**: Current measured state vector ($n_x \times 1$).
@@ -70,7 +70,7 @@ compute_A = @(rho) eye(2) + Ts * [-k_tank * rho(1),  0;
                                    k_tank * rho(1), -k_tank * rho(2)];
 
 % Inside the closed-loop control loop at instant k:
-Pk    = compute_schedul_frozen(mpc, x_prev, my_sched_fun);
+Pk    = compute_scheduling_frozen(mpc, x_prev, my_sched_fun);
 A_lpv = project_matrix(compute_A, Pk, n_rho, mpc.N);
 mpc   = update_mpc_dynamics(mpc, A_lpv, [], []);
 

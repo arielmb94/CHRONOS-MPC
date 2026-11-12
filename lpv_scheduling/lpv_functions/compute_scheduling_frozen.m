@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%   Pk_frozen = compute_schedul_frozen(mpc, x_prev, sched_fun)
+%   Pk_frozen = compute_scheduling_frozen(mpc, x_prev, sched_fun)
 %
 % Computes the scheduling trajectory by evaluating the current measured 
 % state and keeping them constant (frozen) along the entire prediction 
@@ -16,7 +16,7 @@
 %   - Pk_frozen: (N * n_rho) column vector, frozen scheduling trajectory.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Pk_frozen = compute_schedul_frozen(mpc, x_prev, sched_fun)
+function Pk_frozen = compute_scheduling_frozen(mpc, x_prev, sched_fun)
     % Compute scheduling variables for current instant only
     rho_current = sched_fun(x_prev);
     

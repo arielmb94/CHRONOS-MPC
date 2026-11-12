@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Pk_iterative_fast = compute_schedul_lpv_rti(mpc, x_prev, sched_fun, n_rho)
+function Pk_iterative_fast = compute_scheduling_lpv_rti(mpc, x_prev, sched_fun, n_rho)
     Pk_iterative_fast = zeros(mpc.N * n_rho, 1);
     
     % Compute Pk for current iteration based on states stored in mpc.s
