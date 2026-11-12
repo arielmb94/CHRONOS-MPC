@@ -34,8 +34,6 @@ mpc.ru_k = zeros(mpc.nu,N-1);
 mpc.rxe_k = zeros(nxe,N-1);
 mpc.rxe_ter = zeros(nxe,1);
 
-mpc.ru_hat_0 = zeros(mpc.nu,1);
-
 mpc.ri_0 = zeros(ng_0,1);
 mpc.ri_k = zeros(ng_k,N-1);
 mpc.ri_ter = zeros(ng_ter,1);

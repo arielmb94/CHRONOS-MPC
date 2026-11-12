@@ -199,7 +199,6 @@ mpc.iS_ter = [];
 mpc.iS_ri_hat_0 = [];
 mpc.iS_ri_hat_k = [];
 mpc.iS_ri_hat_ter = [];
-mpc.ru_hat_0 = [];
 mpc.delta_g_0 = [];
 mpc.delta_g_k = [];
 mpc.delta_g_ter = [];

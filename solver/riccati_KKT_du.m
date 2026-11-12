@@ -1,119 +1,101 @@
 function mpc = riccati_KKT_du(mpc)
-[mpc.delta_u,mpc.delta_xe,mpc.Q_hat,mpc.R_hat_0,mpc.R_hat,mpc.Y_hat,mpc.rx_hat,mpc.ru_hat,mpc.ru_hat_0,mpc.rp_hat_0,mpc.rp_hat,mpc.K_ric,mpc.d_ric,mpc.d_ric_0,mpc.QA_ric,mpc.G_ric,mpc.solve_rhs_ric,mpc.solve_result_ric] = riccati_KKT_du_local(mpc.N,mpc.R_0,mpc.Q_k,mpc.R_k,mpc.Y_k,mpc.Q_ter,mpc.Q_hat,mpc.R_hat_0,mpc.R_hat,mpc.Y_hat,mpc.ru_0,mpc.rxe_k,mpc.ru_k,mpc.rxe_ter,mpc.rx_hat,mpc.ru_hat,mpc.ru_hat_0,mpc.rp_0,mpc.rp_k,mpc.rp_hat_0,mpc.rp_hat,mpc.K_ric,mpc.d_ric,mpc.d_ric_0,mpc.QA_ric,mpc.G_ric,mpc.solve_rhs_ric,mpc.solve_result_ric,mpc.A,mpc.B,mpc.delta_u,mpc.delta_xe,mpc.eps_thknv,mpc.nu,mpc.nxe,mpc.x_col,mpc.xu_col,mpc.xe_col);
+[mpc.delta_u,mpc.delta_xe,mpc.Q_hat,mpc.rx_hat,mpc.rp_hat_0,mpc.rp_hat, ...
+ mpc.QA_ric,mpc.G_ric,mpc.LDL_ric,mpc.solve_rhs_ric,mpc.scaled_rhs_ric] = ...
+    riccati_KKT_du_local(mpc.R_0,mpc.Q_k,mpc.R_k,mpc.Y_k,mpc.Q_ter, ...
+        mpc.ru_0,mpc.rxe_k,mpc.ru_k,mpc.rxe_ter,mpc.rp_0,mpc.rp_k, ...
+        mpc.A,mpc.B,mpc.eps_thknv,mpc.x_col,mpc.xu_col,mpc.xe_col, ...
+        mpc.delta_u,mpc.delta_xe,mpc.Q_hat,mpc.rx_hat,mpc.rp_hat_0,mpc.rp_hat, ...
+        mpc.QA_ric,mpc.G_ric,mpc.LDL_ric,mpc.solve_rhs_ric,mpc.scaled_rhs_ric);
 end
 
-function [delta_u,delta_xe,Q_hat,R_hat_0,R_hat,Y_hat,rx_hat,ru_hat,ru_hat_0,rp_hat_0,rp_hat,K_ric,d_ric,d_ric_0,QA_ric,G_ric,solve_rhs_ric,solve_result_ric] = riccati_KKT_du_local(N,R_0,Q,R,Y,Q_ter,Q_hat,R_hat_0,R_hat,Y_hat,ru_0,rx,ru,rx_ter,rx_hat,ru_hat,ru_hat_0,rp_0,rp,rp_hat_0,rp_hat,K_ric,d_ric,d_ric_0,QA_ric,G_ric,solve_rhs_ric,solve_result_ric,A,B,delta_u,delta_xe,eps_thknv,nu,nxe,x_col,xu_col,xe_col)
+function [delta_u,delta_xe,Q_hat,rx_hat,rp_hat_0,rp_hat, ...
+          QA_ric,G_ric,LDL_ric,solve_rhs_ric,scaled_rhs_ric] = ...
+    riccati_KKT_du_local(R_0,Q,R,Y,Q_ter,ru_0,rx,ru,rx_ter,rp_0,rp, ...
+        A,B,eps_thknv,x_col,xu_col,xe_col,delta_u,delta_xe,Q_hat,rx_hat, ...
+        rp_hat_0,rp_hat,QA_ric,G_ric,LDL_ric,solve_rhs_ric,scaled_rhs_ric)
 
-%linsolve_opts = struct('SYM',true);
+N = size(delta_u,2);
+nu = size(delta_u,1);
+residual_col = size(solve_rhs_ric,2);
 
 Q_hat(:,:,N) = Q_ter;
 rx_hat(:,N) = rx_ter;
 
 for k = N-1:-1:1
+    ku = k+1;
 
-    % Cache the state-column block of [B';I]*Q_hat once for this stage.
-    G_ric(:,:) = B(:,:,k+1)'*Q_hat(x_col,x_col,k+1) + ...
-                 Q_hat(xu_col,x_col,k+1);
+    % Cache the physical-state columns of [B' I]*Q_hat.
+    G_ric(:,:) = B(:,:,ku)'*Q_hat(x_col,x_col,ku) + Q_hat(xu_col,x_col,ku);
 
-    % \hat{R}*k = R_k + B_kkt^T\hat{Q}_{k+1}B_kkt
-    R_hat(:,:,k) = R(:,:,k) + G_ric*B(:,:,k+1) + ...
-                       B(:,:,k+1)'*Q_hat(x_col,xu_col,k+1) + ...
-                       Q_hat(xu_col,xu_col,k+1);
-
-    for j = 1:nu
-        R_hat(j,j,k) = R_hat(j,j,k) + eps_thknv;
+    LDL_ric(:,:,ku) = R(:,:,k) + G_ric*B(:,:,ku) + ...
+        B(:,:,ku)'*Q_hat(x_col,xu_col,ku) + Q_hat(xu_col,xu_col,ku);
+    for i = 1:nu
+        LDL_ric(i,i,ku) = LDL_ric(i,i,ku) + eps_thknv;
     end
 
-    % \hat{Y}_k = Y_k + B_kkt^T\hat{Q}_{k+1}A_kkt
-    Y_hat(:,x_col,k) = Y(:,x_col,k) + G_ric*A(:,:,k+1);
-    Y_hat(:,xu_col,k) = Y(:,xu_col,k);
+    rp_hat(:,k) = rx_hat(:,ku) + Q_hat(:,:,ku)*rp(:,k);
+    solve_rhs_ric(:,x_col) = Y(:,x_col,k) + G_ric*A(:,:,ku);
+    solve_rhs_ric(:,xu_col) = Y(:,xu_col,k);
+    solve_rhs_ric(:,residual_col) = ru(:,k) + B(:,:,ku)'*rp_hat(x_col,k) + ...
+        rp_hat(xu_col,k);
 
-    % \hat{r}_{pk} = \hat{r}_{sk+1} + \hat{Q}_{k+1}r_{pk}
-    rp_hat(:,k) = rx_hat(:,k+1) + ...
-                      Q_hat(:,:,k+1)*rp(:,k);
+    % Rbar*[K,d] = [Y_hat,ru_hat]; retain T = L^(-1)*RHS and Z = D^(-1)*T.
+    [LDL_ric,solve_rhs_ric] = factorizeForwardRiccatiLDL( ...
+        LDL_ric,solve_rhs_ric,ku,false);
+    scaled_rhs_ric = scaleRiccatiLDLRHS( ...
+        scaled_rhs_ric,solve_rhs_ric,LDL_ric,k);
 
-    % \hat{r}_{uk} = r_{uk} + B_kkt^T\hat{r}_{pk}
-    ru_hat(:,k) = ru(:,k) + B(:,:,k+1)'*rp_hat(x_col,k) + ...
-                      rp_hat(xu_col,k);
-
-    % Solve [K_k, d_k] in one factorization of the regularized block.
-    solve_rhs_ric(:,xe_col) = Y_hat(:,:,k);
-    solve_rhs_ric(:,nxe+1) = ru_hat(:,k);
-
-    % solve_result_ric(:,:) = linsolve(R_hat(:,:,k),...
-    %                                  solve_rhs_ric,linsolve_opts);
-    solve_result_ric(:,:) = solveLinearSystemLDL(R_hat(:,:,k),...
-                                     solve_rhs_ric);
-
-    K_ric(:,:,k) = solve_result_ric(:,xe_col);
-    d_ric(:,k) = solve_result_ric(:,nxe+1);
-
-    % \hat{Q}_k = Q_k + A_kkt^T\hat{Q}_{k+1}A_kkt -
-    %              \hat{Y}_k^TK_k
-    QA_ric(:,:) = Q_hat(x_col,x_col,k+1)*A(:,:,k+1);
-
+    % Keep the augmented dynamics in their physical blocks.
+    QA_ric(:,:) = Q_hat(x_col,x_col,ku)*A(:,:,ku);
     Q_hat(:,:,k) = Q(:,:,k);
-    Q_hat(x_col,x_col,k) = Q_hat(x_col,x_col,k) + ...
-                               A(:,:,k+1)'*QA_ric;
-    Q_hat(:,:,k) = Q_hat(:,:,k) - Y_hat(:,:,k)'*K_ric(:,:,k);
+    Q_hat(x_col,x_col,k) = Q_hat(x_col,x_col,k) + A(:,:,ku)'*QA_ric;
+    % T_Y'*Z_Y = Y_hat'*K, without backward substitution of the state RHS.
+    Q_hat(:,:,k) = Q_hat(:,:,k) - ...
+        solve_rhs_ric(:,xe_col)'*scaled_rhs_ric(:,xe_col,k);
 
-    % \hat{r}_{sk} = r_{sk} + A_kkt^T\hat{r}_{pk} - \hat{Y}_k^Td_k
     rx_hat(:,k) = rx(:,k);
-    rx_hat(x_col,k) = rx_hat(x_col,k) + ...
-                          A(:,:,k+1)'*rp_hat(x_col,k);
-    rx_hat(:,k) = rx_hat(:,k) - Y_hat(:,:,k)'*d_ric(:,k);
-
+    rx_hat(x_col,k) = rx_hat(x_col,k) + A(:,:,ku)'*rp_hat(x_col,k);
+    rx_hat(:,k) = rx_hat(:,k) - ...
+        solve_rhs_ric(:,xe_col)'*scaled_rhs_ric(:,residual_col,k);
 end
 
-G_ric(:,:) = B(:,:,1)'*Q_hat(x_col,x_col,1) + ...
-             Q_hat(xu_col,x_col,1);
-
-R_hat_0(:,:) = R_0 + G_ric*B(:,:,1) + ...
-                   B(:,:,1)'*Q_hat(x_col,xu_col,1) + ...
-                   Q_hat(xu_col,xu_col,1);
-
-for j = 1:nu
-    R_hat_0(j,j) = R_hat_0(j,j) + eps_thknv;
+G_ric(:,:) = B(:,:,1)'*Q_hat(x_col,x_col,1) + Q_hat(xu_col,x_col,1);
+LDL_ric(:,:,1) = R_0 + G_ric*B(:,:,1) + ...
+    B(:,:,1)'*Q_hat(x_col,xu_col,1) + Q_hat(xu_col,xu_col,1);
+for i = 1:nu
+    LDL_ric(i,i,1) = LDL_ric(i,i,1) + eps_thknv;
 end
 
-rp_hat_0(:) = rx_hat(:,1) + ...
-                  Q_hat(:,:,1)*rp_0;
+rp_hat_0(:) = rx_hat(:,1) + Q_hat(:,:,1)*rp_0;
+solve_rhs_ric(:,residual_col) = ru_0 + B(:,:,1)'*rp_hat_0(x_col) + rp_hat_0(xu_col);
 
-ru_hat_0(:) = ru_0 + B(:,:,1)'*rp_hat_0(x_col) + ...
-                  rp_hat_0(xu_col);
+if nu == 1
+    % One scalar RHS needs only a division, not reciprocal scaling.
+    delta_u(1,1) = -solve_rhs_ric(1,residual_col)/LDL_ric(1,1,1);
+else
+    [LDL_ric,solve_rhs_ric] = factorizeForwardRiccatiLDL( ...
+        LDL_ric,solve_rhs_ric,1,true);
+    for i = 1:nu
+        delta_u(i,1) = -LDL_ric(i,i,1)*solve_rhs_ric(i,residual_col);
+    end
+    delta_u = backSubstituteRiccatiLDL(delta_u,LDL_ric,1);
+end
 
-% d_ric_0(:) = linsolve(R_hat_0,ru_hat_0,...
-%                       linsolve_opts);
-d_ric_0(:) = solveLinearSystemLDL(R_hat_0,ru_hat_0);
-
-% u_0 = -d_0
-delta_u(:,1) = -d_ric_0;
-
-% xe_1 = [B;I]u_0 + r_{p0}
+% xe_1 = [B;I]*u_0 + r_p0.
 delta_xe(x_col,1) = B(:,:,1)*delta_u(:,1) + rp_0(x_col);
 delta_xe(xu_col,1) = delta_u(:,1) + rp_0(xu_col);
 
-% \mu_k = \hat{r}_{sk+1} + \hat{Q}_{k+1}x_{k+1}
-%mu(:,1) = rx_hat_ric(:,1) + Q_hat_ric(:,:,1)*delta_xe(:,1);
-
 for k = 1:N-1
+    ku = k+1;
 
-    ku = k+1; % u mu vectors shifted by 1 stage
+    % Recover -d_k-K_k*delta_xe with one L' solve after the matrix product.
+    delta_u(:,ku) = -scaled_rhs_ric(:,residual_col,k) - ...
+        scaled_rhs_ric(:,xe_col,k)*delta_xe(:,k);
+    delta_u = backSubstituteRiccatiLDL(delta_u,LDL_ric,ku);
 
-    % u_k = -d_k - K_k*xe_k
-    delta_u(:,ku) = -d_ric(:,k) - ...
-                    K_ric(:,:,k)*delta_xe(:,k);
-
-    % xe_{k+1} = [A 0;0 0]xe_k + [B;I]u_k + r_{pk}
-    delta_xe(x_col,k+1) = A(:,:,k+1)*delta_xe(x_col,k) + ...
-                              B(:,:,k+1)*delta_u(:,ku) + rp(x_col,k);
-    delta_xe(xu_col,k+1) = delta_u(:,ku) + rp(xu_col,k);
-
-    % \mu_k = \hat{r}_{sk+1} + \hat{Q}_{k+1}x_{k+1}
-    %mu(:,ku) = rx_hat_ric(:,k+1) + ...
-    %           Q_hat_ric(:,:,k+1)*delta_xe(:,k+1);
-
+    % xe_next = [A 0;0 0]*xe + [B;I]*u + r_p.
+    delta_xe(x_col,ku) = A(:,:,ku)*delta_xe(x_col,k) + ...
+        B(:,:,ku)*delta_u(:,ku) + rp(x_col,k);
+    delta_xe(xu_col,ku) = delta_u(:,ku) + rp(xu_col,k);
 end
-
-
 end
