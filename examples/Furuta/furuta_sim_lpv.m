@@ -8,6 +8,10 @@ time = 0:Ts:tsim-Ts;
 % iterative fast method
 use_iterative_fast = true;
 
+%% Constants
+% Time constants for the proportional speed reference law
+tau_1 = 1; % For the arm (theta 1)
+
 %% Preallocate simulation data
 th1_dat  = zeros(1, Sim_samples);
 th2_dat  = zeros(1, Sim_samples);
@@ -27,14 +31,21 @@ for i = 1:Sim_samples
     i
     t_curr = time(i);
     
-    % 1. Reference generation (Step on arm angle theta1 at t = 11 s)
+    % Reference generation (Step on arm angle theta1 at t = 11 s)
     if t_curr >= 11.0
         th1_ref = pi/2; % Reference step
     else
         th1_ref = 0.0;
     end
-    ref = [th1_ref; 0; 0; 0];
+    th2_ref = 0.0; % Upright equilibrium
     
+    % Proportional law for angula speed (theta_1)
+    dth1_ref = (th1_ref - x(1)) / tau_1;
+
+    dth2_ref = 0;
+    
+    ref = [th1_ref; th2_ref; dth1_ref; dth2_ref];
+
     % Input disturbance at t = 20 s (impulse/short pulse)
     if t_curr >= 20.0 && t_curr < 20.1
         d_u = 0.3;
