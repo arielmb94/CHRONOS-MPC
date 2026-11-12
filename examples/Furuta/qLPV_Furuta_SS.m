@@ -17,15 +17,6 @@ function [Ac, Bc, Mc] = qLPV_Furuta_SS(x)
     mu1 = 0.005;    % Arm viscous friction (N.m.s/rad)
     mu2 = 0.0005;   % Pendulum viscous friction (N.m.s/rad)
 
-    % Alison parameters
-    % m2 = 0.270/3;
-    % L1 = 0.170/2;
-    % l2 = 0.130;
-    % I1 = 0.005;
-    % I2 = 5.07e-4;
-    % mu1 = 0.001;
-    % mu2 = 0.001;
-
     % Lumped mechanical parameters
     alpha = I1 + m2 * L1^2;
     beta  = m2 * l2^2;
