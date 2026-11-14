@@ -1,4 +1,5 @@
-function sys = qLPV_TRMS_SS(Wh,Omh,Thth,Wv,Thtv)
+function [A,B,C] = qLPV_TRMS_SS(Wh,Omh,Thth,Wv,Thtv)
+% Return the continuous-time state, input, and output coefficient matrices.
 
     k_g = 0.2;
     l_t= 0.282;
@@ -106,8 +107,6 @@ function sys = qLPV_TRMS_SS(Wh,Omh,Thth,Wv,Thtv)
          0 0 0 1 0 0;
          0 0 0 0 0 1];
      
-    sys = ss(A,B,C,0);
-        
 end
 
 function y = f1hat(Wh)

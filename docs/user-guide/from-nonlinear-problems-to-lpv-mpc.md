@@ -421,9 +421,10 @@ keeps the original state and control coordinates rather than introducing
 deviation variables. Partial and full Taylor expansions are local
 approximations whose accuracy is expected near the chosen operating point.
 
+(lpv-discretization)=
 ## Discretize the model
 
-So far, we have been using continuous-time models in this chapter. However, CHRONOS, like any other MPC solver, assumes discrete prediction models. Thus, the LPV representation we obtain for the dynamics needs to be discretized.
+So far, we have been using continuous-time models in this chapter. However, CHRONOS, like any other MPC solver, assumes discrete-time prediction models. Thus, the LPV representation we obtain for the dynamics needs to be discretized.
 
 For a continuous LPV model
 
@@ -438,16 +439,25 @@ x_{k+1}=A_kx_k+B_ku_k+B_{d,k}d_k,
 \qquad k=0,\ldots,N-1.
 $$
 
-Under forward Euler with sample time $T_s$, the coefficients are
+
+CHRONOS can perform this conversion directly from the continuous
+coefficients and a positive sampling interval `Ts`. It supports three
+methods, with matching functions for initialization and online updates:
+
+| Method | Initialization | Online update |
+| --- | --- | --- |
+| Forward Euler | [`init_mpc_dyn_continuous_forward`](../api/init/init_mpc_dyn_continuous_forward.md) | [`update_mpc_dyn_continuous_forward`](../api/online/update_mpc_dyn_continuous_forward.md) |
+| Backward Euler | [`init_mpc_dyn_continuous_backward`](../api/init/init_mpc_dyn_continuous_backward.md) | [`update_mpc_dyn_continuous_backward`](../api/online/update_mpc_dyn_continuous_backward.md) |
+| Tustin | [`init_mpc_dyn_continuous_tustin`](../api/init/init_mpc_dyn_continuous_tustin.md) | [`update_mpc_dyn_continuous_tustin`](../api/online/update_mpc_dyn_continuous_tustin.md) |
+
+If the continuous model was obtained from a formulation using mass/inertia matrix,
 
 $$
-A_k=I+T_sA_{c,k},\qquad
-B_k=T_sB_{c,k},\qquad
-B_{d,k}=T_sB_{d,c,k}.
+M\dot{x}=A_c(\rho)x+B_c(\rho)u+B_{d,c}(\rho)d,
 $$
 
-Other discretization methods can be used when appropriate to the plant and
-sampling assumptions.
+CHRONOS allows you to pass `M` directly as an optional final argument, without requiring you to transform the $A_c$, $B_c$ and $B_{d,c}$ coefficients first by multiplying by $M^{-1}$. CHRONOS handles that for you, and the resulting
+prediction model remains the explicit discrete model above.
 
 ## Next step
 

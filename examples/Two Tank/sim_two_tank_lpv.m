@@ -58,12 +58,12 @@ for k = 1:Sim_samples
             h2_j = mpc.x(2,j-1);
         end
 
-        A_lpv(:,:,j) = eye(2)+Ts*[-sqrt(2*g)*sqrt(h1_j)/(Ab*h1_j) 0;
+        A_lpv(:,:,j) = [-sqrt(2*g)*sqrt(h1_j)/(Ab*h1_j) 0;
              sqrt(2*g)*sqrt(h1_j)/(Ab*h1_j) -sqrt(2*g)*sqrt(h2_j)/(Ab*h2_j)];
     end
 
-    % Update only A; B is constant and no disturbance model is used
-    mpc = update_mpc_dynamics(mpc,A_lpv,[],[]);
+    % Update the continuous LPV model; B is constant and there is no disturbance.
+    mpc = update_mpc_dyn_continuous_forward(mpc,A_lpv,B,[],Ts);
 
     % 3. Solve using the current state, previous input, output reference, and
     % terminal-state reference. Empty arguments mean no d, dz, or dh inputs.

@@ -33,9 +33,8 @@ B = [0; -alpha*(v0-xc)];
 Bd = [1/theta_f k*c0*M*exp(-M/v0)/(v0^2); xf/theta_f 0];
 
 % Initialize system dynamics
-% System discretized with forward Euler discretization:
-% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
-mpc = init_mpc_dynamics(mpc,eye(2)+Ts*A,Ts*B,Ts*Bd);
+% CHRONOS discretizes the continuous model with forward Euler.
+mpc = init_mpc_dyn_continuous_forward(mpc,A,B,Bd,Ts);
 
 % CHRONOS tracks the full state by default, so no output model is needed
 

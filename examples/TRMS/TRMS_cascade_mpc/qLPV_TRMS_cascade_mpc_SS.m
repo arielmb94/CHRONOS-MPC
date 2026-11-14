@@ -1,4 +1,5 @@
 function [A,B,Bd,Ah,Bh,Av,Bv] = qLPV_TRMS_cascade_mpc_SS(Wh,Omh,Thth,Wv,Thtv)
+% Return the outer and rotor continuous-time coefficient matrices.
 
     k_g = 0.2;
     l_t= 0.282;

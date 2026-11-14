@@ -36,13 +36,13 @@ for i = 1:Sim_samples
 
     tic
 
-    % 2. Evaluate and discretize the hybrid model at the measured state
-    A_lpv = eye(2)+Ts*[-1/theta_f-k*exp(-M/vk) -k*ck*M*exp(-M/vk)/(vk^2);
+    % 2. Evaluate the continuous hybrid model at the measured state
+    A_lpv = [-1/theta_f-k*exp(-M/vk) -k*ck*M*exp(-M/vk)/(vk^2);
          k*exp(-M/vk) -1/theta_f];
-    B_lpv = Ts*[0; -alpha*(vk-xc)];
-    Bd_lpv = Ts*[1/theta_f k*ck*M*exp(-M/vk)/(vk^2); xf/theta_f 0];
+    B_lpv = [0; -alpha*(vk-xc)];
+    Bd_lpv = [1/theta_f k*ck*M*exp(-M/vk)/(vk^2); xf/theta_f 0];
 
-    mpc = update_mpc_dynamics(mpc,A_lpv,B_lpv,Bd_lpv);
+    mpc = update_mpc_dyn_continuous_forward(mpc,A_lpv,B_lpv,Bd_lpv,Ts);
     d = [1;vk];  % constant and Taylor-expansion offset
 
     % 3. Solve with the tracking reference and known input. Terminal and

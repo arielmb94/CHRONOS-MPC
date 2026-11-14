@@ -14,6 +14,9 @@ mpc_solve
 :maxdepth: 1
 
 update_mpc_dynamics
+update_mpc_dyn_continuous_forward
+update_mpc_dyn_continuous_backward
+update_mpc_dyn_continuous_tustin
 update_mpc_output_vector
 update_mpc_Custom_cost_vector
 update_mpc_custom_cnstr_vector

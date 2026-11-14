@@ -42,15 +42,14 @@ mpc_v.max_iter = inner_max_iter;
 
 % Outer body model: rotor references are the inputs and the main-rotor
 % voltage is a measured disturbance
-% System discretized with forward Euler discretization:
-% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
-mpc = init_mpc_dynamics(mpc,eye(4)+Ts*A,Ts*B,Ts*Bd);
+% CHRONOS discretizes the continuous model with forward Euler.
+mpc = init_mpc_dyn_continuous_forward(mpc,A,B,Bd,Ts);
 
 % Tail-rotor model
-mpc_h = init_mpc_dynamics(mpc_h,1+Ts*Ah,Ts*Bh,[]);
+mpc_h = init_mpc_dyn_continuous_forward(mpc_h,Ah,Bh,[],Ts);
 
 % Main-rotor model
-mpc_v = init_mpc_dynamics(mpc_v,1+Ts*Av,Ts*Bv,[]);
+mpc_v = init_mpc_dyn_continuous_forward(mpc_v,Av,Bv,[],Ts);
 
 %% Constraints
 

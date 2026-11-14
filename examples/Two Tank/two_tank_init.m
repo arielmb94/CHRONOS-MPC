@@ -29,9 +29,8 @@ A = [-sqrt(2*g)*sqrt(h1)/(Ab*h1) 0;
 B = [1/Ab; 0];
 
 % Initialize system dynamics
-% System discretized with forward Euler discretization:
-% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
-mpc = init_mpc_dynamics(mpc,eye(2)+Ts*A,Ts*B,[]);
+% CHRONOS discretizes the continuous model with forward Euler.
+mpc = init_mpc_dyn_continuous_forward(mpc,A,B,[],Ts);
 
 % Replace the default full-state output: track only the second tank height
 C = [0 1];

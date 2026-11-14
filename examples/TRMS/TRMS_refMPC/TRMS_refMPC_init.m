@@ -26,15 +26,14 @@ mpc = init_chronos_mpc(N);
 %% Nominal LPV prediction model
 
 % Freeze the modified LPV model at the initial operating point
-sys = qLPV_TRMS_refMPC_SS(Wh,Omh,Thth,Wv,Thtv);
+[A,B,C] = qLPV_TRMS_refMPC_SS(Wh,Omh,Thth,Wv,Thtv);
 
 % Initialize system dynamics
-% System discretized with forward Euler discretization:
-% x+ = (I+Ts*A)*x+Ts*B*u+Ts*Bd*d
-mpc = init_mpc_dynamics(mpc,eye(6)+Ts*sys.A,Ts*sys.B,[]);
+% CHRONOS discretizes the continuous model with forward Euler.
+mpc = init_mpc_dyn_continuous_forward(mpc,A,B,[],Ts);
 
 % Track the horizontal and vertical body rates and angles
-mpc = init_mpc_output(mpc,sys.C,[],[]);
+mpc = init_mpc_output(mpc,C,[],[]);
 
 %% Constraints
 

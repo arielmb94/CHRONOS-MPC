@@ -118,11 +118,12 @@ x_{j+1}=Ax_j+Bu_j,
 $$
 
 The index $j$ denotes a stage within the prediction horizon. For
-initialization, a frozen LPV model is sufficient: we evaluate $A$ at the
+initialization, a frozen LPV model is sufficient: we evaluate $A_c$ at the
 initial heights and repeat it over all $N$ transitions. In the simulation,
-we instead schedule $A_j$ across the horizon using the current measurement
-and the previously predicted states. These matrices remain fixed during
-each solve and are updated before the next one.
+we instead schedule the continuous state matrices across the horizon using
+the current measurement and the previously predicted states. The continuous
+dynamics API performs the forward-Euler conversion at initialization and
+each update. The resulting discrete matrices remain fixed during each solve.
 
 #### Constraints
 
@@ -193,9 +194,9 @@ mpc = init_chronos_mpc(N);
 
 ### Define the prediction dynamics
 
-Evaluate $A_c(x)$ at the initial heights and discretize it using the
-forward-Euler equations above. Register the resulting $A$ and $B$ with
-[`init_mpc_dynamics`](../api/init/init_mpc_dynamics.md).
+Evaluate $A_c(x)$ at the initial heights and pass the continuous coefficients
+to [`init_mpc_dyn_continuous_forward`](../api/init/init_mpc_dyn_continuous_forward.md).
+It applies the forward-Euler equations above using `Ts`.
 
 ```matlab
 alpha1 = sqrt(2*g*x1)/(Ab*x1);
@@ -203,15 +204,14 @@ alpha2 = sqrt(2*g*x2)/(Ab*x2);
 A_continuous = [-alpha1 0; alpha1 -alpha2];
 B_continuous = [1/Ab; 0];
 
-A_discrete = eye(2) + Ts*A_continuous;
-B_discrete = Ts*B_continuous;
-
-mpc = init_mpc_dynamics(mpc, A_discrete, B_discrete, []);
+mpc = init_mpc_dyn_continuous_forward(mpc, A_continuous, ...
+                                      B_continuous, [], Ts);
 ```
 
-`A_discrete` is 2-by-2 and `B_discrete` is 2-by-1, establishing the two
+`A_continuous` is 2-by-2 and `B_continuous` is 2-by-1, establishing the two
 states and single input. Supplying one matrix repeats it throughout the
-horizon. The final `[]` declares that the dynamics have no known input.
+horizon. The `[]` argument declares that the dynamics have no known input;
+omitting the optional mass matrix selects $M=I$.
 
 ### Select the tracked output
 
@@ -375,36 +375,39 @@ We will explore two ways to update the prediction model. The frozen LPV method u
 
 #### Frozen LPV method
 
-This method uses only the current state measurement to update the matrices and holds them constant over the horizon. We therefore pass a single $A$ matrix to
-[`update_mpc_dynamics`](../api/online/update_mpc_dynamics.md).
-Only $A$ changes with height: `B_discrete` remains constant, and the
-controller has no known-input channels.
+This method uses only the current state measurement to update the matrices
+and holds them constant over the horizon. We therefore pass a single
+continuous state matrix to
+[`update_mpc_dyn_continuous_forward`](../api/online/update_mpc_dyn_continuous_forward.md).
+Only $A_c$ changes with height, but this full-model updater also requires
+the constant `B_continuous` on every call. The controller has no known-input
+channels, so we pass `[]` for that coefficient.
 
 ```matlab
 a1 = sqrt(2*g*x_prev(1))/(Ab*x_prev(1));
 a2 = sqrt(2*g*x_prev(2))/(Ab*x_prev(2));
 
-A_lpv = eye(2) + Ts*[-a1 0; a1 -a2];
+A_continuous = [-a1 0; a1 -a2];
 
-mpc = update_mpc_dynamics(mpc, A_lpv, [], []);
+mpc = update_mpc_dyn_continuous_forward(mpc, A_continuous, ...
+                                        B_continuous, [], Ts);
 ```
 
 #### Scheduled LPV method
 
-This method builds one $A$ matrix for each step of the horizon. The first
-uses the current measurement `x_prev`; the remaining matrices use the previous state prediction stored in `mpc.x`. We collect
-these matrices in `A_lpv` and pass them to
-[`update_mpc_dynamics`](../api/online/update_mpc_dynamics.md).
-Only $A$ changes with height: `B_discrete` remains constant, and the
-controller has no known-input channels.
+This method builds one continuous state matrix for each transition of the
+horizon. We collect these matrices in `A_continuous` and pass them to
+[`update_mpc_dyn_continuous_forward`](../api/online/update_mpc_dyn_continuous_forward.md)
+with the constant `B_continuous`, `[]` for the absent known-input coefficient,
+and `Ts`. The updater converts each stage to the discrete prediction model.
 
 ```matlab
-A_lpv = zeros(2,2,mpc.N);
+A_continuous = zeros(2,2,mpc.N);
 
 a1 = sqrt(2*g*x_prev(1))/(Ab*x_prev(1));
 a2 = sqrt(2*g*x_prev(2))/(Ab*x_prev(2));
 
-A_lpv(:,:,1) = eye(2) + Ts*[-a1 0; a1 -a2];
+A_continuous(:,:,1) = [-a1 0; a1 -a2];
 
 for j = 2:mpc.N
 
@@ -413,10 +416,11 @@ for j = 2:mpc.N
     a1 = sqrt(2*g*x_k(1))/(Ab*x_k(1));
     a2 = sqrt(2*g*x_k(2))/(Ab*x_k(2));
 
-    A_lpv(:,:,j) = eye(2) + Ts*[-a1 0; a1 -a2];
+    A_continuous(:,:,j) = [-a1 0; a1 -a2];
 end
 
-mpc = update_mpc_dynamics(mpc, A_lpv, [], []);
+mpc = update_mpc_dyn_continuous_forward(mpc, A_continuous, ...
+                                        B_continuous, [], Ts);
 ```
 
 ### Call the solver
@@ -443,7 +447,7 @@ We use the scheduled LPV method for the model update.
 The complete loop below updates the reference, updates the model, calls [`mpc_solve`](../api/online/mpc_solve.md) and advances the plant.
 
 ```matlab
-A_lpv = zeros(2,2,mpc.N);
+A_continuous = zeros(2,2,mpc.N);
 
 for k = 1:Sim_samples
     % 1. Update the desired height of tank 2.
@@ -453,7 +457,7 @@ for k = 1:Sim_samples
     % 2. Schedule the LPV model across the horizon.
     a1 = sqrt(2*g*x_prev(1))/(Ab*x_prev(1));
     a2 = sqrt(2*g*x_prev(2))/(Ab*x_prev(2));
-    A_lpv(:,:,1) = eye(2) + Ts*[-a1 0; a1 -a2];
+    A_continuous(:,:,1) = [-a1 0; a1 -a2];
 
     for j = 2:mpc.N
 
@@ -462,10 +466,11 @@ for k = 1:Sim_samples
         a1 = sqrt(2*g*x_k(1))/(Ab*x_k(1));
         a2 = sqrt(2*g*x_k(2))/(Ab*x_k(2));
 
-        A_lpv(:,:,j) = eye(2) + Ts*[-a1 0; a1 -a2];
+        A_continuous(:,:,j) = [-a1 0; a1 -a2];
     end
 
-    mpc = update_mpc_dynamics(mpc, A_lpv, [], []);
+    mpc = update_mpc_dyn_continuous_forward(mpc, A_continuous, ...
+                                            B_continuous, [], Ts);
 
     % 3. Solve and retain the returned controller state.
     [u_k, mpc] = mpc_solve(mpc, x_prev, u_prev, ...
@@ -582,9 +587,8 @@ alpha1 = sqrt(2*g*x1)/(Ab*x1);
 alpha2 = sqrt(2*g*x2)/(Ab*x2);
 A_continuous = [-alpha1 0; alpha1 -alpha2];
 B_continuous = [1/Ab; 0];
-A_discrete = eye(2) + Ts*A_continuous;
-B_discrete = Ts*B_continuous;
-mpc = init_mpc_dynamics(mpc, A_discrete, B_discrete, []);
+mpc = init_mpc_dyn_continuous_forward(mpc, A_continuous, ...
+                                      B_continuous, [], Ts);
 
 % Select the tracked output
 C = [0 1];
@@ -636,7 +640,7 @@ x_log(:,1) = x_prev;
 u_log = zeros(1,Sim_samples);
 du_log = zeros(1,Sim_samples);
 rf_log = zeros(1,Sim_samples);
-A_lpv = zeros(2,2,mpc.N);
+A_continuous = zeros(2,2,mpc.N);
 
 for k = 1:Sim_samples
     % Update the filtered reference
@@ -646,16 +650,17 @@ for k = 1:Sim_samples
     % Schedule the LPV model across the horizon
     a1 = sqrt(2*g*x_prev(1))/(Ab*x_prev(1));
     a2 = sqrt(2*g*x_prev(2))/(Ab*x_prev(2));
-    A_lpv(:,:,1) = eye(2) + Ts*[-a1 0; a1 -a2];
+    A_continuous(:,:,1) = [-a1 0; a1 -a2];
 
     for j = 2:mpc.N
         x_k = mpc.x(:,j);
         a1 = sqrt(2*g*x_k(1))/(Ab*x_k(1));
         a2 = sqrt(2*g*x_k(2))/(Ab*x_k(2));
-        A_lpv(:,:,j) = eye(2) + Ts*[-a1 0; a1 -a2];
+        A_continuous(:,:,j) = [-a1 0; a1 -a2];
     end
 
-    mpc = update_mpc_dynamics(mpc, A_lpv, [], []);
+    mpc = update_mpc_dyn_continuous_forward(mpc, A_continuous, ...
+                                            B_continuous, [], Ts);
 
     % Solve and apply the first control action
     [u_k, mpc] = mpc_solve(mpc, x_prev, u_prev, ...
