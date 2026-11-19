@@ -211,18 +211,9 @@ function mpc = preallocate_riccati(mpc)
     
     n_interior = mpc.N-1;
     mpc.Q_hat = zeros(mpc.nxe,mpc.nxe,mpc.N);
-    mpc.R_hat = zeros(mpc.nu,mpc.nu,n_interior);
-    mpc.Y_hat = zeros(mpc.nu,mpc.nxe,n_interior);
-    mpc.K_ric = zeros(mpc.nu,mpc.nxe,n_interior);
-    mpc.d_ric = zeros(mpc.nu,n_interior);
     mpc.rx_hat = zeros(mpc.nxe,mpc.N);
     mpc.rp_hat = zeros(mpc.nxe,n_interior);
-    mpc.ru_hat = zeros(mpc.nu,n_interior);
-
-    mpc.R_hat_0 = zeros(mpc.nu,mpc.nu);
-    mpc.d_ric_0 = zeros(mpc.nu,1);
     mpc.rp_hat_0 = zeros(mpc.nxe,1);
-    mpc.ru_hat_0 = zeros(mpc.nu,1);
 
     mpc.QA_ric = zeros(mpc.nx,mpc.nx);
     if ~isempty(mpc.has_du)
@@ -232,6 +223,7 @@ function mpc = preallocate_riccati(mpc)
         mpc.QB_ric = zeros(mpc.nx,mpc.nu);
         mpc.G_ric = [];
     end
+    mpc.LDL_ric = zeros(mpc.nu,mpc.nu,mpc.N);
     mpc.solve_rhs_ric = zeros(mpc.nu,mpc.nxe+1);
-    mpc.solve_result_ric = zeros(mpc.nu,mpc.nxe+1);
+    mpc.scaled_rhs_ric = zeros(mpc.nu,mpc.nxe+1,n_interior);
 end
